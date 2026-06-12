@@ -85,7 +85,7 @@
         .utility-title.gdrive-title { color: var(--gdrive-color); margin-top: 14px; }
         .utility-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 14px; }
         .btn-util { background: var(--utility); color: white; border: none; font-weight: 600; }
-        .btn-gdrive { background: var(--gdrive-color); color: white; border: none; font-weight: 600; box-shadow: 0 2px 4px rgba(15, 157, 88, 0.2); }
+        .btn-gdrive { background: var(--gdrive-color); color: white; border: none; font-weight: 600; box-shadow: 0 2px 4px rgba(15, 157, 88, 0.2); margin-bottom: 6px; }
         .file-input-wrapper { position: relative; width: 100%; }
         .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
         .btn-fake-file { background: #ffffff; color: var(--utility); border: 1px solid var(--utility); text-align: center; }
@@ -164,7 +164,8 @@
     <div class="utility-card" id="utilityDrawerCard">
         <div class="utility-title gdrive-title">Google Drive Cloud Connectivity</div>
         <div class="utility-grid">
-            <button class="btn-util btn-gdrive" onclick="uploadToGoogleDrive()">☁ Sync Data to Google Drive</button>
+            <button class="btn-util btn-gdrive" id="gdriveMainActionBtn" onclick="initiateGoogleDriveSyncFlow()">☁ Connect Account & Sync</button>
+            <button class="btn-util btn-gdrive" id="gdrivePushBtn" onclick="uploadToGoogleDrive()" style="display: none; background: #4285f4;">📤 Save Changes to Cloud File</button>
         </div>
 
         <div class="utility-title">Manual Backup (Offline)</div>
@@ -191,12 +192,12 @@
             </div>
             
             <div class="guide-section gdrive-guide">
-                <h4>Google Drive Cloud Sync</h4>
-                <p>You can securely push your database direct to the cloud without intermediate files:</p>
+                <h4>Dedicated Cloud Database</h4>
+                <p>The system creates and maintains a single clean file inside your Google Drive:</p>
                 <ul>
-                    <li>Clicking <strong>"Sync Data to Google Drive"</strong> triggers an authorization pop-up window.</li>
-                    <li>The app strictly uses isolated <code>drive.file</code> tracking, giving it access <strong>only</strong> to items it generates itself.</li>
-                    <li>Files save with clear date tags: <code>RNE_YYMMDD_HHMM.txt</code>.</li>
+                    <li>Clicking <strong>"Connect Account & Sync"</strong> logs you in and immediately searches for your database file (<code>rne_database.json</code>).</li>
+                    <li><strong>Auto-Restore:</strong> If the file is found, your local view automatically overwrites with the latest cloud state.</li>
+                    <li><strong>Smart Overwrite:</strong> Clicking <strong>"Save Changes to Cloud File"</strong> safely updates that exact same file directly, ensuring your Drive stays perfectly clean.</li>
                 </ul>
             </div>
 
@@ -210,16 +211,20 @@
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260612_v3
+        // VERSION TRACKER REFERENCE: 260612_v5
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
         const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+        const DEDICATED_FILE_NAME = 'rne_database.json';
 
         let expenses = JSON.parse(localStorage.getItem('household_expenses')) || [];
         let editingTargetId = null; 
         let collapsedGroups = JSON.parse(localStorage.getItem('household_collapsed_groups')) || {};
+        
         let tokenClient = null;
+        let activeAccessToken = null;
+        let gdriveFileId = null; // Caches the specific Google ID of our file instance
 
         const recurrenceGroupsConfig = [
             { key: 0, label: "One-Time Only" },
@@ -236,7 +241,7 @@
                 tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: GOOGLE_CLIENT_ID,
                     scope: GOOGLE_DRIVE_SCOPE,
-                    callback: '', // defined dynamically during invocation to bypass stale closures
+                    callback: '', 
                 });
             }
         };
@@ -368,7 +373,7 @@
             if (!newName || isNaN(newCost)) return alert("Fill out Name and Cost fields.");
 
             if (item.seriesId) {
-                if (confirm("Apply changes to ALL matching upcoming instances? Cancel updates ONLY this specific month.")) {
+                if (confirm("Apply changes to ALL matching upcoming instances? Cancel updates ONLY this month.")) {
                     expenses.forEach(e => {
                         if (e.seriesId === item.seriesId && e.month >= item.month) {
                             e.name = newName;
@@ -483,71 +488,139 @@
             reader.onload = function(e) {
                 try {
                     const parsedData = JSON.parse(e.target.result);
-                    if (Array.isArray(parsedData)) { expenses = parsedData; save(); alert("Data imported!"); }
-                } catch (err) { alert("Error parsing file."); }
+                    if (Array.isArray(parsedData)) { expenses = parsedData; save(); alert("Data imported successfully!"); }
+                } catch (err) { alert("Error parsing file structure."); }
             };
             reader.readAsText(file);
         }
 
-        /* Google Drive API Data Posting Flow Logic */
-        function uploadToGoogleDrive() {
+        /* MASTER GOOGLE DRIVE DEDICATED SYNC ENGINE */
+
+        function initiateGoogleDriveSyncFlow() {
             if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
-                return alert("Google Cloud Execution Missing! Please follow Part 1 of instructions to inject your Client ID value into code.");
+                return alert("Google Cloud Execution Missing! Complete credentials array verification.");
             }
-            if (!tokenClient) return alert("Google API Identity Token failed loading. Verify connectivity.");
+            if (!tokenClient) return alert("Google Identity Library context missing. Check connectivity options.");
 
-            // Request permission token via standard authentication frame popup
             tokenClient.callback = async (response) => {
-                if (response.error !== undefined) {
-                    throw (response);
-                }
+                if (response.error !== undefined) throw (response);
                 
-                const accessToken = response.access_token;
-                const fileName = generateFormattedFilename();
-                const fileContent = JSON.stringify(expenses, null, 2);
+                activeAccessToken = response.access_token;
+                
+                document.getElementById('gdriveMainActionBtn').innerText = "☁ Account Linked Natively";
+                document.getElementById('gdriveMainActionBtn').style.opacity = "0.7";
+                document.getElementById('gdrivePushBtn').style.display = "block";
 
-                const boundary = 'RNE_TRACKER_DATA_SPLIT_BOUNDARY';
-                const delimiter = `\r\n--${boundary}\r\n`;
-                const close_delim = `\r\n--${boundary}--`;
-
-                const metadata = {
-                    'name': fileName,
-                    'mimeType': 'text/plain'
-                };
-
-                const multipartRequestBody =
-                    delimiter +
-                    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-                    JSON.stringify(metadata) +
-                    delimiter +
-                    'Content-Type: text/plain\r\n\r\n' +
-                    fileContent +
-                    close_delim;
-
-                try {
-                    const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`,
-                            'Content-Type': `multipart/related; boundary=${boundary}`
-                        },
-                        body: multipartRequestBody
-                    });
-
-                    if (uploadResponse.ok) {
-                        alert(`Success! Saved to Cloud Drive as:\n${fileName}`);
-                    } else {
-                        const errorData = await uploadResponse.json();
-                        alert(`Cloud Transfer Rejection: ${errorData.error.message}`);
-                    }
-                } catch (err) {
-                    alert("Network framework malfunction executing cloud handshake connection pipeline.");
-                    console.error(err);
-                }
+                // Automatically look up the single master database file instance
+                await gdriveFetchOrCreateDatabase();
             };
 
-            // Request Token access without maintaining cookie-state sessions
             tokenClient.requestAccessToken({ prompt: 'consent' });
+        }
+
+        async function gdriveFetchOrCreateDatabase() {
+            if (!activeAccessToken) return;
+
+            try {
+                // Look up if our single dedicated database name already exists
+                const listUrl = 'https://www.googleapis.com/drive/v3/files?' + new URLSearchParams({
+                    q: `name = '${DEDICATED_FILE_NAME}' and trashed = false`,
+                    pageSize: '1',
+                    fields: 'files(id, name)'
+                });
+
+                const listResponse = await fetch(listUrl, {
+                    headers: { 'Authorization': `Bearer ${activeAccessToken}` }
+                });
+
+                if (!listResponse.ok) throw new Error("Index acquisition rejection.");
+                const listData = await listResponse.json();
+
+                if (listData.files && listData.files.length > 0) {
+                    // File exists! Record the ID and ask the user to pull data
+                    gdriveFileId = listData.files[0].id;
+                    
+                    if (confirm(`Dedicated file [${DEDICATED_FILE_NAME}] found on cloud.\nSync down and overwrite your current local layout?`)) {
+                        const fileUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
+                        const fileResponse = await fetch(fileUrl, {
+                            headers: { 'Authorization': `Bearer ${activeAccessToken}` }
+                        });
+
+                        if (!fileResponse.ok) throw new Error("Media download interface failure.");
+                        const parsedBackupData = await fileResponse.json();
+                        
+                        if (Array.isArray(parsedBackupData)) {
+                            expenses = parsedBackupData;
+                            save();
+                            alert("Database synced down! Your dashboard is now up to date.");
+                        }
+                    }
+                } else {
+                    // First time initialization scenario: file does not exist yet
+                    console.log("No dedicated database file found. It will be generated on your first push.");
+                    gdriveFileId = null; 
+                }
+            } catch (err) {
+                alert("Automated data restoration loop failed reading cloud parameters.");
+                console.error(err);
+            }
+        }
+
+        async function uploadToGoogleDrive() {
+            if (!activeAccessToken) {
+                return alert("No active cloud session found. Use main authentication toggle first.");
+            }
+
+            const fileContent = JSON.stringify(expenses, null, 2);
+            const boundary = 'RNE_TRACKER_DATA_SPLIT_BOUNDARY';
+            const delimiter = `\r\n--${boundary}\r\n`;
+            const close_delim = `\r\n--${boundary}--`;
+
+            let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+            let method = 'POST';
+            const metadata = { 'mimeType': 'application/json' };
+
+            // If we already resolved a file instance ID, perform an UPDATE (overwrite) instead of a CREATE
+            if (gdriveFileId) {
+                url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`;
+                method = 'PATCH'; 
+            } else {
+                metadata.name = DEDICATED_FILE_NAME;
+            }
+
+            const multipartRequestBody =
+                delimiter +
+                'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+                JSON.stringify(metadata) +
+                delimiter +
+                'Content-Type: application/json\r\n\r\n' +
+                fileContent +
+                close_delim;
+
+            try {
+                const uploadResponse = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${activeAccessToken}`,
+                        'Content-Type': `multipart/related; boundary=${boundary}`
+                    },
+                    body: multipartRequestBody
+                });
+
+                if (uploadResponse.ok) {
+                    const responseData = await uploadResponse.json();
+                    if (!gdriveFileId && responseData.id) {
+                        gdriveFileId = responseData.id; // Cache ID if newly generated
+                    }
+                    alert("Cloud sync complete! Master file updated successfully.");
+                } else {
+                    const errorData = await uploadResponse.json();
+                    alert(`Cloud Transfer Rejection: ${errorData.error.message}`);
+                }
+            } catch (err) {
+                alert("Network pipeline execution dropped processing cloud write payload.");
+                console.error(err);
+            }
         }
 
         function render() {
