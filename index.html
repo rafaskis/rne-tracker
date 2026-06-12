@@ -192,12 +192,12 @@
             </div>
             
             <div class="guide-section gdrive-guide">
-                <h4>Dedicated Cloud Database</h4>
-                <p>The system creates and maintains a single clean file inside your Google Drive:</p>
+                <h4>Cross-Device Cloud Syncing</h4>
+                <p>Seamless data porting across separate mobile devices or tablets:</p>
                 <ul>
-                    <li>Clicking <strong>"Connect Account & Sync"</strong> logs you in and immediately searches for your database file (<code>rne_database.json</code>).</li>
-                    <li><strong>Auto-Restore:</strong> If the file is found, your local view automatically overwrites with the latest cloud state.</li>
-                    <li><strong>Smart Overwrite:</strong> Clicking <strong>"Save Changes to Cloud File"</strong> safely updates that exact same file directly, ensuring your Drive stays perfectly clean.</li>
+                    <li>Clicking <strong>"Connect Account & Sync"</strong> logs you in securely via Google Oath client scripts.</li>
+                    <li><strong>New Device Auto-Import:</strong> Even if this device has a blank dashboard, the app scans your Drive root folder for <code>rne_database.json</code> and pulls it down instantly.</li>
+                    <li><strong>Smart Overwrite:</strong> Modifying parameters locally and tapping <strong>"Save Changes to Cloud File"</strong> keeps that exact cloud file updated.</li>
                 </ul>
             </div>
 
@@ -211,7 +211,7 @@
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260612_v5
+        // VERSION TRACKER REFERENCE: 260612_v6
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -224,7 +224,7 @@
         
         let tokenClient = null;
         let activeAccessToken = null;
-        let gdriveFileId = null; // Caches the specific Google ID of our file instance
+        let gdriveFileId = null; 
 
         const recurrenceGroupsConfig = [
             { key: 0, label: "One-Time Only" },
@@ -537,10 +537,13 @@
                 const listData = await listResponse.json();
 
                 if (listData.files && listData.files.length > 0) {
-                    // File exists! Record the ID and ask the user to pull data
                     gdriveFileId = listData.files[0].id;
                     
-                    if (confirm(`Dedicated file [${DEDICATED_FILE_NAME}] found on cloud.\nSync down and overwrite your current local layout?`)) {
+                    // NEW/UPDATED LOGIC FOR NEW DEVICE IMPORT SUPPORT:
+                    // If local browser storage is empty, skip the confirmation prompt and download it automatically.
+                    const isNewDeviceOrEmpty = expenses.length === 0;
+                    
+                    if (isNewDeviceOrEmpty || confirm(`Dedicated file [${DEDICATED_FILE_NAME}] found on cloud.\nSync down and overwrite your current local layout?`)) {
                         const fileUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
                         const fileResponse = await fetch(fileUrl, {
                             headers: { 'Authorization': `Bearer ${activeAccessToken}` }
@@ -551,12 +554,16 @@
                         
                         if (Array.isArray(parsedBackupData)) {
                             expenses = parsedBackupData;
-                            save();
-                            alert("Database synced down! Your dashboard is now up to date.");
+                            save(); // Saves to local storage and refreshes visual UI container instantly
+                            
+                            if (isNewDeviceOrEmpty) {
+                                alert("Cloud profile successfully imported and initialized onto this device!");
+                            } else {
+                                alert("Database synced down! Your dashboard is now up to date.");
+                            }
                         }
                     }
                 } else {
-                    // First time initialization scenario: file does not exist yet
                     console.log("No dedicated database file found. It will be generated on your first push.");
                     gdriveFileId = null; 
                 }
@@ -580,7 +587,6 @@
             let method = 'POST';
             const metadata = { 'mimeType': 'application/json' };
 
-            // If we already resolved a file instance ID, perform an UPDATE (overwrite) instead of a CREATE
             if (gdriveFileId) {
                 url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`;
                 method = 'PATCH'; 
@@ -610,7 +616,7 @@
                 if (uploadResponse.ok) {
                     const responseData = await uploadResponse.json();
                     if (!gdriveFileId && responseData.id) {
-                        gdriveFileId = responseData.id; // Cache ID if newly generated
+                        gdriveFileId = responseData.id; 
                     }
                     alert("Cloud sync complete! Master file updated successfully.");
                 } else {
