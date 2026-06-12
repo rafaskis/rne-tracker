@@ -90,6 +90,9 @@
         .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
         .btn-fake-file { background: #ffffff; color: var(--utility); border: 1px solid var(--utility); text-align: center; }
 
+        /* Cloud Sync Panel Layout Modifications */
+        .cloud-actions-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
         /* Lower Positioned Help Button Styling */
         .help-container { display: flex; justify-content: center; margin-top: 16px; margin-bottom: 24px; }
         .btn-help-bottom { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: auto; max-width: 200px; padding: 10px 20px; background: #e5e7eb; color: var(--text-main); border: 1px solid var(--border); border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
@@ -164,8 +167,12 @@
     <div class="utility-card" id="utilityDrawerCard">
         <div class="utility-title gdrive-title">Google Drive Cloud Connectivity</div>
         <div class="utility-grid">
-            <button class="btn-util btn-gdrive" id="gdriveMainActionBtn" onclick="initiateGoogleDriveSyncFlow()">☁ Connect Account & Sync</button>
-            <button class="btn-util btn-gdrive" id="gdrivePushBtn" onclick="uploadToGoogleDrive()" style="display: none; background: #4285f4;">📤 Save Changes to Cloud File</button>
+            <button class="btn-util btn-gdrive" id="gdriveMainActionBtn" onclick="initiateGoogleDriveSyncFlow()">☁ Sign In with Google</button>
+            
+            <div class="cloud-actions-container" id="cloudActionsPanel" style="display: none;">
+                <button class="btn-util btn-gdrive" onclick="uploadToGoogleDrive()" style="background: #4285f4; margin:0;">📤 Backup to Cloud</button>
+                <button class="btn-util btn-gdrive" onclick="manuallyTriggerCloudRestore()" style="background: #34a853; margin:0;">📥 Restore from Cloud</button>
+            </div>
         </div>
 
         <div class="utility-title">Manual Backup (Offline)</div>
@@ -195,9 +202,9 @@
                 <h4>Cross-Device Cloud Syncing</h4>
                 <p>Seamless data porting across separate mobile devices or tablets:</p>
                 <ul>
-                    <li>Clicking <strong>"Connect Account & Sync"</strong> logs you in securely via Google Oath client scripts.</li>
-                    <li><strong>New Device Auto-Import:</strong> Even if this device has a blank dashboard, the app scans your Drive root folder for <code>rne_database.json</code> and pulls it down instantly.</li>
-                    <li><strong>Smart Overwrite:</strong> Modifying parameters locally and tapping <strong>"Save Changes to Cloud File"</strong> keeps that exact cloud file updated.</li>
+                    <li>Clicking <strong>"Sign In with Google"</strong> requests runtime credentials securely via Google OAuth.</li>
+                    <li>Upon confirmation, you gain explicit control modules to manually push backups or restore prior sessions.</li>
+                    <li><strong>No Local Cache:</strong> This application boots with an empty state every time it opens. Sign in to cloud storage to pull data.</li>
                 </ul>
             </div>
 
@@ -211,14 +218,14 @@
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260612_v6
+        // VERSION TRACKER REFERENCE: 260612_v8
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
         const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
         const DEDICATED_FILE_NAME = 'rne_database.json';
 
-        let expenses = JSON.parse(localStorage.getItem('household_expenses')) || [];
+        let expenses = []; 
         let editingTargetId = null; 
         let collapsedGroups = JSON.parse(localStorage.getItem('household_collapsed_groups')) || {};
         
@@ -350,7 +357,6 @@
         }
 
         function save() {
-            localStorage.setItem('household_expenses', JSON.stringify(expenses));
             render();
         }
 
@@ -507,68 +513,70 @@
                 
                 activeAccessToken = response.access_token;
                 
-                document.getElementById('gdriveMainActionBtn').innerText = "☁ Account Linked Natively";
-                document.getElementById('gdriveMainActionBtn').style.opacity = "0.7";
-                document.getElementById('gdrivePushBtn').style.display = "block";
+                // CHANGED FOR v8: Swap gateway link button with actionable backup/restore matrix
+                document.getElementById('gdriveMainActionBtn').style.display = "none";
+                document.getElementById('cloudActionsPanel').style.display = "grid";
 
-                // Automatically look up the single master database file instance
-                await gdriveFetchOrCreateDatabase();
+                // Resolve the master cloud file identifier tracking profile behind the scenes
+                await resolveCloudFileIdentifier();
             };
 
             tokenClient.requestAccessToken({ prompt: 'consent' });
         }
 
-        async function gdriveFetchOrCreateDatabase() {
+        // Internal engine lookup step to track the file reference ID securely
+        async function resolveCloudFileIdentifier() {
             if (!activeAccessToken) return;
-
             try {
-                // Look up if our single dedicated database name already exists
                 const listUrl = 'https://www.googleapis.com/drive/v3/files?' + new URLSearchParams({
                     q: `name = '${DEDICATED_FILE_NAME}' and trashed = false`,
                     pageSize: '1',
                     fields: 'files(id, name)'
                 });
+                const listResponse = await fetch(listUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
+                if (!listResponse.ok) throw new Error();
+                const listData = await listResponse.json();
+                if (listData.files && listData.files.length > 0) {
+                    gdriveFileId = listData.files[0].id;
+                } else {
+                    gdriveFileId = null;
+                }
+            } catch (err) {
+                console.error("Cloud file indexing anomaly encountered:", err);
+            }
+        }
 
-                const listResponse = await fetch(listUrl, {
+        // CHANGED FOR v8: Split into manual restoration check routine
+        async function manuallyTriggerCloudRestore() {
+            if (!activeAccessToken) return alert("Session expired. Please re-authenticate.");
+            
+            // Re-resolve identifier in case file layout changed out-of-band
+            await resolveCloudFileIdentifier();
+
+            if (!gdriveFileId) {
+                return alert(`No backup file found under the name "${DEDICATED_FILE_NAME}" inside your Google Drive folder yet.`);
+            }
+
+            if (expenses.length > 0 && !confirm("Overwrite your current local visual layout with parameters saved inside the cloud backup?")) {
+                return;
+            }
+
+            try {
+                const fileUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
+                const fileResponse = await fetch(fileUrl, {
                     headers: { 'Authorization': `Bearer ${activeAccessToken}` }
                 });
 
-                if (!listResponse.ok) throw new Error("Index acquisition rejection.");
-                const listData = await listResponse.json();
-
-                if (listData.files && listData.files.length > 0) {
-                    gdriveFileId = listData.files[0].id;
-                    
-                    // NEW/UPDATED LOGIC FOR NEW DEVICE IMPORT SUPPORT:
-                    // If local browser storage is empty, skip the confirmation prompt and download it automatically.
-                    const isNewDeviceOrEmpty = expenses.length === 0;
-                    
-                    if (isNewDeviceOrEmpty || confirm(`Dedicated file [${DEDICATED_FILE_NAME}] found on cloud.\nSync down and overwrite your current local layout?`)) {
-                        const fileUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
-                        const fileResponse = await fetch(fileUrl, {
-                            headers: { 'Authorization': `Bearer ${activeAccessToken}` }
-                        });
-
-                        if (!fileResponse.ok) throw new Error("Media download interface failure.");
-                        const parsedBackupData = await fileResponse.json();
-                        
-                        if (Array.isArray(parsedBackupData)) {
-                            expenses = parsedBackupData;
-                            save(); // Saves to local storage and refreshes visual UI container instantly
-                            
-                            if (isNewDeviceOrEmpty) {
-                                alert("Cloud profile successfully imported and initialized onto this device!");
-                            } else {
-                                alert("Database synced down! Your dashboard is now up to date.");
-                            }
-                        }
-                    }
-                } else {
-                    console.log("No dedicated database file found. It will be generated on your first push.");
-                    gdriveFileId = null; 
+                if (!fileResponse.ok) throw new Error("Media content acquisition error.");
+                const parsedBackupData = await fileResponse.json();
+                
+                if (Array.isArray(parsedBackupData)) {
+                    expenses = parsedBackupData;
+                    save(); 
+                    alert("Database imported successfully! Active dashboard state updated.");
                 }
             } catch (err) {
-                alert("Automated data restoration loop failed reading cloud parameters.");
+                alert("Pipeline error parsing target cloud payload.");
                 console.error(err);
             }
         }
@@ -618,7 +626,7 @@
                     if (!gdriveFileId && responseData.id) {
                         gdriveFileId = responseData.id; 
                     }
-                    alert("Cloud sync complete! Master file updated successfully.");
+                    alert("Cloud sync complete! Master backup updated successfully.");
                 } else {
                     const errorData = await uploadResponse.json();
                     alert(`Cloud Transfer Rejection: ${errorData.error.message}`);
