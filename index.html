@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RNE</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --primary: #2563eb;
+            --danger: #dc2626;
+            --success: #16a34a;
+            --border: #e5e7eb;
+            --utility: #4b5563;
+            --edit-color: #0284c7;
+            --group-header-bg: #e2e8f0;
+            --gdrive-color: #0f9d58;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 16px; padding-bottom: 80px; position: relative; }
+        
+        /* Top Navigation Hierarchy */
+        .month-nav-container { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .btn-nav-arrow { width: 48px; height: 48px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary); }
+        .month-select-wrapper { flex-grow: 1; }
+
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 8px; }
+        .header-card { background: var(--card-bg); padding: 16px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-grow: 1; }
+        .unpaid-badge { font-size: 24px; font-weight: bold; color: var(--danger); margin-top: 4px; }
+        
+        select, input, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background: var(--card-bg); -webkit-appearance: none; }
+        select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M0 3l5 5 5-5z' fill='%23666'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+        
+        /* Collapsible Action Entry Form (Handles Create & Edit States) */
+        .btn-trigger-form { background: var(--primary); color: white; font-weight: bold; border: none; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
+        .form-card { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px; display: none; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+        .form-card input[type="text"] { grid-column: span 2; }
+        .btn-primary { background: var(--primary); color: white; font-weight: bold; border: none; margin-top: 8px; }
+        .btn-cancel-form { background: transparent; color: var(--text-muted); border: none; margin-top: 4px; font-size: 14px; text-decoration: underline; cursor: pointer; }
+        
+        /* Dynamic Inline Edit Mode Styling */
+        .edit-banner { background: var(--edit-color); color: white; padding: 8px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 12px; text-align: center; grid-column: span 2; }
+
+        /* Categorized Group Framework Elements */
+        .group-container { margin-bottom: 14px; border-radius: 12px; overflow: hidden; background: transparent; }
+        .group-header { background: var(--group-header-bg); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; color: #334155; cursor: pointer; user-select: none; border: 1px solid var(--border); border-radius: 10px; gap: 8px; }
+        .group-header-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
+        .group-header-title span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .group-badges-container { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .group-unpaid-cost { font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+        .group-unpaid-cost.has-unpaid { color: var(--danger); background: #fee2e2; border: 1px solid #fca5a5; }
+        .group-unpaid-cost.all-paid { color: var(--success); background: #dcfce7; border: 1px solid #86efac; }
+        .group-badge { background: #64748b; color: white; font-size: 11px; padding: 3px 7px; border-radius: 10px; font-weight: 600; }
+        .group-content { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; padding: 2px; }
+
+        /* Item Display Grid - Optimized for full text wrapping */
+        .expense-item { background: var(--card-bg); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .expense-item.paid { opacity: 0.6; border-left: 5px solid var(--success); }
+        .expense-item.unpaid { border-left: 5px solid var(--danger); }
+        
+        .info { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+        .name { font-weight: 600; font-size: 17px; color: var(--text-main); line-height: 1.4; word-break: break-word; white-space: normal; }
+        .cost-row { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+        .cost { font-weight: 700; font-size: 18px; color: #111827; }
+        
+        /* Buttons Row Layout */
+        .actions { display: flex; gap: 8px; justify-content: flex-end; width: 100%; border-top: 1px solid #f3f4f6; padding-top: 10px; }
+        .btn-action { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 8px; border: 1px solid var(--border); background: #f9fafb; cursor: pointer; font-size: 16px; }
+        .btn-pay { color: var(--success); }
+        .btn-move { color: #f59e0b; }
+        .btn-back { color: #6366f1; }
+        .btn-edit { color: var(--edit-color); }
+        .btn-delete { color: var(--danger); }
+
+        /* Collapsible Bottom Utility Interface Drawer */
+        .utility-toggle-header { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 32px; color: var(--utility); font-size: 14px; font-weight: 600; cursor: pointer; user-select: none; padding: 8px; }
+        .utility-arrow { font-size: 11px; transition: transform 0.2s ease; }
+        .utility-card { background: #eaede4; padding: 16px; border-radius: 12px; border: 1px dashed var(--utility); margin-top: 8px; display: none; }
+        .utility-title { font-size: 12px; font-weight: bold; color: var(--utility); margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
+        .utility-title.gdrive-title { color: var(--gdrive-color); margin-top: 14px; }
+        .utility-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 14px; }
+        .btn-util { background: var(--utility); color: white; border: none; font-weight: 600; }
+        .btn-gdrive { background: var(--gdrive-color); color: white; border: none; font-weight: 600; box-shadow: 0 2px 4px rgba(15, 157, 88, 0.2); }
+        .file-input-wrapper { position: relative; width: 100%; }
+        .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+        .btn-fake-file { background: #ffffff; color: var(--utility); border: 1px solid var(--utility); text-align: center; }
+
+        /* Lower Positioned Help Button Styling */
+        .help-container { display: flex; justify-content: center; margin-top: 16px; margin-bottom: 24px; }
+        .btn-help-bottom { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: auto; max-width: 200px; padding: 10px 20px; background: #e5e7eb; color: var(--text-main); border: 1px solid var(--border); border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        /* User Guide Modal Overlay */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; padding: 16px; overflow-y: auto; }
+        .modal-content { background: var(--card-bg); border-radius: 16px; padding: 20px; max-width: 500px; margin: 20px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .modal-title { font-size: 18px; font-weight: bold; }
+        .modal-close { font-size: 24px; background: none; border: none; cursor: pointer; color: var(--text-muted); width: auto; padding: 0; text-align: right; }
+        .guide-section { margin-bottom: 16px; }
+        .guide-section h4 { font-size: 14px; color: var(--primary); text-transform: uppercase; margin-bottom: 6px; }
+        .guide-section.gdrive-guide h4 { color: var(--gdrive-color); }
+        .guide-section p { font-size: 14px; color: var(--text-main); line-height: 1.5; margin-bottom: 8px; }
+        .guide-section ul { margin-left: 20px; font-size: 13px; color: var(--text-main); line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+    <div class="month-nav-container">
+        <button class="btn-nav-arrow" onclick="stepMonth(-1)" title="Previous Month">◀</button>
+        <div class="month-select-wrapper">
+            <select id="monthViewFilter" onchange="render()"></select>
+        </div>
+        <button class="btn-nav-arrow" onclick="stepMonth(1)" title="Next Month">▶</button>
+    </div>
+
+    <div class="top-bar">
+        <div class="header-card">
+            <div style="font-size: 14px; color: var(--text-muted); font-weight: 500;">TOTAL UNPAID FOR THIS MONTH</div>
+            <div class="unpaid-badge" id="totalUnpaid">€0.00</div>
+        </div>
+    </div>
+
+    <button id="formTriggerBtn" class="btn-trigger-form" onclick="openCreateMode()">+ Add New Expense</button>
+
+    <div class="form-card" id="expenseFormCard">
+        <div class="form-grid">
+            <div id="editBannerElement" class="edit-banner" style="display: none;">🔧 EDITING ACTIVE ENTRY</div>
+            <input type="text" id="expName" placeholder="Expense Name (e.g., Electricity Room 1)">
+            <input type="number" id="expCost" step="0.01" placeholder="Cost (€)">
+            <select id="expMonthTarget"></select>
+            <select id="expRecur" onchange="toggleDurationField()">
+                <option value="0">One-Time Only</option>
+                <option value="1">Every Month</option>
+                <option value="2">Every 2 Months</option>
+                <option value="3">Every 3 Months</option>
+                <option value="6">Every 6 Months</option>
+                <option value="12">Yearly</option>
+            </select>
+            <select id="expDuration" style="display:none;">
+                <option value="999">Indefinitely (Full Year)</option>
+                <option value="2">For 2 Cycles</option>
+                <option value="3">For 3 Cycles</option>
+                <option value="4">For 4 Cycles</option>
+                <option value="6">For 6 Cycles</option>
+            </select>
+        </div>
+        <button class="btn-primary" id="formSubmitBtn" onclick="processFormSubmit()">Save Expense Entry</button>
+        <div style="text-align: center;">
+            <button class="btn-cancel-form" onclick="closeFormDisplay()">Minimize Form</button>
+        </div>
+    </div>
+
+    <div class="expense-list" id="listContainer"></div>
+
+    <div class="utility-toggle-header" onclick="toggleUtilityDrawer()">
+        <span>Backup & Data Integrity</span>
+        <span class="utility-arrow" id="utilArrow">▼</span>
+    </div>
+
+    <div class="utility-card" id="utilityDrawerCard">
+        <div class="utility-title gdrive-title">Google Drive Cloud Connectivity</div>
+        <div class="utility-grid">
+            <button class="btn-util btn-gdrive" onclick="uploadToGoogleDrive()">☁ Sync Data to Google Drive</button>
+        </div>
+
+        <div class="utility-title">Manual Backup (Offline)</div>
+        <div class="utility-grid">
+            <button class="btn-util" onclick="exportToFile()">📥 Export Data to File</button>
+            <div class="file-input-wrapper">
+                <button class="btn-fake-file">📤 Import Backup File</button>
+                <input type="file" id="importFile" accept=".txt,.json" onchange="importFromFile(event)">
+            </div>
+        </div>
+    </div>
+
+    <div class="help-container">
+        <button class="btn-help-bottom" onclick="toggleModal(true)">
+            <span>❓</span> View User Guide
+        </button>
+    </div>
+
+    <div class="modal-overlay" id="guideModal" onclick="if(event.target===this) toggleModal(false)">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">App User Guide</span>
+                <button class="modal-close" onclick="toggleModal(false)">✕</button>
+            </div>
+            
+            <div class="guide-section gdrive-guide">
+                <h4>Google Drive Cloud Sync</h4>
+                <p>You can securely push your database direct to the cloud without intermediate files:</p>
+                <ul>
+                    <li>Clicking <strong>"Sync Data to Google Drive"</strong> triggers an authorization pop-up window.</li>
+                    <li>The app strictly uses isolated <code>drive.file</code> tracking, giving it access <strong>only</strong> to items it generates itself.</li>
+                    <li>Files save with clear date tags: <code>RNE_YYMMDD_HHMM.txt</code>.</li>
+                </ul>
+            </div>
+
+            <div class="guide-section">
+                <h4>Smart Group Visibility Modes</h4>
+                <p>Categories with **unpaid balances** expand automatically by default to catch your attention. Categories that are **fully completed** collapse neatly so you can focus only on what's left.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // REPLACE THIS STRING WITH YOUR ACTUAL GOOGLE CLIENT ID FROM DEVELOPER CONSOLE
+        const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE';
+        const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+
+        let expenses = JSON.parse(localStorage.getItem('household_expenses')) || [];
+        let editingTargetId = null; 
+        let collapsedGroups = JSON.parse(localStorage.getItem('household_collapsed_groups')) || {};
+        let tokenClient = null;
+
+        const recurrenceGroupsConfig = [
+            { key: 0, label: "One-Time Only" },
+            { key: 1, label: "Monthly" },
+            { key: 2, label: "Every 2 Months" },
+            { key: 3, label: "Quarterly" },
+            { key: 6, label: "Every 6 Months" },
+            { key: 12, label: "Yearly" }
+        ];
+
+        // Initialize Google Identity Token Client on startup
+        window.onload = function() {
+            if (typeof google !== 'undefined' && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: GOOGLE_CLIENT_ID,
+                    scope: GOOGLE_DRIVE_SCOPE,
+                    callback: '', // defined dynamically during invocation to bypass stale closures
+                });
+            }
+        };
+
+        function getMonthList() {
+            const list = []; const d = new Date();
+            for (let i = 0; i <= 12; i++) {
+                let targetMonth = d.getMonth() + i;
+                let targetYear = d.getFullYear() + Math.floor(targetMonth / 12);
+                let m = (targetMonth % 12) + 1;
+                let mStr = m < 10 ? '0' + m : m;
+                list.push(`${targetYear}-${mStr}`);
+            }
+            return list;
+        }
+
+        const monthsRange = getMonthList();
+        const currentSystemMonth = monthsRange[0]; 
+        const filterSelect = document.getElementById('monthViewFilter');
+        const formMonthSelect = document.getElementById('expMonthTarget');
+
+        monthsRange.forEach((mStr) => {
+            const [y, m] = mStr.split('-');
+            const dateObj = new Date(y, m - 1, 1);
+            const label = dateObj.toLocaleDateString('default', { month: 'long', year: 'numeric' });
+            filterSelect.options.add(new Option(label, mStr));
+            formMonthSelect.options.add(new Option(label, mStr));
+        });
+
+        function openCreateMode() {
+            editingTargetId = null;
+            document.getElementById('editBannerElement').style.display = 'none';
+            document.getElementById('formSubmitBtn').innerText = 'Save Expense Entry';
+            document.getElementById('formSubmitBtn').style.background = 'var(--primary)';
+            document.getElementById('expRecur').disabled = false;
+            
+            document.getElementById('expName').value = '';
+            document.getElementById('expCost').value = '';
+            document.getElementById('expRecur').value = '0';
+            document.getElementById('expMonthTarget').value = filterSelect.value;
+            toggleDurationField();
+            
+            document.getElementById('expenseFormCard').style.display = 'block';
+            document.getElementById('formTriggerBtn').style.display = 'none';
+        }
+
+        function openEditMode(id) {
+            const item = expenses.find(e => e.id === id);
+            if (!item) return;
+
+            editingTargetId = id;
+            document.getElementById('editBannerElement').style.display = 'block';
+            document.getElementById('formSubmitBtn').innerText = 'Update Changes';
+            document.getElementById('formSubmitBtn').style.background = 'var(--edit-color)';
+            
+            document.getElementById('expName').value = item.name;
+            document.getElementById('expCost').value = item.cost;
+            document.getElementById('expMonthTarget').value = item.month;
+            document.getElementById('expRecur').value = item.recur || '0';
+            
+            document.getElementById('expRecur').disabled = true;
+            document.getElementById('expDuration').style.display = 'none';
+
+            document.getElementById('expenseFormCard').style.display = 'block';
+            document.getElementById('formTriggerBtn').style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function closeFormDisplay() {
+            document.getElementById('expenseFormCard').style.display = 'none';
+            document.getElementById('formTriggerBtn').style.display = 'block';
+            editingTargetId = null;
+        }
+
+        function toggleUtilityDrawer() {
+            const drawer = document.getElementById('utilityDrawerCard');
+            const arrow = document.getElementById('utilArrow');
+            if(drawer.style.display === 'block') {
+                drawer.style.display = 'none'; arrow.innerText = '▼';
+            } else {
+                drawer.style.display = 'block'; arrow.innerText = '▲';
+            }
+        }
+
+        function toggleGroupCollapse(groupKey) {
+            collapsedGroups[groupKey] = !collapsedGroups[groupKey];
+            localStorage.setItem('household_collapsed_groups', JSON.stringify(collapsedGroups));
+            render();
+        }
+
+        function stepMonth(direction) {
+            let currentIndex = filterSelect.selectedIndex;
+            let nextIndex = currentIndex + direction;
+            if(nextIndex >= 0 && nextIndex < filterSelect.options.length) {
+                filterSelect.selectedIndex = nextIndex;
+                render();
+            }
+        }
+
+        function toggleModal(show) { document.getElementById('guideModal').style.display = show ? 'block' : 'none'; }
+        
+        function toggleDurationField() {
+            if (editingTargetId) return; 
+            const recurVal = parseInt(document.getElementById('expRecur').value);
+            document.getElementById('expDuration').style.display = (recurVal > 0) ? 'block' : 'none';
+        }
+
+        function save() {
+            localStorage.setItem('household_expenses', JSON.stringify(expenses));
+            render();
+        }
+
+        function processFormSubmit() {
+            if (editingTargetId) {
+                executeEditSave();
+            } else {
+                addExpense();
+            }
+        }
+
+        function executeEditSave() {
+            const item = expenses.find(e => e.id === editingTargetId);
+            if (!item) return;
+
+            const newName = document.getElementById('expName').value.trim();
+            const newCost = parseFloat(document.getElementById('expCost').value);
+            const newMonth = document.getElementById('expMonthTarget').value;
+
+            if (!newName || isNaN(newCost)) return alert("Fill out Name and Cost fields.");
+
+            if (item.seriesId) {
+                if (confirm("Apply changes to ALL matching upcoming instances? Cancel updates ONLY this specific month.")) {
+                    expenses.forEach(e => {
+                        if (e.seriesId === item.seriesId && e.month >= item.month) {
+                            e.name = newName;
+                            e.cost = newCost;
+                        }
+                    });
+                } else {
+                    item.seriesId = null;
+                    item.recur = 0;
+                    item.name = newName;
+                    item.cost = newCost;
+                    item.month = newMonth;
+                }
+            } else {
+                item.name = newName;
+                item.cost = newCost;
+                item.month = newMonth;
+            }
+
+            closeFormDisplay();
+            save();
+        }
+
+        function addExpense() {
+            const name = document.getElementById('expName').value.trim();
+            const cost = parseFloat(document.getElementById('expCost').value);
+            const startMonth = document.getElementById('expMonthTarget').value;
+            const recur = parseInt(document.getElementById('expRecur').value);
+            const durationLimit = parseInt(document.getElementById('expDuration').value);
+
+            if (!name || isNaN(cost)) return alert("Fill out Name and Cost.");
+            const seriesId = recur > 0 ? 'series_' + Date.now() : null;
+            const [startYear, startMonthNum] = startMonth.split('-').map(Number);
+            let cycleCount = 0;
+            
+            for (let i = 0; i <= 12; i++) {
+                if (recur > 0 && i % recur !== 0) continue;
+                if (recur === 0 && i > 0) break; 
+                if (cycleCount >= durationLimit) break; 
+
+                let calcMonthRaw = (startMonthNum - 1) + i;
+                let calcYear = startYear + Math.floor(calcMonthRaw / 12);
+                let calcMonth = (calcMonthRaw % 12) + 1;
+                let calcMonthStr = calcMonth < 10 ? '0' + calcMonth : calcMonth;
+                let targetKey = `${calcYear}-${calcMonthStr}`;
+
+                if (!monthsRange.includes(targetKey) && recur > 0) continue;
+
+                expenses.push({
+                    id: Date.now() + Math.random().toString(36).substr(2, 5),
+                    seriesId: seriesId, name: name, cost: cost, month: targetKey, recur: recur, status: 'unpaid'
+                });
+                cycleCount++;
+            }
+            closeFormDisplay();
+            save();
+        }
+
+        function togglePaid(id) {
+            const item = expenses.find(e => e.id === id);
+            if (item) { item.status = (item.status === 'unpaid') ? 'paid' : 'unpaid'; save(); }
+        }
+
+        function moveNextMonth(id) {
+            const item = expenses.find(e => e.id === id); if (!item) return;
+            const [y, m] = item.month.split('-').map(Number);
+            let nextMonthStr = (m % 12) + 1 < 10 ? '0' + ((m % 12) + 1) : (m % 12) + 1;
+            item.month = `${y + Math.floor(m / 12)}-${nextMonthStr}`; save();
+        }
+
+        function movePreviousMonth(id) {
+            const item = expenses.find(e => e.id === id); if (!item) return;
+            const [y, m] = item.month.split('-').map(Number);
+            let prevMonthRaw = (m - 1) - 1;
+            let prevYear = prevMonthRaw < 0 ? y - 1 : y;
+            let prevMonthStr = (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) < 10 ? '0' + (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) : (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1);
+            item.month = `${prevYear}-${prevMonthStr}`; save();
+        }
+
+        function deleteExpense(id) {
+            const itemToDelete = expenses.find(e => e.id === id); if (!itemToDelete) return;
+            if (itemToDelete.seriesId) {
+                if (confirm("Delete ALL upcoming instances? Cancel deletes ONLY this month.")) {
+                    expenses = expenses.filter(e => e.seriesId !== itemToDelete.seriesId);
+                } else { expenses = expenses.filter(e => e.id !== id); }
+            } else { if (confirm("Delete permanently?")) expenses = expenses.filter(e => e.id !== id); }
+            save();
+        }
+
+        function generateFormattedFilename() {
+            const now = new Date();
+            const yy = String(now.getFullYear()).slice(-2);
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return `RNE_${yy}${mm}${dd}_${hours}${minutes}.txt`;
+        }
+
+        function exportToFile() {
+            const fileName = generateFormattedFilename();
+            const blob = new Blob([JSON.stringify(expenses, null, 2)], { type: "text/plain;charset=utf-8" });
+            const tempLink = document.createElement('a'); 
+            tempLink.href = URL.createObjectURL(blob);
+            tempLink.download = fileName; 
+            tempLink.click();
+        }
+
+        function importFromFile(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsedData = JSON.parse(e.target.result);
+                    if (Array.isArray(parsedData)) { expenses = parsedData; save(); alert("Data imported!"); }
+                } catch (err) { alert("Error parsing file."); }
+            };
+            reader.readAsText(file);
+        }
+
+        /* Google Drive API Data Posting Flow Logic */
+        function uploadToGoogleDrive() {
+            if (GOOGLE_CLIENT_ID === '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com') {
+                return alert("Google Cloud Execution Missing! Please follow Part 1 of instructions to inject your Client ID value into code.");
+            }
+            if (!tokenClient) return alert("Google API Identity Token failed loading. Verify connectivity.");
+
+            // Request permission token via standard authentication frame popup
+            tokenClient.callback = async (response) => {
+                if (response.error !== undefined) {
+                    throw (response);
+                }
+                
+                const accessToken = response.access_token;
+                const fileName = generateFormattedFilename();
+                const fileContent = JSON.stringify(expenses, null, 2);
+
+                // Build a Multipart/Related Request payload structure to assign Metadata paired with Blob contents natively
+                const boundary = 'RNE_TRACKER_DATA_SPLIT_BOUNDARY';
+                const delimiter = `\r\n--${boundary}\r\n`;
+                const close_delim = `\r\n--${boundary}--`;
+
+                const metadata = {
+                    'name': fileName,
+                    'mimeType': 'text/plain'
+                };
+
+                const multipartRequestBody =
+                    delimiter +
+                    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+                    JSON.stringify(metadata) +
+                    delimiter +
+                    'Content-Type: text/plain\r\n\r\n' +
+                    fileContent +
+                    close_delim;
+
+                try {
+                    const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': `multipart/related; boundary=${boundary}`
+                        },
+                        body: multipartRequestBody
+                    });
+
+                    if (uploadResponse.ok) {
+                        alert(`Success! Saved to Cloud Drive as:\n${fileName}`);
+                    } else {
+                        const errorData = await uploadResponse.json();
+                        alert(`Cloud Transfer Rejection: ${errorData.error.message}`);
+                    }
+                } catch (err) {
+                    alert("Network framework malfunction executing cloud handshake connection pipeline.");
+                    console.error(err);
+                }
+            };
+
+            // Request Token access without maintaining cookie-state sessions
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        }
+
+        function render() {
+            const currentFilter = filterSelect.value;
+            const container = document.getElementById('listContainer');
+            container.innerHTML = ''; 
+            
+            let totalUnpaidOverall = 0;
+            const currentMonthItems = expenses.filter(e => e.month === currentFilter);
+
+            currentMonthItems.forEach(e => {
+                if (e.status === 'unpaid') totalUnpaidOverall += e.cost;
+            });
+            document.getElementById('totalUnpaid').innerText = `€${totalUnpaidOverall.toFixed(2)}`;
+
+            if (currentMonthItems.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:24px;">No expenses logged for this month.</div>';
+                return;
+            }
+
+            recurrenceGroupsConfig.forEach(group => {
+                const groupItems = currentMonthItems.filter(e => (e.recur || 0) === group.key);
+                if (groupItems.length === 0) return;
+
+                let groupUnpaidCost = 0;
+                groupItems.forEach(e => {
+                    if (e.status === 'unpaid') groupUnpaidCost += e.cost;
+                });
+
+                let isCollapsed;
+                if (collapsedGroups[group.key] !== undefined) {
+                    isCollapsed = collapsedGroups[group.key];
+                } else {
+                    isCollapsed = groupUnpaidCost === 0;
+                }
+
+                const groupContainer = document.createElement('div');
+                groupContainer.className = 'group-container';
+
+                const groupHeader = document.createElement('div');
+                groupHeader.className = 'group-header';
+                groupHeader.onclick = () => toggleGroupCollapse(group.key);
+                groupHeader.innerHTML = `
+                    <div class="group-header-title">
+                        <span>${isCollapsed ? '▶' : '▼'}</span>
+                        <span>${group.label}</span>
+                    </div>
+                    <div class="group-badges-container">
+                        <span class="group-unpaid-cost ${groupUnpaidCost > 0 ? 'has-unpaid' : 'all-paid'}">
+                            €${groupUnpaidCost.toFixed(2)}
+                        </span>
+                        <span class="group-badge">${groupItems.length}</span>
+                    </div>
+                `;
+                groupContainer.appendChild(groupHeader);
+
+                if (!isCollapsed) {
+                    const groupContent = document.createElement('div');
+                    groupContent.className = 'group-content';
+
+                    groupItems.forEach(e => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = `expense-item ${e.status}`;
+                        const showMoveBack = (e.month > currentSystemMonth) && (e.status === 'unpaid');
+
+                        itemDiv.innerHTML = `
+                            <div class="info">
+                                <span class="name">${e.name}</span>
+                                <div class="cost-row">
+                                    <span class="cost">€${e.cost.toFixed(2)}</span>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                ${showMoveBack ? `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);" title="Move back a month">➔</button>` : ''}
+                                ${e.status === 'unpaid' ? `
+                                    <button class="btn-action btn-move" onclick="moveNextMonth('${e.id}')" title="Move to next month">➔</button>
+                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')" title="Edit Entry">✏️</button>
+                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')" title="Mark as Paid">✓</button>
+                                ` : `
+                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')" title="Edit Entry">✏️</button>
+                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')" title="Mark as Unpaid">⟲</button>
+                                `}
+                                <button class="btn-action btn-delete" onclick="deleteExpense('${e.id}')" title="Delete">✕</button>
+                            </div>
+                        `;
+                        groupContent.appendChild(itemDiv);
+                    });
+                    groupContainer.appendChild(groupContent);
+                }
+
+                container.appendChild(groupContainer);
+            });
+        }
+        render();
+    </script>
+</body>
+</html>
