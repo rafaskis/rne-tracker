@@ -93,10 +93,12 @@
         .utility-card { background: #eaede4; padding: 16px; border-radius: 12px; border: 1px dashed var(--utility); margin-top: 8px; display: none; }
         .utility-title { font-size: 12px; font-weight: bold; color: var(--utility); margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
         .utility-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
-        .btn-util { background: #ffffff; color: var(--text-main); font-weight: 600; }
+        
+        /* FIXED FOR v11: Harmonized Export/Import visual appearance completely */
+        .btn-util { background: #ffffff; color: var(--utility); border: 1px solid var(--border); font-size: 16px; font-weight: normal; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center; -webkit-appearance: none; }
         .file-input-wrapper { position: relative; width: 100%; }
         .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
-        .btn-fake-file { background: #ffffff; color: var(--utility); border: 1px solid var(--utility); text-align: center; }
+        .btn-fake-file { background: #ffffff; color: var(--utility); border: 1px solid var(--border); font-size: 16px; font-weight: normal; text-align: center; }
 
         /* Help & Modal Box Universal Frameworks */
         .help-container { display: flex; justify-content: center; margin-top: 16px; margin-bottom: 24px; }
@@ -196,7 +198,7 @@
         <div class="utility-grid">
             <button class="btn-util" onclick="exportToFile()">📥 Export Data to File</button>
             <div class="file-input-wrapper">
-                <button class="btn-fake-file">📤 Import Backup File</button>
+                <button class="btn-fake-file btn-util">📤 Import Backup File</button>
                 <input type="file" id="importFile" accept=".txt,.json" onchange="importFromFile(event)">
             </div>
         </div>
@@ -241,7 +243,7 @@
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260620_v10_FIXED
+        // VERSION TRACKER REFERENCE: 260620_v11
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -304,12 +306,29 @@
             return ` (${cleanMonth}/${shortYear})`;
         }
 
+        // FIXED FOR v11: Strip generic date suffixes safely to extract base item clean names
+        function stripAnyDateSuffix(name) {
+            const regex = /\s\(\d{1,2}\/\d{2}\)$/;
+            return name.replace(regex, '').trim();
+        }
+
+        // FIXED FOR v11: Identify original month an entry or series sequence was explicitly generated for
+        function getOriginalCreationMonth(item) {
+            if (item.originMonth) return item.originMonth;
+            if (item.seriesId) {
+                const matchingSeries = expenses.filter(e => e.seriesId === item.seriesId);
+                if (matchingSeries.length > 0) {
+                    return matchingSeries.reduce((earliest, cur) => cur.month < earliest ? cur.month : earliest, matchingSeries[0].month);
+                }
+            }
+            return item.month;
+        }
+
         function appendOriginSuffixToName(name, originalMonthKey) {
             const suffix = generateMonthOriginSuffix(originalMonthKey);
             if (!suffix) return name;
-            if (name.endsWith(suffix)) return name;
-            const regex = /\s\(\d{1,2}\/\d{2}\)$/;
-            return name.replace(regex, '') + suffix;
+            const cleanBaseName = stripAnyDateSuffix(name);
+            return cleanBaseName + suffix;
         }
 
         function getMonthList() {
@@ -350,6 +369,7 @@
             executeAutomatedMonthRolloverAudit();
         }
 
+        // FIXED FOR v11: Uses locked creation origin month tracker fields
         function executeAutomatedMonthRolloverAudit() {
             let changesMade = false;
             const lastAuditedMonth = localStorage.getItem('rne_last_processed_month') || currentSystemMonth;
@@ -357,7 +377,8 @@
             if (currentSystemMonth > lastAuditedMonth) {
                 expenses.forEach(item => {
                     if (item.month === lastAuditedMonth && item.status === 'unpaid') {
-                        item.name = appendOriginSuffixToName(item.name, item.month);
+                        if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
+                        item.name = appendOriginSuffixToName(item.name, item.originMonth);
                         item.month = currentSystemMonth;
                         changesMade = true;
                     }
@@ -388,7 +409,7 @@
             document.getElementById('editBannerElement').style.display = 'block';
             document.getElementById('formSubmitBtn').innerText = 'Update Changes';
             document.getElementById('formSubmitBtn').style.background = 'var(--edit-color)';
-            document.getElementById('expName').value = item.name;
+            document.getElementById('expName').value = stripAnyDateSuffix(item.name);
             document.getElementById('expCost').value = item.cost;
             document.getElementById('expMonthTarget').value = item.month;
             document.getElementById('expRecur').value = item.recur || '0';
@@ -450,6 +471,7 @@
             const newMonth = document.getElementById('expMonthTarget').value;
 
             if (!newName || isNaN(newCost)) return alert("Fill out Name and Cost fields.");
+            if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
 
             if (item.seriesId) {
                 const decision = await presentCustomChoicePrompt("Update only this single current entry, or all upcoming instances in the series?");
@@ -462,11 +484,11 @@
                     });
                 } else {
                     item.seriesId = null; item.recur = 0; item.name = newName; item.cost = newCost;
-                    if (newMonth !== item.month) item.name = appendOriginSuffixToName(newName, item.month);
+                    if (newMonth !== item.month) item.name = appendOriginSuffixToName(newName, item.originMonth);
                     item.month = newMonth;
                 }
             } else {
-                if (newMonth !== item.month) { item.name = appendOriginSuffixToName(newName, item.month); } 
+                if (newMonth !== item.month) { item.name = appendOriginSuffixToName(newName, item.originMonth); } 
                 else { item.name = newName; }
                 item.cost = newCost; item.month = newMonth;
             }
@@ -498,7 +520,7 @@
 
                 expenses.push({
                     id: Date.now() + Math.random().toString(36).substr(2, 5),
-                    seriesId: seriesId, name: name, cost: cost, month: targetKey, recur: recur, status: 'unpaid'
+                    seriesId: seriesId, name: name, cost: cost, month: targetKey, recur: recur, status: 'unpaid', originMonth: startMonth
                 });
                 cycleCount++;
             }
@@ -510,23 +532,25 @@
             if (item) { item.status = (item.status === 'unpaid') ? 'paid' : 'unpaid'; save(); }
         }
 
+        // FIXED FOR v11: Uses targeted tracking parameters to lock origin dates permanently
         function moveNextMonth(id) {
             const item = expenses.find(e => e.id === id); if (!item) return;
-            const originalMonth = item.month;
+            if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
             const [y, m] = item.month.split('-').map(Number);
             item.month = `${y + Math.floor(m / 12)}-${(m % 12) + 1 < 10 ? '0' + ((m % 12) + 1) : (m % 12) + 1}`; 
-            item.name = appendOriginSuffixToName(item.name, originalMonth);
+            item.name = appendOriginSuffixToName(item.name, item.originMonth);
             save();
         }
 
+        // FIXED FOR v11: Preserves historic origin creation months rather than incremental step targets
         function movePreviousMonth(id) {
             const item = expenses.find(e => e.id === id); if (!item) return;
-            const originalMonth = item.month;
+            if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
             const [y, m] = item.month.split('-').map(Number);
             let prevMonthRaw = (m - 1) - 1;
             let prevMonthStr = (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) < 10 ? '0' + (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) : (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1);
             item.month = `${prevMonthRaw < 0 ? y - 1 : y}-${prevMonthStr}`; 
-            item.name = appendOriginSuffixToName(item.name, originalMonth);
+            item.name = appendOriginSuffixToName(item.name, item.originMonth);
             save();
         }
 
@@ -672,9 +696,14 @@
                     groupItems.forEach(e => {
                         const itemDiv = document.createElement('div'); itemDiv.className = `expense-item ${e.status}`;
                         const showMoveBack = (e.month > currentSystemMonth) && (e.status === 'unpaid');
+                        
+                        // FIXED FOR v11: Dynamically renders text labels properly checking custom structural origin trackers
+                        if (!e.originMonth) e.originMonth = getOriginalCreationMonth(e);
+                        const displayName = (e.month !== e.originMonth && e.status === 'unpaid') ? appendOriginSuffixToName(e.name, e.originMonth) : stripAnyDateSuffix(e.name);
+                        
                         itemDiv.innerHTML = `
                             <div class="info">
-                                <span class="name">${e.name}</span>
+                                <span class="name">${displayName}</span>
                                 <div class="cost-row"><span class="cost">€${e.cost.toFixed(2)}</span></div>
                             </div>
                             <div class="actions">
