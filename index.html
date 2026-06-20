@@ -3,729 +3,466 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE</title>
-    <!-- Include Google Identity Services library for modern token authentication -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <title>RNE - Advanced Expenses & Editable Pockets</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        :root {
-            --bg-color: #f4f6f9;
-            --card-bg: #ffffff;
-            --text-main: #333333;
-            --text-muted: #666666;
-            --primary: #2563eb;
-            --danger: #dc2626;
-            --success: #16a34a;
-            --border: #e5e7eb;
-            --utility: #4b5563;
-            --edit-color: #0284c7;
-            --group-header-bg: #e2e8f0;
-            --gdrive-color: #0f9d58;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-main); padding: 16px; padding-bottom: 80px; position: relative; }
-        
-        /* Discreet, Streamlined Top Cloud Bar Placement */
-        .top-cloud-bar { display: flex; justify-content: space-between; align-items: center; background: #e2e8f0; padding: 8px 12px; border-radius: 10px; margin-bottom: 12px; border: 1px dashed #cbd5e1; font-size: 13px; }
-        .cloud-status-text { font-weight: 600; color: #475569; display: flex; align-items: center; gap: 4px; }
-        .btn-cloud-discreet { width: auto; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 4px; }
-        .btn-cloud-signin { background: var(--gdrive-color); box-shadow: 0 1px 2px rgba(15, 157, 88, 0.2); }
-        .btn-cloud-push { background: #4285f4; }
-        .btn-cloud-pull { background: #16a34a; }
-        .discreet-actions-grid { display: flex; gap: 6px; }
-
-        /* Top Navigation Hierarchy */
-        .month-nav-container { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-        .btn-nav-arrow { width: 48px; height: 48px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary); }
-        .month-select-wrapper { flex-grow: 1; }
-
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 8px; }
-        .header-card { background: var(--card-bg); padding: 16px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-grow: 1; }
-        .unpaid-badge { font-size: 24px; font-weight: bold; color: var(--danger); margin-top: 4px; }
-        
-        select, input, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background: var(--card-bg); -webkit-appearance: none; }
-        select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M0 3l5 5 5-5z' fill='%23666'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-        
-        /* Collapsible Action Entry Form */
-        .btn-trigger-form { background: var(--primary); color: white; font-weight: bold; border: none; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
-        .form-card { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px; display: none; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-        .form-card input[type="text"] { grid-column: span 2; }
-        .btn-primary { background: var(--primary); color: white; font-weight: bold; border: none; margin-top: 8px; }
-        .btn-cancel-form { background: transparent; color: var(--text-muted); border: none; margin-top: 4px; font-size: 14px; text-decoration: underline; cursor: pointer; }
-        
-        /* Dynamic Inline Edit Mode Styling */
-        .edit-banner { background: var(--edit-color); color: white; padding: 8px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 12px; text-align: center; grid-column: span 2; }
-
-        /* Categorized Group Framework Elements */
-        .group-container { margin-bottom: 14px; border-radius: 12px; overflow: hidden; background: transparent; }
-        .group-header { background: var(--group-header-bg); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; color: #334155; cursor: pointer; user-select: none; border: 1px solid var(--border); border-radius: 10px; gap: 8px; }
-        .group-header-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
-        .group-header-title span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .group-badges-container { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-        .group-unpaid-cost { font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
-        .group-unpaid-cost.has-unpaid { color: var(--danger); background: #fee2e2; border: 1px solid #fca5a5; }
-        .group-unpaid-cost.all-paid { color: var(--success); background: #dcfce7; border: 1px solid #86efac; }
-        .group-badge { background: #64748b; color: white; font-size: 11px; padding: 3px 7px; border-radius: 10px; font-weight: 600; }
-        .group-content { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; padding: 2px; }
-
-        /* Item Display Grid */
-        .expense-item { background: var(--card-bg); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-        .expense-item.paid { opacity: 0.6; border-left: 5px solid var(--success); }
-        .expense-item.unpaid { border-left: 5px solid var(--danger); }
-        
-        .info { display: flex; flex-direction: column; gap: 4px; width: 100%; }
-        .name { font-weight: 600; font-size: 17px; color: var(--text-main); line-height: 1.4; word-break: break-word; white-space: normal; }
-        .cost-row { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
-        .cost { font-weight: 700; font-size: 18px; color: #111827; }
-        
-        /* Buttons Row Layout */
-        .actions { display: flex; gap: 8px; justify-content: flex-end; width: 100%; border-top: 1px solid #f3f4f6; padding-top: 10px; }
-        .btn-action { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 8px; border: 1px solid var(--border); background: #f9fafb; cursor: pointer; font-size: 16px; }
-        .btn-pay { color: var(--success); }
-        .btn-move { color: #f59e0b; }
-        .btn-back { color: #6366f1; }
-        .btn-edit { color: var(--edit-color); }
-        .btn-delete { color: var(--danger); }
-
-        /* Collapsible Bottom Utility Interface Drawer */
-        .utility-toggle-header { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 32px; color: var(--utility); font-size: 14px; font-weight: 600; cursor: pointer; user-select: none; padding: 8px; }
-        .utility-arrow { font-size: 11px; transition: transform 0.2s ease; }
-        .utility-card { background: #eaede4; padding: 16px; border-radius: 12px; border: 1px dashed var(--utility); margin-top: 8px; display: none; }
-        .utility-title { font-size: 12px; font-weight: bold; color: var(--utility); margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
-        .utility-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
-        
-        /* FIXED FOR v11: Harmonized Export/Import visual appearance completely */
-        .btn-util { background: #ffffff; color: var(--utility); border: 1px solid var(--border); font-size: 16px; font-weight: normal; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center; -webkit-appearance: none; }
-        .file-input-wrapper { position: relative; width: 100%; }
-        .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
-        .btn-fake-file { background: #ffffff; color: var(--utility); border: 1px solid var(--border); font-size: 16px; font-weight: normal; text-align: center; }
-
-        /* Help & Modal Box Universal Frameworks */
-        .help-container { display: flex; justify-content: center; margin-top: 16px; margin-bottom: 24px; }
-        .btn-help-bottom { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: auto; max-width: 200px; padding: 10px 20px; background: #e5e5e5; color: var(--text-main); border: 1px solid var(--border); border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; padding: 16px; overflow-y: auto; }
-        .modal-content { background: var(--card-bg); border-radius: 16px; padding: 20px; max-width: 500px; margin: 20px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        .modal-title { font-size: 18px; font-weight: bold; }
-        .modal-close { font-size: 24px; background: none; border: none; cursor: pointer; color: var(--text-muted); width: auto; padding: 0; text-align: right; }
-        .guide-section { margin-bottom: 16px; }
-        .guide-section h4 { font-size: 14px; color: var(--primary); text-transform: uppercase; margin-bottom: 6px; }
-        .guide-section p { font-size: 14px; color: var(--text-main); line-height: 1.5; margin-bottom: 8px; }
-        
-        /* Modern Choice Dialog Engine Overlay Template */
-        .choice-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; padding: 24px; align-items: center; justify-content: center; }
-        .choice-card { background: var(--card-bg); border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); border: 1px solid var(--border); }
-        .choice-message { font-size: 16px; font-weight: 500; color: var(--text-main); line-height: 1.5; margin-bottom: 24px; text-align: center; }
-        .choice-buttons-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
-        .btn-choice { width: calc(50% - 8px); padding: 14px; font-size: 16px; font-weight: 700; border-radius: 10px; cursor: pointer; border: none; text-align: center; }
-        .btn-choice-left { background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; }
-        .btn-choice-right { background: var(--primary); color: white; }
-        .btn-choice-danger { background: var(--danger); color: white; }
+        .modal { transition: opacity 0.25s ease; }
+        body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+        .prose h1 { font-size: 1.5rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #f1f5f9; border-bottom: 1px solid #334155; padding-bottom: 0.25rem; }
+        .prose h2 { font-size: 1.25rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; color: #f1f5f9; }
+        .prose p { margin-bottom: 0.75rem; color: #94a3b8; font-size: 0.95rem; }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
-    <!-- Discreet Top Cloud Navigation Control Row -->
-    <div class="top-cloud-bar">
-        <div class="cloud-status-text" id="cloudStatusLabel">☁ Cloud Offline</div>
-        <div class="discreet-actions-grid">
-            <button class="btn-cloud-discreet btn-cloud-signin" id="gdriveMainActionBtn" onclick="initiateGoogleDriveSyncFlow()">Sign In</button>
-            <button class="btn-cloud-discreet btn-cloud-push" id="gdrivePushBtn" onclick="uploadToGoogleDrive()" style="display: none;">Backup</button>
-            <button class="btn-cloud-discreet btn-cloud-pull" id="gdrivePullBtn" onclick="manuallyTriggerCloudRestore()" style="display: none;">Restore</button>
-        </div>
-    </div>
-
-    <!-- Month Selector with quick toggle arrows -->
-    <div class="month-nav-container">
-        <button class="btn-nav-arrow" onclick="stepMonth(-1)" title="Previous Month">◀</button>
-        <div class="month-select-wrapper">
-            <select id="monthViewFilter" onchange="render()"></select>
-        </div>
-        <button class="btn-nav-arrow" onclick="stepMonth(1)" title="Next Month">▶</button>
-    </div>
-
-    <!-- Summary & Totals Panel -->
-    <div class="top-bar">
-        <div class="header-card">
-            <div style="font-size: 14px; color: var(--text-muted); font-weight: 500;">TOTAL UNPAID FOR THIS MONTH</div>
-            <div class="unpaid-badge" id="totalUnpaid">€0.00</div>
-        </div>
-    </div>
-
-    <!-- Collapsible Action Entry Form -->
-    <button id="formTriggerBtn" class="btn-trigger-form" onclick="openCreateMode()">+ Add New Expense</button>
-
-    <div class="form-card" id="expenseFormCard">
-        <div class="form-grid">
-            <div id="editBannerElement" class="edit-banner" style="display: none;">🔧 EDITING ACTIVE ENTRY</div>
-            <input type="text" id="expName" placeholder="Expense Name (e.g., Electricity Room 1)">
-            <input type="number" id="expCost" step="0.01" placeholder="Cost (€)">
-            <select id="expMonthTarget"></select>
-            <select id="expRecur" onchange="toggleDurationField()">
-                <option value="0">One-Time Only</option>
-                <option value="1">Every Month</option>
-                <option value="2">Every 2 Months</option>
-                <option value="3">Every 3 Months</option>
-                <option value="6">Every 6 Months</option>
-                <option value="12">Yearly</option>
-            </select>
-            <select id="expDuration" style="display:none;">
-                <option value="999">Indefinitely (Full Year)</option>
-                <option value="2">For 2 Cycles</option>
-                <option value="3">For 3 Cycles</option>
-                <option value="4">For 4 Cycles</option>
-                <option value="6">For 6 Cycles</option>
-            </select>
-        </div>
-        <button class="btn-primary" id="formSubmitBtn" onclick="processFormSubmit()">Save Expense Entry</button>
-        <div style="text-align: center;">
-            <button class="btn-cancel-form" onclick="closeFormDisplay()">Minimize Form</button>
-        </div>
-    </div>
-
-    <!-- Active List Layout Wrapper -->
-    <div class="expense-list" id="listContainer"></div>
-
-    <!-- Collapsible Bottom Utility Interface Drawer -->
-    <div class="utility-toggle-header" onclick="toggleUtilityDrawer()">
-        <span>Offline Data Options</span>
-        <span class="utility-arrow" id="utilArrow">▼</span>
-    </div>
-
-    <div class="utility-card" id="utilityDrawerCard">
-        <div class="utility-title">Manual Backup (Offline)</div>
-        <div class="utility-grid">
-            <button class="btn-util" onclick="exportToFile()">📥 Export Data to File</button>
-            <div class="file-input-wrapper">
-                <button class="btn-fake-file btn-util">📤 Import Backup File</button>
-                <input type="file" id="importFile" accept=".txt,.json" onchange="importFromFile(event)">
+    <!-- HEADER -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 p-2 rounded-lg text-white">
+                <i data-lucide="wallet" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-white">RNE</h1>
+                <p class="text-xs text-slate-400">Recurring Expenses & Sinking Funds</p>
             </div>
         </div>
-    </div>
-
-    <!-- User Guide Trigger Button -->
-    <div class="help-container">
-        <button class="btn-help-bottom" onclick="toggleModal(true)">
-            <span>❓</span> View User Guide
+        <button id="openManualBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-sm flex items-center space-x-1.5 transition">
+            <i data-lucide="book-open" class="w-4 h-4"></i>
+            <span>User Manual</span>
         </button>
-    </div>
+    </header>
 
-    <!-- User Instructional Guide Component -->
-    <div class="modal-overlay" id="guideModal" onclick="if(event.target===this) toggleModal(false)">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span class="modal-title">App User Guide</span>
-                <button class="modal-close" onclick="toggleModal(false)">✕</button>
+    <!-- MAIN DASHBOARD -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+        
+        <!-- CALENDAR NAVIGATOR -->
+        <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm">
+            <div class="flex items-center space-x-2">
+                <button id="prevMonthBtn" class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </button>
+                <div class="text-center min-w-[140px]">
+                    <span id="currentMonthLabel" class="text-lg font-semibold text-white">June 2026</span>
+                </div>
+                <button id="nextMonthBtn" class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition">
+                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </button>
             </div>
-            <div class="guide-section">
-                <h4>Managing Recurring Cycles</h4>
-                <p>When updating or removing item sequences tied to continuous intervals, a distinct selection prompt will guide your target action scope:</p>
-                <ul>
-                    <li><strong>"Current"</strong> (On the Left Side): Focuses changes exclusively to your active display month.</li>
-                    <li><strong>"All"</strong> (On the Right Side): Sweeps changes entirely across all matching future cycles down the series roadmap.</li>
-                </ul>
+            <button id="addExpenseBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition shadow-sm w-full sm:w-auto justify-center">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>Add Entry</span>
+            </button>
+        </div>
+
+        <!-- KPI DISPLAY CARDS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm">
+                <div class="flex justify-between items-start text-slate-400">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Expected Bills</span>
+                    <i data-lucide="activity" class="w-4 h-4 text-indigo-400"></i>
+                </div>
+                <div id="kpiExpected" class="text-2xl font-bold mt-2 text-white">$0.00</div>
+                <div class="text-xs text-slate-500 mt-1">Total monthly liabilities</div>
             </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm">
+                <div class="flex justify-between items-start text-slate-400">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Unpaid Liabilities</span>
+                    <i data-lucide="alert-circle" class="w-4 h-4 text-rose-400"></i>
+                </div>
+                <div id="kpiUnpaid" class="text-2xl font-bold mt-2 text-rose-400">$0.00</div>
+                <div class="text-xs text-slate-500 mt-1">Outstanding bills remaining</div>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm border-l-4 border-l-amber-500">
+                <div class="flex justify-between items-start text-slate-400">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Stashed This Month</span>
+                    <i data-lucide="piggy-bank" class="w-4 h-4 text-amber-400"></i>
+                </div>
+                <div id="kpiPocketsMonthly" class="text-2xl font-bold mt-2 text-amber-400">$0.00</div>
+                <div class="text-xs text-slate-500 mt-1">Isolated savings flow input</div>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm">
+                <div class="flex justify-between items-start text-slate-400">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Total Pocket Assets</span>
+                    <i data-lucide="layers" class="w-4 h-4 text-emerald-400"></i>
+                </div>
+                <div id="kpiPocketsTotal" class="text-2xl font-bold mt-2 text-emerald-400">$0.00</div>
+                <div class="text-xs text-slate-500 mt-1">Cumulative historic balance</div>
+            </div>
+        </div>
+
+        <!-- TWO COLUMN WORKSPACE -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-bold flex items-center space-x-2 text-white">
+                        <i data-lucide="credit-card" class="w-5 h-5 text-indigo-400"></i>
+                        <span>Standard & Recurring Liabilities</span>
+                    </h2>
+                    <span id="expenseCountBadge" class="bg-slate-800 text-slate-400 text-xs px-2.5 py-0.5 rounded-full font-medium">0 items</span>
+                </div>
+                <div id="expenseList" class="space-y-3"></div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-bold flex items-center space-x-2 text-white">
+                        <i data-lucide="sliders" class="w-5 h-5 text-amber-400"></i>
+                        <span>Active Sinking Pockets</span>
+                    </h2>
+                    <span id="pocketsCountBadge" class="bg-slate-800 text-amber-400/80 text-xs px-2.5 py-0.5 rounded-full font-medium">0 active</span>
+                </div>
+                <div id="pocketsList" class="space-y-3"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- INPUT DIALOG MODAL -->
+    <div id="entryModal" class="modal opacity-0 pointer-events-none fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 shadow-xl space-y-4 transform scale-95 transition-transform duration-200">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-white">Add New Entry</h3>
+                <button id="closeModalBtn" class="text-slate-400 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="entryForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Classification</label>
+                    <div class="flex items-center space-x-6 bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                        <label class="flex items-center space-x-2 cursor-pointer select-none">
+                            <input type="radio" name="entryType" value="standard" checked class="text-indigo-600 focus:ring-0 bg-slate-800 border-slate-700">
+                            <span class="text-sm font-medium text-slate-200">Bill / Liability</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer select-none">
+                            <input type="radio" name="entryType" value="pocket" class="text-amber-500 focus:ring-0 bg-slate-800 border-slate-700">
+                            <span class="text-sm font-medium text-amber-400">Pocket (Savings)</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label id="nameLabel" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Item Title</label>
+                    <input type="text" id="entryName" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm">
+                </div>
+                <div>
+                    <label id="costLabel" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cost Valuation ($)</label>
+                    <input type="number" step="0.01" id="entryCost" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Categorization Group</label>
+                    <input type="text" id="entryCategory" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm">
+                </div>
+                <div id="standardFieldsGroup" class="flex items-center space-x-2 py-1">
+                    <input type="checkbox" id="entryRecurring" class="rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-0 w-4 h-4">
+                    <label for="entryRecurring" class="text-sm text-slate-300 select-none cursor-pointer">Recurring Month-to-Month</label>
+                </div>
+                <div id="pocketFieldsGroup" class="hidden space-y-1">
+                    <label class="block text-xs font-semibold text-amber-400 uppercase tracking-wider mb-1">Target End Maturity Month</label>
+                    <input type="month" id="entryTargetMonth" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 text-sm">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium transition shadow-md">Commit Entry</button>
+            </form>
         </div>
     </div>
 
-    <!-- Modern Choice Dialog Engine Overlay Template -->
-    <div class="choice-overlay" id="customChoiceOverlay">
-        <div class="choice-card">
-            <div class="choice-message" id="choiceOverlayMessage">Do you want to apply this action to the current month or all upcoming instances?</div>
-            <div class="choice-buttons-row">
-                <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
-                <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
+    <!-- DOCUMENTATION MANUAL MODAL -->
+    <div id="manualModal" class="modal opacity-0 pointer-events-none fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-200">
+            <div class="flex justify-between items-center border-b border-slate-800 px-6 py-4">
+                <div class="flex items-center space-x-2 text-indigo-400"><i data-lucide="book-open" class="w-5 h-5"></i><h3 class="text-lg font-bold text-white">System Manual</h3></div>
+                <button id="closeManualModalBtn" class="text-slate-400 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
+            <div id="manualMarkdownContent" class="prose overflow-y-auto px-6 py-4 flex-1 bg-slate-950/40"></div>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260620_v11
-        // ==========================================
+        let currentYear = 2026;
+        let currentMonth = 5; 
+        let registryData = [];
+        let openPocketDrawers = {}; 
+        let editingPocketId = null; // Tracks which pocket is actively being edited inline (Name & Target)
 
-        const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
-        const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-        const DEDICATED_FILE_NAME = 'rne_database.json';
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-        let expenses = []; 
-        let editingTargetId = null; 
-        let collapsedGroups = JSON.parse(localStorage.getItem('household_collapsed_groups')) || {};
-        
-        let tokenClient = null;
-        let activeAccessToken = null;
-        let gdriveFileId = null; 
-
-        const recurrenceGroupsConfig = [
-            { key: 0, label: "One-Time Only" },
-            { key: 1, label: "Monthly" },
-            { key: 2, label: "Every 2 Months" },
-            { key: 3, label: "Quarterly" },
-            { key: 6, label: "Every 6 Months" },
-            { key: 12, label: "Yearly" }
-        ];
-
-        // Micro Promise Core Engine linking Custom Modals directly into linear async workflows
-        function presentCustomChoicePrompt(questionMessage, isDestructive = false) {
-            return new Promise((resolve) => {
-                const overlay = document.getElementById('customChoiceOverlay');
-                const textContainer = document.getElementById('choiceOverlayMessage');
-                const leftBtn = document.getElementById('choiceLeftActionBtn');
-                const rightBtn = document.getElementById('choiceRightActionBtn');
-
-                textContainer.innerText = questionMessage;
-                
-                if (isDestructive) {
-                    rightBtn.className = "btn-choice btn-choice-danger";
-                } else {
-                    rightBtn.className = "btn-choice btn-choice-right";
-                }
-
-                const handleLeftSelection = () => { cleanup(); resolve('current'); };
-                const handleRightSelection = () => { cleanup(); resolve('all'); };
-
-                const cleanup = () => {
-                    leftBtn.removeEventListener('click', handleLeftSelection);
-                    rightBtn.removeEventListener('click', handleRightSelection);
-                    overlay.style.display = 'none';
-                };
-
-                leftBtn.addEventListener('click', handleLeftSelection);
-                rightBtn.addEventListener('click', handleRightSelection);
-                overlay.style.display = 'flex';
-            });
-        }
-
-        function generateMonthOriginSuffix(monthKeyString) {
-            if (!monthKeyString || !monthKeyString.includes('-')) return '';
-            const [year, month] = monthKeyString.split('-');
-            const shortYear = year.slice(-2);
-            const cleanMonth = parseInt(month, 10);
-            return ` (${cleanMonth}/${shortYear})`;
-        }
-
-        // FIXED FOR v11: Strip generic date suffixes safely to extract base item clean names
-        function stripAnyDateSuffix(name) {
-            const regex = /\s\(\d{1,2}\/\d{2}\)$/;
-            return name.replace(regex, '').trim();
-        }
-
-        // FIXED FOR v11: Identify original month an entry or series sequence was explicitly generated for
-        function getOriginalCreationMonth(item) {
-            if (item.originMonth) return item.originMonth;
-            if (item.seriesId) {
-                const matchingSeries = expenses.filter(e => e.seriesId === item.seriesId);
-                if (matchingSeries.length > 0) {
-                    return matchingSeries.reduce((earliest, cur) => cur.month < earliest ? cur.month : earliest, matchingSeries[0].month);
-                }
-            }
-            return item.month;
-        }
-
-        function appendOriginSuffixToName(name, originalMonthKey) {
-            const suffix = generateMonthOriginSuffix(originalMonthKey);
-            if (!suffix) return name;
-            const cleanBaseName = stripAnyDateSuffix(name);
-            return cleanBaseName + suffix;
-        }
-
-        function getMonthList() {
-            const list = []; const d = new Date();
-            for (let i = 0; i <= 12; i++) {
-                let targetMonth = d.getMonth() + i;
-                let targetYear = d.getFullYear() + Math.floor(targetMonth / 12);
-                let m = (targetMonth % 12) + 1;
-                list.push(`${targetYear}-${m < 10 ? '0' + m : m}`);
-            }
-            return list;
-        }
-
-        const monthsRange = getMonthList();
-        const currentSystemMonth = monthsRange[0]; 
-        const filterSelect = document.getElementById('monthViewFilter');
-        const formMonthSelect = document.getElementById('expMonthTarget');
-
-        monthsRange.forEach((mStr) => {
-            const [y, m] = mStr.split('-');
-            const label = new Date(y, m - 1, 1).toLocaleDateString('default', { month: 'long', year: 'numeric' });
-            filterSelect.options.add(new Option(label, mStr));
-            formMonthSelect.options.add(new Option(label, mStr));
+        window.addEventListener('DOMContentLoaded', () => {
+            loadLocalCache();
+            if(registryData.length === 0) injectSeedData();
+            evaluateActiveRenderDashboard();
+            document.getElementById('manualMarkdownContent').innerHTML = marked.parse(`
+# RNE Pocket Modifications Manual
+* Click the **Pencil Icon** on any Pocket card to enter inline edit mode.
+* You can instantly modify the **Goal Name** and the **Target Month** right on the card.
+* Click the **Checkmark Icon** to commit changes, or click away to discard.
+            `);
+            lucide.createIcons();
         });
 
-        window.onload = function() {
-            if (typeof google !== 'undefined' && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID_HERE') {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: GOOGLE_CLIENT_ID, scope: GOOGLE_DRIVE_SCOPE, callback: '', 
-                });
-            }
-            loadLocalExpensesAndAudit();
-        };
-
-        function loadLocalExpensesAndAudit() {
-            const cached = localStorage.getItem('rne_local_backup_cache');
-            if (cached) { try { expenses = JSON.parse(cached); } catch(e) { expenses = []; } }
-            executeAutomatedMonthRolloverAudit();
+        function injectSeedData() {
+            registryData = [
+                { id: "1", type: "standard", name: "Fiber Internet Line", cost: 60.00, category: "Utilities", isRecurring: true, isPaid: true, originMonth: "2026-06", currentMonth: "2026-06", suffix: "" },
+                { id: "2", type: "pocket", name: "Japan Winter Trip Fund", cost: 3000.00, category: "Travel", startMonth: "2026-06", targetMonth: "2026-12", contributions: { "2026-06": 400.00, "2026-07": 150.00 } }
+            ];
+            commitLocalCache();
         }
 
-        // FIXED FOR v11: Uses locked creation origin month tracker fields
-        function executeAutomatedMonthRolloverAudit() {
-            let changesMade = false;
-            const lastAuditedMonth = localStorage.getItem('rne_last_processed_month') || currentSystemMonth;
+        function formatMonthString(y, m) { return `${y}-${String(m + 1).padStart(2, '0')}`; }
 
-            if (currentSystemMonth > lastAuditedMonth) {
-                expenses.forEach(item => {
-                    if (item.month === lastAuditedMonth && item.status === 'unpaid') {
-                        if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
-                        item.name = appendOriginSuffixToName(item.name, item.originMonth);
-                        item.month = currentSystemMonth;
-                        changesMade = true;
-                    }
-                });
-            }
-            localStorage.setItem('rne_last_processed_month', currentSystemMonth);
-            if (changesMade) { save(); } else { render(); }
+        document.getElementById('prevMonthBtn').addEventListener('click', () => shiftMonth(-1));
+        document.getElementById('nextMonthBtn').addEventListener('click', () => shiftMonth(1));
+
+        function shiftMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            else if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            evaluateActiveRenderDashboard();
         }
 
-        function openCreateMode() {
-            editingTargetId = null;
-            document.getElementById('editBannerElement').style.display = 'none';
-            document.getElementById('formSubmitBtn').innerText = 'Save Expense Entry';
-            document.getElementById('formSubmitBtn').style.background = 'var(--primary)';
-            document.getElementById('expRecur').disabled = false;
-            document.getElementById('expName').value = '';
-            document.getElementById('expCost').value = '';
-            document.getElementById('expRecur').value = '0';
-            document.getElementById('expMonthTarget').value = filterSelect.value;
-            toggleDurationField();
-            document.getElementById('expenseFormCard').style.display = 'block';
-            document.getElementById('formTriggerBtn').style.display = 'none';
-        }
+        function evaluateActiveRenderDashboard() {
+            const filterStr = formatMonthString(currentYear, currentMonth);
+            document.getElementById('currentMonthLabel').innerText = `${monthNames[currentMonth]} ${currentYear}`;
 
-        function openEditMode(id) {
-            const item = expenses.find(e => e.id === id); if (!item) return;
-            editingTargetId = id;
-            document.getElementById('editBannerElement').style.display = 'block';
-            document.getElementById('formSubmitBtn').innerText = 'Update Changes';
-            document.getElementById('formSubmitBtn').style.background = 'var(--edit-color)';
-            document.getElementById('expName').value = stripAnyDateSuffix(item.name);
-            document.getElementById('expCost').value = item.cost;
-            document.getElementById('expMonthTarget').value = item.month;
-            document.getElementById('expRecur').value = item.recur || '0';
-            document.getElementById('expRecur').disabled = true;
-            document.getElementById('expDuration').style.display = 'none';
-            document.getElementById('expenseFormCard').style.display = 'block';
-            document.getElementById('formTriggerBtn').style.display = 'none';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+            const displayExpenses = registryData.filter(d => d.type === 'standard' && d.currentMonth === filterStr);
+            const displayPockets = registryData.filter(d => d.type === 'pocket' && filterStr >= d.startMonth && filterStr <= d.targetMonth);
 
-        function closeFormDisplay() {
-            document.getElementById('expenseFormCard').style.display = 'none';
-            document.getElementById('formTriggerBtn').style.display = 'block';
-            editingTargetId = null;
-        }
+            const expected = displayExpenses.reduce((sum, curr) => sum + curr.cost, 0);
+            const unpaid = displayExpenses.filter(d => !d.isPaid).reduce((sum, curr) => sum + curr.cost, 0);
+            const stashedThisMonth = displayPockets.reduce((sum, curr) => sum + (curr.contributions[filterStr] || 0), 0);
 
-        function toggleUtilityDrawer() {
-            const drawer = document.getElementById('utilityDrawerCard');
-            const arrow = document.getElementById('utilArrow');
-            if(drawer.style.display === 'block') { drawer.style.display = 'none'; arrow.innerText = '▼'; } 
-            else { drawer.style.display = 'block'; arrow.innerText = '▲'; }
-        }
-
-        function toggleGroupCollapse(groupKey) {
-            collapsedGroups[groupKey] = !collapsedGroups[groupKey];
-            localStorage.setItem('household_collapsed_groups', JSON.stringify(collapsedGroups));
-            render();
-        }
-
-        function stepMonth(direction) {
-            let nextIndex = filterSelect.selectedIndex + direction;
-            if(nextIndex >= 0 && nextIndex < filterSelect.options.length) {
-                filterSelect.selectedIndex = nextIndex; render();
-            }
-        }
-
-        function toggleModal(show) { document.getElementById('guideModal').style.display = show ? 'block' : 'none'; }
-        
-        function toggleDurationField() {
-            if (editingTargetId) return; 
-            const recurVal = parseInt(document.getElementById('expRecur').value);
-            document.getElementById('expDuration').style.display = (recurVal > 0) ? 'block' : 'none';
-        }
-
-        function save() {
-            localStorage.setItem('rne_local_backup_cache', JSON.stringify(expenses));
-            render();
-        }
-
-        function processFormSubmit() {
-            if (editingTargetId) { executeEditSave(); } else { addExpense(); }
-        }
-
-        async function executeEditSave() {
-            const item = expenses.find(e => e.id === editingTargetId); if (!item) return;
-
-            const newName = document.getElementById('expName').value.trim();
-            const newCost = parseFloat(document.getElementById('expCost').value);
-            const newMonth = document.getElementById('expMonthTarget').value;
-
-            if (!newName || isNaN(newCost)) return alert("Fill out Name and Cost fields.");
-            if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
-
-            if (item.seriesId) {
-                const decision = await presentCustomChoicePrompt("Update only this single current entry, or all upcoming instances in the series?");
-                
-                if (decision === 'all') {
-                    expenses.forEach(e => {
-                        if (e.seriesId === item.seriesId && e.month >= item.month) {
-                            e.name = newName; e.cost = newCost;
-                        }
+            let absolutePocketAssets = 0;
+            registryData.forEach(p => {
+                if(p.type === 'pocket') {
+                    Object.keys(p.contributions || {}).forEach(mKey => {
+                        if(mKey <= filterStr) absolutePocketAssets += p.contributions[mKey];
                     });
-                } else {
-                    item.seriesId = null; item.recur = 0; item.name = newName; item.cost = newCost;
-                    if (newMonth !== item.month) item.name = appendOriginSuffixToName(newName, item.originMonth);
-                    item.month = newMonth;
                 }
-            } else {
-                if (newMonth !== item.month) { item.name = appendOriginSuffixToName(newName, item.originMonth); } 
-                else { item.name = newName; }
-                item.cost = newCost; item.month = newMonth;
-            }
+            });
 
-            closeFormDisplay(); save();
+            document.getElementById('kpiExpected').innerText = `$${expected.toFixed(2)}`;
+            document.getElementById('kpiUnpaid').innerText = `$${unpaid.toFixed(2)}`;
+            document.getElementById('kpiPocketsMonthly').innerText = `$${stashedThisMonth.toFixed(2)}`;
+            document.getElementById('kpiPocketsTotal').innerText = `$${absolutePocketAssets.toFixed(2)}`;
+
+            document.getElementById('expenseCountBadge').innerText = `${displayExpenses.length} items`;
+            document.getElementById('pocketsCountBadge').innerText = `${displayPockets.length} active`;
+
+            renderExpensesListUI(displayExpenses);
+            renderPocketsListUI(displayPockets, filterStr);
+            lucide.createIcons();
         }
 
-        function addExpense() {
-            const name = document.getElementById('expName').value.trim();
-            const cost = parseFloat(document.getElementById('expCost').value);
-            const startMonth = document.getElementById('expMonthTarget').value;
-            const recur = parseInt(document.getElementById('expRecur').value);
-            const durationLimit = parseInt(document.getElementById('expDuration').value);
-
-            if (!name || isNaN(cost)) return alert("Fill out Name and Cost.");
-            const seriesId = recur > 0 ? 'series_' + Date.now() : null;
-            const [startYear, startMonthNum] = startMonth.split('-').map(Number);
-            let cycleCount = 0;
-            
-            for (let i = 0; i <= 12; i++) {
-                if (recur > 0 && i % recur !== 0) continue;
-                if (recur === 0 && i > 0) break; 
-                if (cycleCount >= durationLimit) break; 
-
-                let calcMonthRaw = (startMonthNum - 1) + i;
-                let targetKey = `${startYear + Math.floor(calcMonthRaw / 12)}-${((calcMonthRaw % 12) + 1) < 10 ? '0' + ((calcMonthRaw % 12) + 1) : ((calcMonthRaw % 12) + 1)}`;
-
-                if (!monthsRange.includes(targetKey) && recur > 0) continue;
-
-                expenses.push({
-                    id: Date.now() + Math.random().toString(36).substr(2, 5),
-                    seriesId: seriesId, name: name, cost: cost, month: targetKey, recur: recur, status: 'unpaid', originMonth: startMonth
-                });
-                cycleCount++;
-            }
-            closeFormDisplay(); save();
-        }
-
-        function togglePaid(id) {
-            const item = expenses.find(e => e.id === id);
-            if (item) { item.status = (item.status === 'unpaid') ? 'paid' : 'unpaid'; save(); }
-        }
-
-        // FIXED FOR v11: Uses targeted tracking parameters to lock origin dates permanently
-        function moveNextMonth(id) {
-            const item = expenses.find(e => e.id === id); if (!item) return;
-            if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
-            const [y, m] = item.month.split('-').map(Number);
-            item.month = `${y + Math.floor(m / 12)}-${(m % 12) + 1 < 10 ? '0' + ((m % 12) + 1) : (m % 12) + 1}`; 
-            item.name = appendOriginSuffixToName(item.name, item.originMonth);
-            save();
-        }
-
-        // FIXED FOR v11: Preserves historic origin creation months rather than incremental step targets
-        function movePreviousMonth(id) {
-            const item = expenses.find(e => e.id === id); if (!item) return;
-            if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
-            const [y, m] = item.month.split('-').map(Number);
-            let prevMonthRaw = (m - 1) - 1;
-            let prevMonthStr = (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) < 10 ? '0' + (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) : (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1);
-            item.month = `${prevMonthRaw < 0 ? y - 1 : y}-${prevMonthStr}`; 
-            item.name = appendOriginSuffixToName(item.name, item.originMonth);
-            save();
-        }
-
-        async function deleteExpense(id) {
-            const itemToDelete = expenses.find(e => e.id === id); if (!itemToDelete) return;
-            
-            if (itemToDelete.seriesId) {
-                const decision = await presentCustomChoicePrompt("Delete only this current single entry, or completely remove all matching upcoming items in the series?", true);
-                if (decision === 'all') {
-                    expenses = expenses.filter(e => e.seriesId !== itemToDelete.seriesId);
-                } else { 
-                    expenses = expenses.filter(e => e.id !== id); 
-                }
-            } else { 
-                if (confirm("Delete permanently?")) expenses = expenses.filter(e => e.id !== id); 
-            }
-            save();
-        }
-
-        function exportToFile() {
-            const now = new Date();
-            const fileName = `RNE_${String(now.getFullYear()).slice(-2)}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.txt`;
-            const blob = new Blob([JSON.stringify(expenses, null, 2)], { type: "text/plain;charset=utf-8" });
-            const tempLink = document.createElement('a'); tempLink.href = URL.createObjectURL(blob); tempLink.download = fileName; tempLink.click();
-        }
-
-        function importFromFile(event) {
-            const file = event.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const parsedData = JSON.parse(e.target.result);
-                    if (Array.isArray(parsedData)) { 
-                        expenses = parsedData; save(); executeAutomatedMonthRolloverAudit(); alert("Data imported successfully!"); 
-                    }
-                } catch (err) { alert("Error parsing file structure."); }
-            };
-            reader.readAsText(file);
-        }
-
-        function initiateGoogleDriveSyncFlow() {
-            if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') return alert("Google Cloud Execution Missing!");
-            if (!tokenClient) return alert("Google Identity Library context missing.");
-            tokenClient.callback = async (response) => {
-                if (response.error !== undefined) throw (response);
-                activeAccessToken = response.access_token;
-                document.getElementById('gdriveMainActionBtn').style.display = "none";
-                document.getElementById('gdrivePushBtn').style.display = "inline-flex";
-                document.getElementById('gdrivePullBtn').style.display = "inline-flex";
-                document.getElementById('cloudStatusLabel').innerHTML = "🟢 Cloud Connected";
-                await resolveCloudFileIdentifier();
-            };
-            tokenClient.requestAccessToken({ prompt: 'consent' });
-        }
-
-        async function resolveCloudFileIdentifier() {
-            if (!activeAccessToken) return;
-            try {
-                const listUrl = 'https://www.googleapis.com/drive/v3/files?' + new URLSearchParams({
-                    q: `name = '${DEDICATED_FILE_NAME}' and trashed = false`, pageSize: '1', fields: 'files(id, name)'
-                });
-                const listResponse = await fetch(listUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
-                const listData = await listResponse.json();
-                gdriveFileId = (listData.files && listData.files.length > 0) ? listData.files[0].id : null;
-            } catch (err) { console.error(err); }
-        }
-
-        async function manuallyTriggerCloudRestore() {
-            if (!activeAccessToken) return alert("Session expired. Please re-authenticate.");
-            await resolveCloudFileIdentifier();
-            if (!gdriveFileId) return alert(`No backup file found under the name "${DEDICATED_FILE_NAME}".`);
-            if (expenses.length > 0 && !confirm("Overwrite current parameters with data from cloud backup?")) return;
-            try {
-                const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, {
-                    headers: { 'Authorization': `Bearer ${activeAccessToken}` }
-                });
-                const parsedBackupData = await fileResponse.json();
-                if (Array.isArray(parsedBackupData)) {
-                    expenses = parsedBackupData; save(); executeAutomatedMonthRolloverAudit(); alert("Database imported successfully!");
-                }
-            } catch (err) { alert("Pipeline error parsing target cloud payload."); }
-        }
-
-        async function uploadToGoogleDrive() {
-            if (!activeAccessToken) return alert("No active cloud session found.");
-            const fileContent = JSON.stringify(expenses, null, 2);
-            const boundary = 'RNE_TRACKER_DATA_SPLIT_BOUNDARY';
-            const delimiter = `\r\n--${boundary}\r\n`;
-            const close_delim = `\r\n--${boundary}--`;
-            let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-            let method = 'POST';
-            const metadata = { 'mimeType': 'application/json' };
-            if (gdriveFileId) { url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`; method = 'PATCH'; } 
-            else { metadata.name = DEDICATED_FILE_NAME; }
-            const multipartRequestBody = delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(metadata) + delimiter + 'Content-Type: application/json\r\n\r\n' + fileContent + close_delim;
-            try {
-                const uploadResponse = await fetch(url, {
-                    method: method, headers: { 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': `multipart/related; boundary=${boundary}` }, body: multipartRequestBody
-                });
-                if (uploadResponse.ok) {
-                    const responseData = await uploadResponse.json();
-                    if (!gdriveFileId && responseData.id) gdriveFileId = responseData.id; 
-                    alert("Cloud sync complete!");
-                } else { alert("Cloud Transfer Rejection."); }
-            } catch (err) { console.error(err); }
-        }
-
-        function render() {
-            const currentFilter = filterSelect.value;
-            const container = document.getElementById('listContainer');
-            container.innerHTML = ''; 
-            let totalUnpaidOverall = 0;
-            const currentMonthItems = expenses.filter(e => e.month === currentFilter);
-            currentMonthItems.forEach(e => { if (e.status === 'unpaid') totalUnpaidOverall += e.cost; });
-            document.getElementById('totalUnpaid').innerText = `€${totalUnpaidOverall.toFixed(2)}`;
-
-            if (currentMonthItems.length === 0) {
-                container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:24px;">No expenses logged for this month.</div>'; return;
-            }
-
-            recurrenceGroupsConfig.forEach(group => {
-                const groupItems = currentMonthItems.filter(e => (e.recur || 0) === group.key); if (groupItems.length === 0) return;
-                let groupUnpaidCost = 0; groupItems.forEach(e => { if (e.status === 'unpaid') groupUnpaidCost += e.cost; });
-
-                let isCollapsed = collapsedGroups[group.key] !== undefined ? collapsedGroups[group.key] : groupUnpaidCost === 0;
-                const groupContainer = document.createElement('div');
-                groupContainer.className = 'group-container';
-
-                const groupHeader = document.createElement('div');
-                groupHeader.className = 'group-header';
-                groupHeader.onclick = () => toggleGroupCollapse(group.key);
-                groupHeader.innerHTML = `
-                    <div class="group-header-title"><span>${isCollapsed ? '▶' : '▼'}</span><span>${group.label}</span></div>
-                    <div class="group-badges-container">
-                        <span class="group-unpaid-cost ${groupUnpaidCost > 0 ? 'has-unpaid' : 'all-paid'}">€${groupUnpaidCost.toFixed(2)}</span>
-                        <span class="group-badge">${groupItems.length}</span>
+        function renderExpensesListUI(items) {
+            expenseList.innerHTML = items.length === 0 ? `<div class="bg-slate-900/40 border border-dashed border-slate-800 rounded-xl p-8 text-center text-slate-500 text-sm">No items logged.</div>` : '';
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${item.isPaid ? 'bg-emerald-950/10 border-emerald-900/40' : 'bg-slate-900 border-slate-800'}`;
+                card.innerHTML = `
+                    <div class="flex items-start space-x-3">
+                        <button onclick="toggleExpensePaidState('${item.id}')" class="mt-0.5 rounded w-5 h-5 flex items-center justify-center border ${item.isPaid ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-slate-950 border-slate-700 text-transparent'}"><i data-lucide="check" class="w-4 h-4"></i></button>
+                        <div>
+                            <div class="flex items-center space-x-1.5">
+                                <h3 class="font-semibold text-sm ${item.isPaid ? 'text-slate-400 line-through' : 'text-white'}">${item.name}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end space-x-4">
+                        <span class="text-sm font-bold text-white">$${item.cost.toFixed(2)}</span>
+                        <button onclick="purgeItem('${item.id}')" class="p-2 text-slate-400 hover:text-rose-400 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                     </div>
                 `;
-                groupContainer.appendChild(groupHeader);
-
-                if (!isCollapsed) {
-                    const groupContent = document.createElement('div'); groupContent.className = 'group-content';
-                    groupItems.forEach(e => {
-                        const itemDiv = document.createElement('div'); itemDiv.className = `expense-item ${e.status}`;
-                        const showMoveBack = (e.month > currentSystemMonth) && (e.status === 'unpaid');
-                        
-                        // FIXED FOR v11: Dynamically renders text labels properly checking custom structural origin trackers
-                        if (!e.originMonth) e.originMonth = getOriginalCreationMonth(e);
-                        const displayName = (e.month !== e.originMonth && e.status === 'unpaid') ? appendOriginSuffixToName(e.name, e.originMonth) : stripAnyDateSuffix(e.name);
-                        
-                        itemDiv.innerHTML = `
-                            <div class="info">
-                                <span class="name">${displayName}</span>
-                                <div class="cost-row"><span class="cost">€${e.cost.toFixed(2)}</span></div>
-                            </div>
-                            <div class="actions">
-                                ${showMoveBack ? `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);">➔</button>` : ''}
-                                ${e.status === 'unpaid' ? `
-                                    <button class="btn-action btn-move" onclick="moveNextMonth('${e.id}')">➔</button>
-                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">✏️</button>
-                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">✓</button>
-                                ` : `
-                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">✏️</button>
-                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">⟲</button>
-                                `}
-                                <button class="btn-action btn-delete" onclick="deleteExpense('${e.id}')">✕</button>
-                            </div>
-                        `;
-                        groupContent.appendChild(itemDiv);
-                    });
-                    groupContainer.appendChild(groupContent);
-                }
-                container.appendChild(groupContainer);
+                expenseList.appendChild(card);
             });
         }
+
+        function renderPocketsListUI(items, filterStr) {
+            pocketsList.innerHTML = items.length === 0 ? `<div class="bg-slate-900/40 border border-dashed border-slate-800 rounded-xl p-8 text-center text-slate-500 text-sm">No syncing pockets active.</div>` : '';
+            items.forEach(pocket => {
+                const currentMonthInputVal = pocket.contributions[filterStr] || 0;
+                let runningTotalUpToCurrent = 0;
+                let historyHTMLRows = '';
+
+                Object.keys(pocket.contributions).sort().forEach(mKey => {
+                    const val = pocket.contributions[mKey];
+                    if (mKey <= filterStr) runningTotalUpToCurrent += val;
+                    if (val > 0) {
+                        const [pY, pM] = mKey.split('-');
+                        historyHTMLRows += `
+                            <div class="flex justify-between items-center text-xs text-slate-400 bg-slate-950 px-2.5 py-1.5 rounded border border-slate-800/60 font-mono">
+                                <span>${monthNames[parseInt(pM)-1]} ${pY}</span>
+                                <span class="text-emerald-400 font-bold">+$${val.toFixed(2)}</span>
+                            </div>`;
+                    }
+                });
+
+                const pct = Math.min((runningTotalUpToCurrent / pocket.cost) * 100, 100);
+                const isDrawerOpen = openPocketDrawers[pocket.id] || false;
+                const isEditing = editingPocketId === pocket.id;
+
+                const [ty, tm] = pocket.targetMonth.split('-');
+                const targetReadable = `${monthNames[parseInt(tm)-1]} ${ty}`;
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3 shadow-sm";
+                
+                if (isEditing) {
+                    // EDIT MODAL STATE: Name and Date inputs active
+                    card.innerHTML = `
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[10px] uppercase font-semibold text-slate-500 tracking-wider mb-1">Pocket Name</label>
+                                <input type="text" id="inlineEditName-${pocket.id}" value="${pocket.name}" 
+                                    class="w-full bg-slate-950 border border-amber-500 rounded px-2 py-1 text-sm text-white focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-semibold text-slate-500 tracking-wider mb-1">Target Month</label>
+                                <input type="month" id="inlineEditTarget-${pocket.id}" value="${pocket.targetMonth}" 
+                                    class="w-full bg-slate-950 border border-amber-500 rounded px-2 py-1 text-sm text-amber-400 focus:outline-none font-mono">
+                            </div>
+                            <div class="flex justify-end space-x-2 pt-1">
+                                <button onclick="setPocketEditMode(null)" class="px-2.5 py-1 text-xs text-slate-400 bg-slate-800 hover:bg-slate-700 rounded transition">Cancel</button>
+                                <button onclick="savePocketInlineChanges('${pocket.id}')" class="px-2.5 py-1 text-xs text-emerald-400 bg-emerald-950 border border-emerald-800 hover:bg-emerald-900 rounded flex items-center space-x-1 transition">
+                                    <i data-lucide="check" class="w-3 h-3"></i><span>Save</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // READ ONLY STATE: Clean badges and interactive edit button
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-sm text-amber-400 flex items-center"><i data-lucide="piggy-bank" class="w-4 h-4 mr-1.5"></i>${pocket.name}</h3>
+                                <div class="flex items-center space-x-1.5 mt-1">
+                                    <span class="text-xs text-slate-400">Target Month:</span>
+                                    <div class="flex items-center space-x-1">
+                                        <span class="text-xs font-semibold bg-slate-950 text-amber-400 border border-slate-800 px-2 py-0.5 rounded font-mono">${targetReadable}</span>
+                                        <button onclick="setPocketEditMode('${pocket.id}')" title="Edit Pocket details" class="p-1 hover:bg-slate-800 rounded text-slate-500 hover:text-white transition">
+                                            <i data-lucide="pencil" class="w-3 h-3"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="purgeItem('${pocket.id}')" class="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                        </div>
+
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs"><span class="text-slate-300">$${runningTotalUpToCurrent.toFixed(2)} total</span><span class="text-slate-500">Goal: $${pocket.cost.toFixed(2)}</span></div>
+                            <div class="w-full bg-slate-950 rounded-full h-1.5 border border-slate-800"><div class="bg-amber-500 h-1.5 rounded-full" style="width: ${pct}%"></div></div>
+                        </div>
+
+                        <div class="bg-slate-950 p-2 rounded-lg border border-slate-800 flex items-center justify-between gap-2">
+                            <label class="text-xs text-slate-400">Save This Month:</label>
+                            <div class="relative max-w-[110px] w-full">
+                                <span class="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-bold">$</span>
+                                <input type="number" step="0.01" value="${currentMonthInputVal || ''}" placeholder="0.00" onchange="updatePocketSavingValue('${pocket.id}', '${filterStr}', this.value)" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 pl-5 text-right text-xs text-amber-400 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-800/60 pt-2">
+                            <button onclick="toggleHistoryDrawer('${pocket.id}')" class="w-full flex items-center justify-between text-xs text-slate-400 hover:text-white transition py-0.5">
+                                <span class="flex items-center font-medium"><i data-lucide="history" class="w-3.5 h-3.5 mr-1 text-slate-500"></i>Savings History</span>
+                                <i data-lucide="${isDrawerOpen ? 'chevron-up' : 'chevron-down'}" class="w-3.5 h-3.5 text-slate-500"></i>
+                            </button>
+                            <div class="${isDrawerOpen ? 'block' : 'hidden'} mt-2 space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+                                ${historyHTMLRows || '<p class="text-center text-[11px] text-slate-600 py-2 italic">No deposits tracked yet.</p>'}
+                            </div>
+                        </div>
+                    `;
+                }
+                pocketsList.appendChild(card);
+            });
+        }
+
+        // TRIGGER EDIT MODE
+        function setPocketEditMode(id) {
+            editingPocketId = id;
+            evaluateActiveRenderDashboard();
+            if(id) {
+                setTimeout(() => {
+                    const nameInput = document.getElementById(`inlineEditName-${id}`);
+                    if(nameInput) nameInput.focus();
+                }, 50);
+            }
+        }
+
+        // COMBO SAVE INLINE ACTION
+        function savePocketInlineChanges(id) {
+            const nameField = document.getElementById(`inlineEditName-${id}`);
+            const targetField = document.getElementById(`inlineEditTarget-${id}`);
+            
+            if(!nameField || !targetField || !nameField.value.trim() || !targetField.value) return;
+
+            const item = registryData.find(d => d.id === id);
+            if(item && item.type === 'pocket') {
+                item.name = nameField.value.trim();
+                item.targetMonth = targetField.value;
+                commitLocalCache();
+            }
+            setPocketEditMode(null);
+        }
+
+        function toggleHistoryDrawer(id) { openPocketDrawers[id] = !openPocketDrawers[id]; evaluateActiveRenderDashboard(); }
+        function toggleExpensePaidState(id) { const item = registryData.find(d => d.id === id); if (item) { item.isPaid = !item.isPaid; commitLocalCache(); evaluateActiveRenderDashboard(); } }
+        function purgeItem(id) { registryData = registryData.filter(d => d.id !== id); commitLocalCache(); evaluateActiveRenderDashboard(); }
+
+        function updatePocketSavingValue(id, mKey, val) {
+            const item = registryData.find(d => d.id === id);
+            if(item && item.type === 'pocket') {
+                const parsed = parseFloat(val) || 0;
+                if(parsed <= 0) delete item.contributions[mKey];
+                else item.contributions[mKey] = parsed;
+                commitLocalCache(); evaluateActiveRenderDashboard();
+            }
+        }
+
+        // ENTRY DIALOG ROUTINES
+        document.getElementById('addExpenseBtn').addEventListener('click', () => toggleModalVisibility(document.getElementById('entryModal'), true));
+        document.getElementById('closeModalBtn').addEventListener('click', () => toggleModalVisibility(document.getElementById('entryModal'), false));
+        document.getElementById('openManualBtn').addEventListener('click', () => toggleModalVisibility(document.getElementById('manualModal'), true));
+        document.getElementById('closeManualModalBtn').addEventListener('click', () => toggleModalVisibility(document.getElementById('manualModal'), false));
+
+        function toggleModalVisibility(element, show) {
+            if (show) { element.classList.remove('pointer-events-none', 'opacity-0'); element.firstElementChild.classList.add('scale-100'); }
+            else { element.classList.add('pointer-events-none', 'opacity-0'); element.firstElementChild.classList.remove('scale-100'); }
+        }
+
+        document.querySelectorAll('input[name="entryType"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const isPocket = (e.target.value === 'pocket');
+                document.getElementById('nameLabel').innerText = isPocket ? "Pocket Goal Name" : "Item Title";
+                document.getElementById('costLabel').innerText = isPocket ? "Target Absolute Cap ($)" : "Cost Valuation ($)";
+                document.getElementById('standardFieldsGroup').classList.toggle('hidden', isPocket);
+                document.getElementById('pocketFieldsGroup').classList.toggle('hidden', !isPocket);
+                document.getElementById('entryTargetMonth').required = isPocket;
+            });
+        });
+
+        document.getElementById('entryForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const filterStr = formatMonthString(currentYear, currentMonth);
+            const entryTypeSelection = document.querySelector('input[name="entryType"]:checked').value;
+
+            const baseObj = {
+                id: crypto.randomUUID(), type: entryTypeSelection,
+                name: document.getElementById('entryName').value.trim(),
+                cost: parseFloat(document.getElementById('entryCost').value) || 0,
+                category: document.getElementById('entryCategory').value.trim()
+            };
+
+            if (entryTypeSelection === 'pocket') {
+                baseObj.startMonth = filterStr;
+                baseObj.targetMonth = document.getElementById('entryTargetMonth').value;
+                baseObj.contributions = {};
+            } else {
+                baseObj.isRecurring = document.getElementById('entryRecurring').checked;
+                baseObj.isPaid = false; baseObj.originMonth = filterStr; baseObj.currentMonth = filterStr; baseObj.suffix = "";
+            }
+
+            registryData.push(baseObj); commitLocalCache(); document.getElementById('entryForm').reset();
+            toggleModalVisibility(document.getElementById('entryModal'), false); evaluateActiveRenderDashboard();
+        });
+
+        function commitLocalCache() { localStorage.setItem('RNE_registry_v14', JSON.stringify(registryData)); }
+        function loadLocalCache() { const raw = localStorage.getItem('RNE_registry_v14'); if(raw) { try { registryData = JSON.parse(raw); } catch(e) {} } }
     </script>
 </body>
 </html>
