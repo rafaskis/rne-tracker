@@ -3,175 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE - Advanced Expenses & Editable Pockets</title>
+    <title>RNE - Advanced Ledger Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         .modal { transition: opacity 0.25s ease; }
         body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
-        .prose h1 { font-size: 1.5rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #f1f5f9; border-bottom: 1px solid #334155; padding-bottom: 0.25rem; }
-        .prose h2 { font-size: 1.25rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; color: #f1f5f9; }
-        .prose p { margin-bottom: 0.75rem; color: #94a3b8; font-size: 0.95rem; }
+        .prose h1 { font-size: 1.3rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.5rem; color: #f1f5f9; border-bottom: 1px solid #334155; padding-bottom: 0.25rem; }
+        .prose h2 { font-size: 1.1rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.25rem; color: #e2e8f0; }
+        .prose p, .prose li { margin-bottom: 0.5rem; color: #94a3b8; font-size: 0.875rem; list-style-type: disc; }
+        .prose ul { padding-left: 1.25rem; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- HEADER -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center shadow-md">
-        <div class="flex items-center space-x-3">
-            <div class="bg-indigo-600 p-2 rounded-lg text-white">
-                <i data-lucide="wallet" class="w-6 h-6"></i>
-            </div>
-            <div>
-                <h1 class="text-xl font-bold tracking-tight text-white">RNE</h1>
-                <p class="text-xs text-slate-400">Recurring Expenses & Sinking Funds</p>
-            </div>
+    <!-- COMPACT HEADER CONSOLIDATION -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex flex-wrap justify-between items-center gap-3 shadow-md">
+        <!-- GOOGLE DRIVE & SYSTEM BACKUP STORAGE CONTROLS -->
+        <div class="flex items-center space-x-2 text-xs">
+            <button id="authDriveBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded font-medium flex items-center space-x-1 transition">
+                <i data-lucide="cloud" class="w-3.5 h-3.5"></i>
+                <span>Link GDrive</span>
+            </button>
+            <button id="backupDriveBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1.5 rounded border border-slate-700 font-medium flex items-center space-x-1 transition">
+                <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                <span>Backup</span>
+            </button>
+            <button id="restoreDriveBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1.5 rounded border border-slate-700 font-medium flex items-center space-x-1 transition">
+                <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i>
+                <span>Restore</span>
+            </button>
+            <label class="flex items-center space-x-1 text-slate-400 select-none cursor-pointer pl-1">
+                <input type="checkbox" id="autoSyncCheck" checked class="rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-0 w-3.5 h-3.5">
+                <span>Auto-Sync</span>
+            </label>
         </div>
-        <button id="openManualBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-sm flex items-center space-x-1.5 transition">
-            <i data-lucide="book-open" class="w-4 h-4"></i>
+
+        <button id="openManualBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1.5 rounded text-xs flex items-center space-x-1 transition">
+            <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
             <span>User Manual</span>
         </button>
     </header>
 
-    <!-- MAIN DASHBOARD -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+    <!-- MAIN DASHBOARD HUB -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 space-y-4">
         
-        <!-- CALENDAR NAVIGATOR -->
-        <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm">
-            <div class="flex items-center space-x-2">
-                <button id="prevMonthBtn" class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition">
-                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+        <!-- CALENDAR INTERACTION ROW & ENGINE LAYOUT -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+            <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800 flex justify-between items-center shadow-sm md:col-span-1">
+                <button id="prevMonthBtn" class="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition">
+                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
                 </button>
-                <div class="text-center min-w-[140px]">
-                    <span id="currentMonthLabel" class="text-lg font-semibold text-white">June 2026</span>
-                </div>
-                <button id="nextMonthBtn" class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition">
-                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                <span id="currentMonthLabel" class="text-sm font-bold text-white tracking-wide">June 2026</span>
+                <button id="nextMonthBtn" class="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition">
+                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
                 </button>
             </div>
-            <button id="addExpenseBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition shadow-sm w-full sm:w-auto justify-center">
-                <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                <span>Add Entry</span>
-            </button>
-        </div>
 
-        <!-- KPI DISPLAY CARDS -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm">
-                <div class="flex justify-between items-start text-slate-400">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Expected Bills</span>
-                    <i data-lucide="activity" class="w-4 h-4 text-indigo-400"></i>
+            <!-- COMPACT 2X2 KPI ISOLATION DISPLAY MATRIX -->
+            <div class="grid grid-cols-2 gap-2 md:col-span-2">
+                <div class="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 flex justify-between items-center text-xs">
+                    <span class="text-slate-400 font-medium">Expected Bills:</span>
+                    <span id="kpiExpected" class="font-bold text-white">$0.00</span>
                 </div>
-                <div id="kpiExpected" class="text-2xl font-bold mt-2 text-white">$0.00</div>
-                <div class="text-xs text-slate-500 mt-1">Total monthly liabilities</div>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm">
-                <div class="flex justify-between items-start text-slate-400">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Unpaid Liabilities</span>
-                    <i data-lucide="alert-circle" class="w-4 h-4 text-rose-400"></i>
+                <div class="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 flex justify-between items-center text-xs">
+                    <span class="text-slate-400 font-medium">Unpaid:</span>
+                    <span id="kpiUnpaid" class="font-bold text-rose-400">$0.00</span>
                 </div>
-                <div id="kpiUnpaid" class="text-2xl font-bold mt-2 text-rose-400">$0.00</div>
-                <div class="text-xs text-slate-500 mt-1">Outstanding bills remaining</div>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm border-l-4 border-l-amber-500">
-                <div class="flex justify-between items-start text-slate-400">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Stashed This Month</span>
-                    <i data-lucide="piggy-bank" class="w-4 h-4 text-amber-400"></i>
+                <div class="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 flex justify-between items-center text-xs border-l-2 border-l-amber-500">
+                    <span class="text-slate-400 font-medium">Stashed Now:</span>
+                    <span id="kpiPocketsMonthly" class="font-bold text-amber-400">$0.00</span>
                 </div>
-                <div id="kpiPocketsMonthly" class="text-2xl font-bold mt-2 text-amber-400">$0.00</div>
-                <div class="text-xs text-slate-500 mt-1">Isolated savings flow input</div>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm">
-                <div class="flex justify-between items-start text-slate-400">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Total Pocket Assets</span>
-                    <i data-lucide="layers" class="w-4 h-4 text-emerald-400"></i>
+                <div class="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 flex justify-between items-center text-xs">
+                    <span class="text-slate-400 font-medium">Total Assets:</span>
+                    <span id="kpiPocketsTotal" class="font-bold text-emerald-400">$0.00</span>
                 </div>
-                <div id="kpiPocketsTotal" class="text-2xl font-bold mt-2 text-emerald-400">$0.00</div>
-                <div class="text-xs text-slate-500 mt-1">Cumulative historic balance</div>
             </div>
         </div>
 
-        <!-- TWO COLUMN WORKSPACE -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 space-y-4">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-lg font-bold flex items-center space-x-2 text-white">
-                        <i data-lucide="credit-card" class="w-5 h-5 text-indigo-400"></i>
+        <!-- TRANSACTION INPUT TRIGGER BAR -->
+        <button id="addExpenseBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1 transition shadow-sm">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+            <span>Add New Entry (Liability or Sinking Pocket)</span>
+        </button>
+
+        <!-- TWO COLUMN COLLAPSIBLE SPLIT WORKSPACE -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+            
+            <!-- SECTION A: STANDARD LIABILITIES (2 COLS) -->
+            <div class="lg:col-span-2 bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden">
+                <button onclick="toggleSectionCollapse('expenseMainDrawer')" class="w-full flex justify-between items-center bg-slate-900 px-4 py-3 border-b border-slate-800 text-sm font-bold text-slate-200 hover:bg-slate-800/60 transition">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="credit-card" class="w-4 h-4 text-indigo-400"></i>
                         <span>Standard & Recurring Liabilities</span>
-                    </h2>
-                    <span id="expenseCountBadge" class="bg-slate-800 text-slate-400 text-xs px-2.5 py-0.5 rounded-full font-medium">0 items</span>
+                        <span id="expenseCountBadge" class="bg-slate-800 text-slate-400 text-[11px] px-2 py-0.5 rounded-full font-medium ml-2">0 items</span>
+                    </div>
+                    <i id="expenseMainDrawer-icon" data-lucide="chevron-down" class="w-4 h-4 text-slate-500"></i>
+                </button>
+                
+                <div id="expenseMainDrawer" class="p-3 space-y-3">
+                    <!-- SUB-ACCORDION GROUP 1: MONTHLY RECURRING -->
+                    <div class="border border-slate-800 rounded-lg overflow-hidden bg-slate-950/40">
+                        <button onclick="toggleSectionCollapse('catMonthlyGroup')" class="w-full flex justify-between items-center bg-slate-900/40 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800/40 transition">
+                            <span>Monthly Recurring Obligations</span>
+                            <i id="catMonthlyGroup-icon" data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-500"></i>
+                        </button>
+                        <div id="catMonthlyGroup" class="p-2 space-y-2"></div>
+                    </div>
+
+                    <!-- SUB-ACCORDION GROUP 2: ONE-TIME / FIXED LIABILITIES -->
+                    <div class="border border-slate-800 rounded-lg overflow-hidden bg-slate-950/40">
+                        <button onclick="toggleSectionCollapse('catOneTimeGroup')" class="w-full flex justify-between items-center bg-slate-900/40 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800/40 transition">
+                            <span>One-Time / Fixed Structural Expenses</span>
+                            <i id="catOneTimeGroup-icon" data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-500"></i>
+                        </button>
+                        <div id="catOneTimeGroup" class="p-2 space-y-2"></div>
+                    </div>
                 </div>
-                <div id="expenseList" class="space-y-3"></div>
             </div>
 
-            <div class="space-y-4">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-lg font-bold flex items-center space-x-2 text-white">
-                        <i data-lucide="sliders" class="w-5 h-5 text-amber-400"></i>
+            <!-- SECTION B: SINKING FUNDS POCKETS (1 COL) -->
+            <div class="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden">
+                <button onclick="toggleSectionCollapse('pocketsMainDrawer')" class="w-full flex justify-between items-center bg-slate-900 px-4 py-3 border-b border-slate-800 text-sm font-bold text-slate-200 hover:bg-slate-800/60 transition">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="sliders" class="w-4 h-4 text-amber-400"></i>
                         <span>Active Sinking Pockets</span>
-                    </h2>
-                    <span id="pocketsCountBadge" class="bg-slate-800 text-amber-400/80 text-xs px-2.5 py-0.5 rounded-full font-medium">0 active</span>
-                </div>
-                <div id="pocketsList" class="space-y-3"></div>
+                        <span id="pocketsCountBadge" class="bg-slate-800 text-amber-400/80 text-[11px] px-2 py-0.5 rounded-full font-medium ml-2">0 active</span>
+                    </div>
+                    <i id="pocketsMainDrawer-icon" data-lucide="chevron-down" class="w-4 h-4 text-slate-500"></i>
+                </button>
+                <div id="pocketsMainDrawer" class="p-3 space-y-3"></div>
             </div>
         </div>
     </main>
 
-    <!-- INPUT DIALOG MODAL -->
+    <!-- DIALOG INPUT ENTRIES MODAL -->
     <div id="entryModal" class="modal opacity-0 pointer-events-none fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 shadow-xl space-y-4 transform scale-95 transition-transform duration-200">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-lg font-bold text-white">Add New Entry</h3>
-                <button id="closeModalBtn" class="text-slate-400 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-5 shadow-xl space-y-4 transform scale-95 transition-transform duration-200">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+                <h3 class="text-sm font-bold text-white">Create Ledger Entry</h3>
+                <button id="closeModalBtn" class="text-slate-400 hover:text-white transition"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
-            <form id="entryForm" class="space-y-4">
+            <form id="entryForm" class="space-y-3 text-xs">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Classification</label>
-                    <div class="flex items-center space-x-6 bg-slate-950 p-2.5 rounded-lg border border-slate-800">
-                        <label class="flex items-center space-x-2 cursor-pointer select-none">
-                            <input type="radio" name="entryType" value="standard" checked class="text-indigo-600 focus:ring-0 bg-slate-800 border-slate-700">
-                            <span class="text-sm font-medium text-slate-200">Bill / Liability</span>
+                    <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Classification Type</label>
+                    <div class="flex items-center space-x-4 bg-slate-950 p-2 rounded-lg border border-slate-800">
+                        <label class="flex items-center space-x-1.5 cursor-pointer select-none">
+                            <input type="radio" name="entryType" value="standard" checked class="text-indigo-600 focus:ring-0 bg-slate-800 border-slate-700 w-3.5 h-3.5">
+                            <span class="font-medium text-slate-200">Liability Bill</span>
                         </label>
-                        <label class="flex items-center space-x-2 cursor-pointer select-none">
-                            <input type="radio" name="entryType" value="pocket" class="text-amber-500 focus:ring-0 bg-slate-800 border-slate-700">
-                            <span class="text-sm font-medium text-amber-400">Pocket (Savings)</span>
+                        <label class="flex items-center space-x-1.5 cursor-pointer select-none">
+                            <input type="radio" name="entryType" value="pocket" class="text-amber-500 focus:ring-0 bg-slate-800 border-slate-700 w-3.5 h-3.5">
+                            <span class="font-medium text-amber-400">Sinking Pocket</span>
                         </label>
                     </div>
                 </div>
                 <div>
-                    <label id="nameLabel" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Item Title</label>
-                    <input type="text" id="entryName" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm">
+                    <label id="nameLabel" class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Title Name</label>
+                    <input type="text" id="entryName" required class="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-white focus:outline-none focus:border-indigo-500">
                 </div>
                 <div>
-                    <label id="costLabel" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Cost Valuation ($)</label>
-                    <input type="number" step="0.01" id="entryCost" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm">
+                    <label id="costLabel" class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Valuation Balance Target ($)</label>
+                    <input type="number" step="0.01" id="entryCost" required class="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-white focus:outline-none focus:border-indigo-500">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Categorization Group</label>
-                    <input type="text" id="entryCategory" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm">
+                    <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Group tag</label>
+                    <input type="text" id="entryCategory" required class="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-white focus:outline-none focus:border-indigo-500">
                 </div>
                 <div id="standardFieldsGroup" class="flex items-center space-x-2 py-1">
-                    <input type="checkbox" id="entryRecurring" class="rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-0 w-4 h-4">
-                    <label for="entryRecurring" class="text-sm text-slate-300 select-none cursor-pointer">Recurring Month-to-Month</label>
+                    <input type="checkbox" id="entryRecurring" class="rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-0 w-3.5 h-3.5">
+                    <label for="entryRecurring" class="text-slate-300 select-none cursor-pointer">Set as Monthly Recurring</label>
                 </div>
                 <div id="pocketFieldsGroup" class="hidden space-y-1">
-                    <label class="block text-xs font-semibold text-amber-400 uppercase tracking-wider mb-1">Target End Maturity Month</label>
-                    <input type="month" id="entryTargetMonth" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 text-sm">
+                    <label class="block text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-1">Target Maturity End Month</label>
+                    <input type="month" id="entryTargetMonth" class="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-500">
                 </div>
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium transition shadow-md">Commit Entry</button>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded font-medium transition shadow-md">Commit Entry</button>
             </form>
         </div>
     </div>
 
-    <!-- DOCUMENTATION MANUAL MODAL -->
+    <!-- DOCUMENTATION COMPREHENSIVE MANUAL MODAL -->
     <div id="manualModal" class="modal opacity-0 pointer-events-none fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-200">
-            <div class="flex justify-between items-center border-b border-slate-800 px-6 py-4">
-                <div class="flex items-center space-x-2 text-indigo-400"><i data-lucide="book-open" class="w-5 h-5"></i><h3 class="text-lg font-bold text-white">System Manual</h3></div>
-                <button id="closeManualModalBtn" class="text-slate-400 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-200">
+            <div class="flex justify-between items-center border-b border-slate-800 px-5 py-3">
+                <div class="flex items-center space-x-2 text-indigo-400"><i data-lucide="book-open" class="w-4 h-4"></i><h3 class="text-sm font-bold text-white">RNE Master Blueprint</h3></div>
+                <button id="closeManualModalBtn" class="text-slate-400 hover:text-white transition"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
-            <div id="manualMarkdownContent" class="prose overflow-y-auto px-6 py-4 flex-1 bg-slate-950/40"></div>
+            <div class="overflow-y-auto px-5 py-3 flex-1 bg-slate-950/20 space-y-3">
+                <div id="manualBaseContent" class="prose"></div>
+                
+                <!-- ACCORDION DISCLOSURE FOR HEAVY EXHAUSTIVE DOCUMENTATION -->
+                <details class="group bg-slate-950 border border-slate-800 rounded-lg overflow-hidden transition">
+                    <summary class="list-none flex justify-between items-center px-4 py-2 text-xs font-bold text-indigo-400 cursor-pointer select-none bg-slate-900/60 hover:bg-slate-900 transition">
+                        <span>Click to Expand System Operations Documentation</span>
+                        <i data-lucide="chevron-down" class="w-3.5 h-3.5 transform group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div id="manualExtendedMarkdown" class="prose p-4 border-t border-slate-800 bg-slate-950/60 text-xs"></div>
+                </details>
+            </div>
         </div>
     </div>
 
@@ -180,27 +211,37 @@
         let currentMonth = 5; 
         let registryData = [];
         let openPocketDrawers = {}; 
-        let editingPocketId = null; // Tracks which pocket is actively being edited inline (Name & Target)
+        let sectionCollapseStates = { expenseMainDrawer: false, catMonthlyGroup: false, catOneTimeGroup: false, pocketsMainDrawer: false };
+        let editingPocketId = null;
 
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
         window.addEventListener('DOMContentLoaded', () => {
             loadLocalCache();
             if(registryData.length === 0) injectSeedData();
-            evaluateActiveRenderDashboard();
-            document.getElementById('manualMarkdownContent').innerHTML = marked.parse(`
-# RNE Pocket Modifications Manual
-* Click the **Pencil Icon** on any Pocket card to enter inline edit mode.
-* You can instantly modify the **Goal Name** and the **Target Month** right on the card.
-* Click the **Checkmark Icon** to commit changes, or click away to discard.
+            
+            document.getElementById('manualBaseContent').innerHTML = marked.parse(`
+# RNE Quick Start Guide
+Welcome to your unified workspace. Manage structural recurring bills and isolated sinking pockets seamlessly across month timelines.
             `);
+
+            document.getElementById('manualExtendedMarkdown').innerHTML = marked.parse(`
+## 💡 System Operations Manual
+*   **Architecture & Scope Mapping:** The system tracks entries based on selected months. Standard liabilities track independent execution state flag maps per period.
+*   **Collapsible Layering Layouts:** Use section header drop indicators to visually group information blocks away. Standard liabilities sort dynamic flows automatically between **Monthly Recurring** sets and **One Time Flags**.
+*   **Inline Multi-Variable Edits:** Tap the Pencil indicator asset inside active Pocket fund items to seamlessly adjust string text identification labels or calendar maturities cleanly in one layout transaction.
+*   **Cloud Cloud Execution Synchronizations:** Use the integrated backup triggers inside the streamlined header array block to connect to third party Google Drive file targets safely.
+            `);
+
+            evaluateActiveRenderDashboard();
             lucide.createIcons();
         });
 
         function injectSeedData() {
             registryData = [
                 { id: "1", type: "standard", name: "Fiber Internet Line", cost: 60.00, category: "Utilities", isRecurring: true, isPaid: true, originMonth: "2026-06", currentMonth: "2026-06", suffix: "" },
-                { id: "2", type: "pocket", name: "Japan Winter Trip Fund", cost: 3000.00, category: "Travel", startMonth: "2026-06", targetMonth: "2026-12", contributions: { "2026-06": 400.00, "2026-07": 150.00 } }
+                { id: "2", type: "standard", name: "Annual Domain Renewal", cost: 15.00, category: "Tech", isRecurring: false, isPaid: false, originMonth: "2026-06", currentMonth: "2026-06", suffix: "" },
+                { id: "3", type: "pocket", name: "Japan Winter Trip Fund", cost: 3000.00, category: "Travel", startMonth: "2026-06", targetMonth: "2026-12", contributions: { "2026-06": 400.00, "2026-07": 150.00 } }
             ];
             commitLocalCache();
         }
@@ -217,64 +258,90 @@
             evaluateActiveRenderDashboard();
         }
 
+        function toggleSectionCollapse(divId) {
+            sectionCollapseStates[divId] = !sectionCollapseStates[divId];
+            evaluateActiveRenderDashboard();
+        }
+
         function evaluateActiveRenderDashboard() {
             const filterStr = formatMonthString(currentYear, currentMonth);
             document.getElementById('currentMonthLabel').innerText = `${monthNames[currentMonth]} ${currentYear}`;
 
-            const displayExpenses = registryData.filter(d => d.type === 'standard' && d.currentMonth === filterStr);
-            const displayPockets = registryData.filter(d => d.type === 'pocket' && filterStr >= d.startMonth && filterStr <= d.targetMonth);
-
-            const expected = displayExpenses.reduce((sum, curr) => sum + curr.cost, 0);
-            const unpaid = displayExpenses.filter(d => !d.isPaid).reduce((sum, curr) => sum + curr.cost, 0);
-            const stashedThisMonth = displayPockets.reduce((sum, curr) => sum + (curr.contributions[filterStr] || 0), 0);
-
-            let absolutePocketAssets = 0;
-            registryData.forEach(p => {
-                if(p.type === 'pocket') {
-                    Object.keys(p.contributions || {}).forEach(mKey => {
-                        if(mKey <= filterStr) absolutePocketAssets += p.contributions[mKey];
-                    });
+            // Refreshed layout updates for high-level main collapsible drawers
+            Object.keys(sectionCollapseStates).forEach(key => {
+                const targetEl = document.getElementById(key);
+                const iconEl = document.getElementById(`${key}-icon`);
+                if(targetEl) {
+                    if(sectionCollapseStates[key]) {
+                        targetEl.classList.add('hidden');
+                        if(iconEl) iconEl.style.transform = 'rotate(-90deg)';
+                    } else {
+                        targetEl.classList.remove('hidden');
+                        if(iconEl) iconEl.style.transform = 'rotate(0deg)';
+                    }
                 }
             });
 
-            document.getElementById('kpiExpected').innerText = `$${expected.toFixed(2)}`;
-            document.getElementById('kpiUnpaid').innerText = `$${unpaid.toFixed(2)}`;
-            document.getElementById('kpiPocketsMonthly').innerText = `$${stashedThisMonth.toFixed(2)}`;
+            const displayExpenses = registryData.filter(d => d.type === 'standard' && d.currentMonth === filterStr);
+            const displayPockets = registryData.filter(d => d.type === 'pocket' && filterStr >= d.startMonth && filterStr <= d.targetMonth);
+
+            document.getElementById('kpiExpected').innerText = `$${displayExpenses.reduce((sum, curr) => sum + curr.cost, 0).toFixed(2)}`;
+            document.getElementById('kpiUnpaid').innerText = `$${displayExpenses.filter(d => !d.isPaid).reduce((sum, curr) => sum + curr.cost, 0).toFixed(2)}`;
+            document.getElementById('kpiPocketsMonthly').innerText = `$${displayPockets.reduce((sum, curr) => sum + (curr.contributions[filterStr] || 0), 0).toFixed(2)}`;
+            
+            let absolutePocketAssets = 0;
+            registryData.forEach(p => {
+                if(p.type === 'pocket') {
+                    Object.keys(p.contributions || {}).forEach(mKey => { if(mKey <= filterStr) absolutePocketAssets += p.contributions[mKey]; });
+                }
+            });
             document.getElementById('kpiPocketsTotal').innerText = `$${absolutePocketAssets.toFixed(2)}`;
 
             document.getElementById('expenseCountBadge').innerText = `${displayExpenses.length} items`;
             document.getElementById('pocketsCountBadge').innerText = `${displayPockets.length} active`;
 
-            renderExpensesListUI(displayExpenses);
+            renderSplitExpensesUI(displayExpenses);
             renderPocketsListUI(displayPockets, filterStr);
             lucide.createIcons();
         }
 
-        function renderExpensesListUI(items) {
-            expenseList.innerHTML = items.length === 0 ? `<div class="bg-slate-900/40 border border-dashed border-slate-800 rounded-xl p-8 text-center text-slate-500 text-sm">No items logged.</div>` : '';
-            items.forEach(item => {
+        function renderSplitExpensesUI(items) {
+            const monthlyBox = document.getElementById('catMonthlyGroup');
+            const oneTimeBox = document.getElementById('catOneTimeGroup');
+            
+            monthlyBox.innerHTML = '';
+            oneTimeBox.innerHTML = '';
+
+            const monthlyItems = items.filter(i => i.isRecurring);
+            const oneTimeItems = items.filter(i => !i.isRecurring);
+
+            if(monthlyItems.length === 0) monthlyBox.innerHTML = `<p class="text-[11px] text-slate-600 italic p-2 text-center">No recurring bills.</p>`;
+            if(oneTimeItems.length === 0) oneTimeBox.innerHTML = `<p class="text-[11px] text-slate-600 italic p-2 text-center">No one-time bills.</p>`;
+
+            const injectCard = (item, targetContainer) => {
                 const card = document.createElement('div');
-                card.className = `p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${item.isPaid ? 'bg-emerald-950/10 border-emerald-900/40' : 'bg-slate-900 border-slate-800'}`;
+                card.className = `p-2.5 rounded-lg border flex items-center justify-between gap-3 text-xs ${item.isPaid ? 'bg-emerald-950/10 border-emerald-900/30' : 'bg-slate-900 border-slate-800'}`;
                 card.innerHTML = `
-                    <div class="flex items-start space-x-3">
-                        <button onclick="toggleExpensePaidState('${item.id}')" class="mt-0.5 rounded w-5 h-5 flex items-center justify-center border ${item.isPaid ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-slate-950 border-slate-700 text-transparent'}"><i data-lucide="check" class="w-4 h-4"></i></button>
-                        <div>
-                            <div class="flex items-center space-x-1.5">
-                                <h3 class="font-semibold text-sm ${item.isPaid ? 'text-slate-400 line-through' : 'text-white'}">${item.name}</h3>
-                            </div>
-                        </div>
+                    <div class="flex items-center space-x-2 min-w-0 flex-1">
+                        <button onclick="toggleExpensePaidState('${item.id}')" class="rounded w-4 h-4 flex items-center justify-center border transition-all flex-shrink-0 ${item.isPaid ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-slate-950 border-slate-700 text-transparent'}"><i data-lucide="check" class="w-3 h-3"></i></button>
+                        <span class="font-medium truncate ${item.isPaid ? 'text-slate-500 line-through' : 'text-slate-200'}">${item.name}</span>
                     </div>
-                    <div class="flex items-center justify-end space-x-4">
-                        <span class="text-sm font-bold text-white">$${item.cost.toFixed(2)}</span>
-                        <button onclick="purgeItem('${item.id}')" class="p-2 text-slate-400 hover:text-rose-400 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <div class="flex items-center space-x-3 ml-2 flex-shrink-0">
+                        <span class="font-bold text-slate-300">$${item.cost.toFixed(2)}</span>
+                        <button onclick="purgeItem('${item.id}')" class="text-slate-500 hover:text-rose-400 p-0.5 rounded transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                     </div>
                 `;
-                expenseList.appendChild(card);
-            });
+                targetContainer.appendChild(card);
+            };
+
+            monthlyItems.forEach(i => injectCard(i, monthlyBox));
+            oneTimeItems.forEach(i => injectCard(i, oneTimeBox));
         }
 
         function renderPocketsListUI(items, filterStr) {
-            pocketsList.innerHTML = items.length === 0 ? `<div class="bg-slate-900/40 border border-dashed border-slate-800 rounded-xl p-8 text-center text-slate-500 text-sm">No syncing pockets active.</div>` : '';
+            const container = document.getElementById('pocketsMainDrawer');
+            container.innerHTML = items.length === 0 ? `<div class="bg-slate-900/40 border border-dashed border-slate-800 rounded-xl p-6 text-center text-slate-500 text-xs">No sinking funds mapped here.</div>` : '';
+            
             items.forEach(pocket => {
                 const currentMonthInputVal = pocket.contributions[filterStr] || 0;
                 let runningTotalUpToCurrent = 0;
@@ -286,9 +353,9 @@
                     if (val > 0) {
                         const [pY, pM] = mKey.split('-');
                         historyHTMLRows += `
-                            <div class="flex justify-between items-center text-xs text-slate-400 bg-slate-950 px-2.5 py-1.5 rounded border border-slate-800/60 font-mono">
+                            <div class="flex justify-between items-center text-[11px] text-slate-400 bg-slate-950 px-2 py-1 rounded border border-slate-800/40 font-mono">
                                 <span>${monthNames[parseInt(pM)-1]} ${pY}</span>
-                                <span class="text-emerald-400 font-bold">+$${val.toFixed(2)}</span>
+                                <span class="text-emerald-400 font-semibold">+$${val.toFixed(2)}</span>
                             </div>`;
                     }
                 });
@@ -296,99 +363,87 @@
                 const pct = Math.min((runningTotalUpToCurrent / pocket.cost) * 100, 100);
                 const isDrawerOpen = openPocketDrawers[pocket.id] || false;
                 const isEditing = editingPocketId === pocket.id;
-
                 const [ty, tm] = pocket.targetMonth.split('-');
                 const targetReadable = `${monthNames[parseInt(tm)-1]} ${ty}`;
 
                 const card = document.createElement('div');
-                card.className = "bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3 shadow-sm";
+                card.className = "bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-2.5 text-xs shadow-sm shadow-black/20";
                 
                 if (isEditing) {
-                    // EDIT MODAL STATE: Name and Date inputs active
                     card.innerHTML = `
-                        <div class="space-y-3">
+                        <div class="space-y-2 p-0.5">
                             <div>
-                                <label class="block text-[10px] uppercase font-semibold text-slate-500 tracking-wider mb-1">Pocket Name</label>
-                                <input type="text" id="inlineEditName-${pocket.id}" value="${pocket.name}" 
-                                    class="w-full bg-slate-950 border border-amber-500 rounded px-2 py-1 text-sm text-white focus:outline-none">
+                                <label class="block text-[10px] uppercase font-semibold text-slate-500 tracking-wider mb-0.5">Rename Goal</label>
+                                <input type="text" id="inlineEditName-${pocket.id}" value="${pocket.name}" class="w-full bg-slate-950 border border-amber-500 rounded px-2 py-1 text-xs text-white focus:outline-none">
                             </div>
                             <div>
-                                <label class="block text-[10px] uppercase font-semibold text-slate-500 tracking-wider mb-1">Target Month</label>
-                                <input type="month" id="inlineEditTarget-${pocket.id}" value="${pocket.targetMonth}" 
-                                    class="w-full bg-slate-950 border border-amber-500 rounded px-2 py-1 text-sm text-amber-400 focus:outline-none font-mono">
+                                <label class="block text-[10px] uppercase font-semibold text-slate-500 tracking-wider mb-0.5">Target Maturity</label>
+                                <input type="month" id="inlineEditTarget-${pocket.id}" value="${pocket.targetMonth}" class="w-full bg-slate-950 border border-amber-500 rounded px-2 py-1 text-xs text-amber-400 focus:outline-none font-mono">
                             </div>
-                            <div class="flex justify-end space-x-2 pt-1">
-                                <button onclick="setPocketEditMode(null)" class="px-2.5 py-1 text-xs text-slate-400 bg-slate-800 hover:bg-slate-700 rounded transition">Cancel</button>
-                                <button onclick="savePocketInlineChanges('${pocket.id}')" class="px-2.5 py-1 text-xs text-emerald-400 bg-emerald-950 border border-emerald-800 hover:bg-emerald-900 rounded flex items-center space-x-1 transition">
+                            <div class="flex justify-end space-x-2 pt-0.5">
+                                <button onclick="setPocketEditMode(null)" class="px-2 py-0.5 text-[11px] text-slate-400 bg-slate-800 hover:bg-slate-700 rounded transition">Cancel</button>
+                                <button onclick="savePocketInlineChanges('${pocket.id}')" class="px-2 py-0.5 text-[11px] text-emerald-400 bg-emerald-950 border border-emerald-800 hover:bg-emerald-900 rounded flex items-center space-x-1 transition">
                                     <i data-lucide="check" class="w-3 h-3"></i><span>Save</span>
                                 </button>
                             </div>
                         </div>
                     `;
                 } else {
-                    // READ ONLY STATE: Clean badges and interactive edit button
                     card.innerHTML = `
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h3 class="font-bold text-sm text-amber-400 flex items-center"><i data-lucide="piggy-bank" class="w-4 h-4 mr-1.5"></i>${pocket.name}</h3>
-                                <div class="flex items-center space-x-1.5 mt-1">
-                                    <span class="text-xs text-slate-400">Target Month:</span>
-                                    <div class="flex items-center space-x-1">
-                                        <span class="text-xs font-semibold bg-slate-950 text-amber-400 border border-slate-800 px-2 py-0.5 rounded font-mono">${targetReadable}</span>
-                                        <button onclick="setPocketEditMode('${pocket.id}')" title="Edit Pocket details" class="p-1 hover:bg-slate-800 rounded text-slate-500 hover:text-white transition">
-                                            <i data-lucide="pencil" class="w-3 h-3"></i>
-                                        </button>
-                                    </div>
+                        <div class="flex justify-between items-start gap-2">
+                            <div class="min-w-0">
+                                <h3 class="font-bold text-amber-400 flex items-center truncate"><i data-lucide="piggy-bank" class="w-3.5 h-3.5 mr-1 flex-shrink-0"></i>${pocket.name}</h3>
+                                <div class="flex items-center space-x-1 mt-1 flex-wrap gap-y-1">
+                                    <span class="text-[11px] text-slate-400">Target:</span>
+                                    <span class="text-[10px] font-semibold bg-slate-950 text-amber-400 border border-slate-800 px-1.5 py-0.5 rounded font-mono">${targetReadable}</span>
+                                    <button onclick="setPocketEditMode('${pocket.id}')" class="p-0.5 hover:bg-slate-800 rounded text-slate-500 hover:text-white transition"><i data-lucide="pencil" class="w-3 h-3"></i></button>
                                 </div>
                             </div>
-                            <button onclick="purgeItem('${pocket.id}')" class="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                            <button onclick="purgeItem('${pocket.id}')" class="text-slate-500 hover:text-rose-400 p-1 rounded-lg flex-shrink-0 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                         </div>
 
-                        <div class="space-y-1">
-                            <div class="flex justify-between text-xs"><span class="text-slate-300">$${runningTotalUpToCurrent.toFixed(2)} total</span><span class="text-slate-500">Goal: $${pocket.cost.toFixed(2)}</span></div>
-                            <div class="w-full bg-slate-950 rounded-full h-1.5 border border-slate-800"><div class="bg-amber-500 h-1.5 rounded-full" style="width: ${pct}%"></div></div>
+                        <div class="space-y-1 text-[11px]">
+                            <div class="flex justify-between text-slate-400"><span>$${runningTotalUpToCurrent.toFixed(2)} saved</span><span class="text-slate-500">Goal: $${pocket.cost.toFixed(2)}</span></div>
+                            <div class="w-full bg-slate-950 rounded-full h-1 border border-slate-800/80"><div class="bg-amber-500 h-1 rounded-full transition-all" style="width: ${pct}%"></div></div>
                         </div>
 
-                        <div class="bg-slate-950 p-2 rounded-lg border border-slate-800 flex items-center justify-between gap-2">
-                            <label class="text-xs text-slate-400">Save This Month:</label>
-                            <div class="relative max-w-[110px] w-full">
-                                <span class="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-bold">$</span>
-                                <input type="number" step="0.01" value="${currentMonthInputVal || ''}" placeholder="0.00" onchange="updatePocketSavingValue('${pocket.id}', '${filterStr}', this.value)" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 pl-5 text-right text-xs text-amber-400 focus:outline-none">
+                        <div class="bg-slate-950 p-1.5 rounded-lg border border-slate-800 flex items-center justify-between gap-2">
+                            <label class="text-[11px] text-slate-400">Stash Month:</label>
+                            <div class="relative max-w-[90px] w-full">
+                                <span class="absolute left-1.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 font-bold">$</span>
+                                <input type="number" step="0.01" value="${currentMonthInputVal || ''}" placeholder="0.00" onchange="updatePocketSavingValue('${pocket.id}', '${filterStr}', this.value)" class="w-full bg-slate-900 border border-slate-800 rounded px-1.5 py-0.5 pl-4 text-right text-xs text-amber-400 focus:outline-none">
                             </div>
                         </div>
 
-                        <div class="border-t border-slate-800/60 pt-2">
-                            <button onclick="toggleHistoryDrawer('${pocket.id}')" class="w-full flex items-center justify-between text-xs text-slate-400 hover:text-white transition py-0.5">
-                                <span class="flex items-center font-medium"><i data-lucide="history" class="w-3.5 h-3.5 mr-1 text-slate-500"></i>Savings History</span>
-                                <i data-lucide="${isDrawerOpen ? 'chevron-up' : 'chevron-down'}" class="w-3.5 h-3.5 text-slate-500"></i>
+                        <div class="border-t border-slate-800/60 pt-1.5">
+                            <button onclick="toggleHistoryDrawer('${pocket.id}')" class="w-full flex items-center justify-between text-[11px] text-slate-400 hover:text-white transition py-0.5">
+                                <span class="flex items-center"><i data-lucide="history" class="w-3 h-3 mr-1 text-slate-500"></i>Deposits Log</span>
+                                <i data-lucide="${isDrawerOpen ? 'chevron-up' : 'chevron-down'}" class="w-3 h-3 text-slate-500"></i>
                             </button>
-                            <div class="${isDrawerOpen ? 'block' : 'hidden'} mt-2 space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
-                                ${historyHTMLRows || '<p class="text-center text-[11px] text-slate-600 py-2 italic">No deposits tracked yet.</p>'}
+                            <div class="${isDrawerOpen ? 'block' : 'hidden'} mt-1.5 space-y-1 max-h-[100px] overflow-y-auto pr-0.5">
+                                ${historyHTMLRows || '<p class="text-center text-[10px] text-slate-600 py-1 italic">Empty.</p>'}
                             </div>
                         </div>
                     `;
                 }
-                pocketsList.appendChild(card);
+                container.appendChild(card);
             });
         }
 
-        // TRIGGER EDIT MODE
         function setPocketEditMode(id) {
             editingPocketId = id;
             evaluateActiveRenderDashboard();
             if(id) {
                 setTimeout(() => {
-                    const nameInput = document.getElementById(`inlineEditName-${id}`);
-                    if(nameInput) nameInput.focus();
+                    const el = document.getElementById(`inlineEditName-${id}`);
+                    if(el) el.focus();
                 }, 50);
             }
         }
 
-        // COMBO SAVE INLINE ACTION
         function savePocketInlineChanges(id) {
             const nameField = document.getElementById(`inlineEditName-${id}`);
             const targetField = document.getElementById(`inlineEditTarget-${id}`);
-            
             if(!nameField || !targetField || !nameField.value.trim() || !targetField.value) return;
 
             const item = registryData.find(d => d.id === id);
@@ -414,7 +469,7 @@
             }
         }
 
-        // ENTRY DIALOG ROUTINES
+        // ELEMENT WINDOW EVENTS MODALS HANDLERS
         document.getElementById('addExpenseBtn').addEventListener('click', () => toggleModalVisibility(document.getElementById('entryModal'), true));
         document.getElementById('closeModalBtn').addEventListener('click', () => toggleModalVisibility(document.getElementById('entryModal'), false));
         document.getElementById('openManualBtn').addEventListener('click', () => toggleModalVisibility(document.getElementById('manualModal'), true));
@@ -428,8 +483,8 @@
         document.querySelectorAll('input[name="entryType"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
                 const isPocket = (e.target.value === 'pocket');
-                document.getElementById('nameLabel').innerText = isPocket ? "Pocket Goal Name" : "Item Title";
-                document.getElementById('costLabel').innerText = isPocket ? "Target Absolute Cap ($)" : "Cost Valuation ($)";
+                document.getElementById('nameLabel').innerText = isPocket ? "Pocket Goal Name" : "Title Name";
+                document.getElementById('costLabel').innerText = isPocket ? "Absolute Cap Goal Target ($)" : "Valuation Balance Target ($)";
                 document.getElementById('standardFieldsGroup').classList.toggle('hidden', isPocket);
                 document.getElementById('pocketFieldsGroup').classList.toggle('hidden', !isPocket);
                 document.getElementById('entryTargetMonth').required = isPocket;
@@ -461,8 +516,8 @@
             toggleModalVisibility(document.getElementById('entryModal'), false); evaluateActiveRenderDashboard();
         });
 
-        function commitLocalCache() { localStorage.setItem('RNE_registry_v14', JSON.stringify(registryData)); }
-        function loadLocalCache() { const raw = localStorage.getItem('RNE_registry_v14'); if(raw) { try { registryData = JSON.parse(raw); } catch(e) {} } }
+        function commitLocalCache() { localStorage.setItem('RNE_registry_v15', JSON.stringify(registryData)); }
+        function loadLocalCache() { const raw = localStorage.getItem('RNE_registry_v15'); if(raw) { try { registryData = JSON.parse(raw); } catch(e) {} } }
     </script>
 </body>
 </html>
