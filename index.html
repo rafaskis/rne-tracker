@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE</title>
+    <title>RNE Tracker - v12</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         :root {
@@ -20,177 +20,110 @@
             --group-header-bg: #e2e8f0;
             --gdrive-color: #0f9d58;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: var(--bg-color);
-            color: var(--text-main); padding: 16px; padding-bottom: 100px; position: relative; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 16px; padding-bottom: 80px; position: relative; }
         
         /* Discreet, Streamlined Top Cloud Bar Placement */
-        .top-cloud-bar { display: flex;
-            justify-content: space-between; align-items: center; background: #e2e8f0; padding: 8px 12px; border-radius: 10px; margin-bottom: 12px; border: 1px dashed #cbd5e1; font-size: 13px;
-        }
-        .cloud-status-text { font-weight: 600; color: #475569; display: flex; align-items: center; gap: 4px;
-        }
-        .btn-cloud-discreet { width: auto; padding: 6px 12px; font-size: 12px; font-weight: bold;
-            border-radius: 6px; border: none; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 4px;
-        }
-        .btn-cloud-signin { background: var(--gdrive-color); box-shadow: 0 1px 2px rgba(15, 157, 88, 0.2);
-        }
-        .btn-cloud-push { background: #4285f4;
-        }
-        .btn-cloud-pull { background: #16a34a;
-        }
-        .discreet-actions-grid { display: flex; gap: 6px;
-        }
+        .top-cloud-bar { display: flex; justify-content: space-between; align-items: center; background: #e2e8f0; padding: 8px 12px; border-radius: 10px; margin-bottom: 12px; border: 1px dashed #cbd5e1; font-size: 13px; }
+        .cloud-status-text { font-weight: 600; color: #475569; display: flex; align-items: center; gap: 4px; }
+        .btn-cloud-discreet { width: auto; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-cloud-signin { background: var(--gdrive-color); box-shadow: 0 1px 2px rgba(15, 157, 88, 0.2); }
+        .btn-cloud-push { background: #4285f4; }
+        .btn-cloud-pull { background: #16a34a; }
+        .discreet-actions-grid { display: flex; gap: 6px; }
 
         /* Top Navigation Hierarchy */
-        .month-nav-container { display: flex;
-            align-items: center; gap: 8px; margin-bottom: 12px; }
-        .btn-nav-arrow { width: 48px; height: 48px;
-            background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            color: var(--primary); }
-        .month-select-wrapper { flex-grow: 1;
-        }
+        .month-nav-container { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .btn-nav-arrow { width: 48px; height: 48px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary); }
+        .month-select-wrapper { flex-grow: 1; }
 
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 8px;
-        }
-        .header-card { background: var(--card-bg); padding: 16px; border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-grow: 1;
-        }
-        .unpaid-badge { font-size: 24px; font-weight: bold; color: var(--danger); margin-top: 4px;
-        }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 8px; }
+        .header-card { background: var(--card-bg); padding: 16px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-grow: 1; }
+        .unpaid-badge { font-size: 24px; font-weight: bold; color: var(--danger); margin-top: 4px; }
         
-        select, input, button { width: 100%;
-            padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background: var(--card-bg); -webkit-appearance: none;
-        }
-        select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M0 3l5 5 5-5z' fill='%23666'/></svg>");
-            background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+        select, input, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background: var(--card-bg); -webkit-appearance: none; }
+        select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M0 3l5 5 5-5z' fill='%23666'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
         
         /* Collapsible Action Entry Form */
-        .btn-trigger-form { background: var(--primary);
-            color: white; font-weight: bold; border: none; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-        }
-        .form-card { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border);
-            margin-bottom: 16px; display: none; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr;
-            gap: 8px; margin-bottom: 8px; }
-        .form-card input[type="text"] { grid-column: span 2;
-        }
-        .btn-primary { background: var(--primary); color: white; font-weight: bold; border: none; margin-top: 8px;
-        }
-        .btn-cancel-form { background: transparent; color: var(--text-muted); border: none; margin-top: 4px; font-size: 14px;
-            text-decoration: underline; cursor: pointer; }
+        .btn-trigger-form { background: var(--primary); color: white; font-weight: bold; border: none; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
+        .form-card { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px; display: none; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+        .form-card input[type="text"] { grid-column: span 2; }
+        .btn-primary { background: var(--primary); color: white; font-weight: bold; border: none; margin-top: 8px; }
+        .btn-cancel-form { background: transparent; color: var(--text-muted); border: none; margin-top: 4px; font-size: 14px; text-decoration: underline; cursor: pointer; }
         
         /* Dynamic Inline Edit Mode Styling */
-        .edit-banner { background: var(--edit-color);
-            color: white; padding: 8px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 12px; text-align: center; grid-column: span 2;
-        }
+        .edit-banner { background: var(--edit-color); color: white; padding: 8px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 12px; text-align: center; grid-column: span 2; }
 
         /* Categorized Group Framework Elements */
-        .group-container { margin-bottom: 14px;
-            border-radius: 12px; overflow: hidden; background: transparent; }
-        .group-header { background: var(--group-header-bg);
-            padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; color: #334155; cursor: pointer; user-select: none;
-            border: 1px solid var(--border); border-radius: 10px; gap: 8px; }
-            
-        .group-header-title { display: flex;
-            align-items: center; gap: 6px; min-width: 0; }
-        .group-header-title span:last-child { white-space: nowrap;
-            overflow: hidden; text-overflow: ellipsis; }
-        .group-badges-container { display: flex; align-items: center; gap: 6px;
-            flex-shrink: 0; }
-        .group-unpaid-cost { font-size: 13px; font-weight: 700; padding: 2px 8px;
-            border-radius: 6px; }
-        .group-unpaid-cost.has-unpaid { color: var(--danger); background: #fee2e2; border: 1px solid #fca5a5;
-        }
-        .group-unpaid-cost.all-paid { color: var(--success); background: #dcfce7; border: 1px solid #86efac;
-        }
-        .group-badge { background: #64748b; color: white; font-size: 11px; padding: 3px 7px;
-            border-radius: 10px; font-weight: 600; }
-        .group-content { display: flex; flex-direction: column; gap: 10px;
-            margin-top: 8px; padding: 2px; }
+        .group-container { margin-bottom: 14px; border-radius: 12px; overflow: hidden; background: transparent; }
+        .group-header { background: var(--group-header-bg); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; color: #334155; cursor: pointer; user-select: none; border: 1px solid var(--border); border-radius: 10px; gap: 8px; }
+        .group-header-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
+        .group-header-title span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .group-badges-container { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .group-unpaid-cost { font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+        .group-unpaid-cost.has-unpaid { color: var(--danger); background: #fee2e2; border: 1px solid #fca5a5; }
+        .group-unpaid-cost.all-paid { color: var(--success); background: #dcfce7; border: 1px solid #86efac; }
+        .group-badge { background: #64748b; color: white; font-size: 11px; padding: 3px 7px; border-radius: 10px; font-weight: 600; }
+        .group-content { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; padding: 2px; }
 
         /* Item Display Grid */
-        .expense-item { background: var(--card-bg);
-            padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-        }
-        .expense-item.paid { opacity: 0.6; border-left: 5px solid var(--success);
-        }
-        .expense-item.unpaid { border-left: 5px solid var(--danger);
-        }
+        .expense-item { background: var(--card-bg); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .expense-item.paid { opacity: 0.6; border-left: 5px solid var(--success); }
+        .expense-item.unpaid { border-left: 5px solid var(--danger); }
         
-        .info { display: flex;
-            flex-direction: column; gap: 4px; width: 100%; }
-        .name { font-weight: 600; font-size: 17px;
-            color: var(--text-main); line-height: 1.4; word-break: break-word; white-space: normal; }
-        .cost-row { display: flex;
-            align-items: center; justify-content: space-between; margin-top: 2px; }
-        .cost { font-weight: 700; font-size: 18px;
-            color: #111827; }
+        .info { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+        .name-wrapper { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .name { font-weight: 600; font-size: 17px; color: var(--text-main); line-height: 1.4; word-break: break-word; white-space: normal; }
+        .badge-edited { background: #bae6fd; color: #0369a1; font-size: 11px; font-weight: bold; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .cost-row { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+        .cost { font-weight: 700; font-size: 18px; color: #111827; }
         
         /* Buttons Row Layout */
-        .actions { display: flex;
-            gap: 8px; justify-content: flex-end; width: 100%; border-top: 1px solid #f3f4f6; padding-top: 10px;
-        }
-        .btn-action { width: 44px; height: 44px; padding: 0; display: flex; align-items: center;
-            justify-content: center; font-weight: bold; border-radius: 8px; border: 1px solid var(--border); background: #f9fafb; cursor: pointer; font-size: 16px;
-        }
-        .btn-pay { color: var(--success);
-        }
-        .btn-move { color: #f59e0b;
-        }
-        .btn-back { color: #6366f1;
-        }
-        .btn-edit { color: var(--edit-color);
-        }
-        .btn-delete { color: var(--danger);
-        }
+        .actions { display: flex; gap: 8px; justify-content: flex-end; width: 100%; border-top: 1px solid #f3f4f6; padding-top: 10px; }
+        .btn-action { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 8px; border: 1px solid var(--border); background: #f9fafb; cursor: pointer; font-size: 16px; }
+        .btn-pay { color: var(--success); }
+        .btn-move { color: #f59e0b; }
+        .btn-back { color: #6366f1; }
+        .btn-edit { color: var(--edit-color); }
+        .btn-delete { color: var(--danger); }
 
         /* Collapsible Bottom Utility Interface Drawer */
-        .utility-toggle-header { display: flex;
-            align-items: center; justify-content: center; gap: 6px; margin-top: 32px; color: var(--utility); font-size: 14px; font-weight: 600; cursor: pointer; user-select: none; padding: 8px;
-        }
-        .utility-arrow { font-size: 11px; transition: transform 0.2s ease;
-        }
-        .utility-card { background: #eaede4; padding: 16px; border-radius: 12px; border: 1px dashed var(--utility);
-            margin-top: 8px; display: none; }
-        .utility-title { font-size: 12px; font-weight: bold; color: var(--utility);
-            margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
-        .utility-grid { display: grid; grid-template-columns: 1fr;
-            gap: 8px; }
+        .utility-toggle-header { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 32px; color: var(--utility); font-size: 14px; font-weight: 600; cursor: pointer; user-select: none; padding: 8px; }
+        .utility-arrow { font-size: 11px; transition: transform 0.2s ease; }
+        .utility-card { background: #eaede4; padding: 16px; border-radius: 12px; border: 1px dashed var(--utility); margin-top: 8px; display: none; }
+        .utility-title { font-size: 12px; font-weight: bold; color: var(--utility); margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
+        .utility-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
         
-        .btn-util { background: #ffffff;
-            color: var(--utility); border: 1px solid var(--border); font-size: 16px; font-weight: normal; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center;
-            -webkit-appearance: none; }
-        .file-input-wrapper { position: relative; width: 100%;
-        }
-        .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0;
-            width: 100%; height: 100%; cursor: pointer; }
-        .btn-fake-file { background: #ffffff; color: var(--utility);
-            border: 1px solid var(--border); font-size: 16px; font-weight: normal; text-align: center;
-        }
+        .btn-util { background: #ffffff; color: var(--utility); border: 1px solid var(--border); font-size: 16px; font-weight: normal; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center; -webkit-appearance: none; }
+        .file-input-wrapper { position: relative; width: 100%; }
+        .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+        .btn-fake-file { background: #ffffff; color: var(--utility); border: 1px solid var(--border); font-size: 16px; font-weight: normal; text-align: center; }
+
+        /* Help & Modal Box Universal Frameworks */
+        .help-container { display: flex; justify-content: center; margin-top: 16px; margin-bottom: 24px; }
+        .btn-help-bottom { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: auto; max-width: 200px; padding: 10px 20px; background: #e5e5e5; color: var(--text-main); border: 1px solid var(--border); border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; padding: 16px; overflow-y: auto; }
+        .modal-content { background: var(--card-bg); border-radius: 16px; padding: 20px; max-width: 500px; margin: 20px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .modal-title { font-size: 18px; font-weight: bold; }
+        .modal-close { font-size: 24px; background: none; border: none; cursor: pointer; color: var(--text-muted); width: auto; padding: 0; text-align: right; }
+        .guide-section { margin-bottom: 16px; }
+        .guide-section h4 { font-size: 14px; color: var(--primary); text-transform: uppercase; margin-bottom: 6px; }
+        .guide-section p { font-size: 14px; color: var(--text-main); line-height: 1.5; margin-bottom: 8px; }
         
         /* Modern Choice Dialog Engine Overlay Template */
-        .choice-overlay { display: none;
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; padding: 24px; align-items: center; justify-content: center;
-        }
-        .choice-card { background: var(--card-bg); border-radius: 16px; padding: 24px; width: 100%; max-width: 400px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); border: 1px solid var(--border);
-        }
-        .choice-message { font-size: 16px; font-weight: 500; color: var(--text-main); line-height: 1.5; margin-bottom: 24px;
-            text-align: center; }
-        .choice-buttons-row { display: flex; flex-direction: column; gap: 10px; width: 100%; }
-        .choice-actions-split { display: flex; gap: 12px; width: 100%; }
-        .btn-choice { padding: 14px; font-size: 16px; font-weight: 700; border-radius: 10px; cursor: pointer; border: none; text-align: center; }
-        .choice-actions-split .btn-choice { width: 50%; }
+        .choice-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; padding: 24px; align-items: center; justify-content: center; }
+        .choice-card { background: var(--card-bg); border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); border: 1px solid var(--border); }
+        .choice-message { font-size: 16px; font-weight: 500; color: var(--text-main); line-height: 1.5; margin-bottom: 24px; text-align: center; }
+        .choice-buttons-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+        .btn-choice { width: calc(50% - 8px); padding: 14px; font-size: 16px; font-weight: 700; border-radius: 10px; cursor: pointer; border: none; text-align: center; }
         .btn-choice-left { background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; }
         .btn-choice-right { background: var(--primary); color: white; }
         .btn-choice-danger { background: var(--danger); color: white; }
-        .btn-choice-cancel { background: transparent; color: var(--text-muted); border: 1px solid var(--border); width: 100%; }
-
-        /* Persistent System Version Overlay Badge */
-        .system-version-footer { position: fixed; bottom: 8px; right: 12px; font-size: 11px;
-            font-weight: 700; color: var(--text-muted); opacity: 0.6; pointer-events: none; text-transform: uppercase; letter-spacing: 0.5px; z-index: 5000; }
+        .btn-choice-full { width: 100%; margin-bottom: 8px; }
+        .vertical-buttons { flex-direction: column; gap: 4px; width: 100%; display: flex; }
     </style>
 </head>
 <body>
@@ -267,41 +200,60 @@
         </div>
     </div>
 
-    <div class="choice-overlay" id="customChoiceOverlay">
-        <div class="choice-card">
-            <div class="choice-message" id="choiceOverlayMessage">Do you want to apply this action to the current month or all upcoming instances?</div>
-            <div class="choice-buttons-row">
-                <div class="choice-actions-split">
-                    <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
-                    <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
-                </div>
-                <button class="btn-choice btn-choice-cancel" id="choiceCancelActionBtn">Cancel</button>
+    <div class="help-container">
+        <button class="btn-help-bottom" onclick="toggleModal(true)">
+            <span>❓</span> View User Guide
+        </button>
+    </div>
+
+    <div class="modal-overlay" id="guideModal" onclick="if(event.target===this) toggleModal(false)">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">App User Guide</span>
+                <button class="modal-close" onclick="toggleModal(false)">✕</button>
+            </div>
+            <div class="guide-section">
+                <h4>Managing Recurring Cycles</h4>
+                <p>When updating or removing item sequences tied to continuous intervals, a distinct selection prompt will guide your target action scope:</p>
+                <ul>
+                    <li><strong>"Current"</strong>: Focuses changes exclusively to your active display month.</li>
+                    <li><strong>"All"</strong>: Sweeps changes entirely across all matching future cycles down the series roadmap.</li>
+                </ul>
             </div>
         </div>
     </div>
 
-    <div class="system-version-footer">RNE-Tracker v8.4</div>
+    <div class="choice-overlay" id="customChoiceOverlay">
+        <div class="choice-card">
+            <div class="choice-message" id="choiceOverlayMessage">Do you want to apply this action to the current month or all upcoming instances?</div>
+            <div class="choice-buttons-row" id="choiceButtonsContainer">
+                <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
+                <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: rne-tracker_v8.4
+        // VERSION TRACKER REFERENCE: 210626_v12
         // ==========================================
-
-        localStorage.removeItem('rne_local_backup_cache');
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
         const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
         const DEDICATED_FILE_NAME = 'rne_database.json';
 
+        // Master Architecture State Tracking Arrays
         let expenses = []; 
+        let templates = [];
+        let meta = { lastMonthPopulated: "" };
+
         let editingTargetId = null;
         let collapsedGroups = JSON.parse(localStorage.getItem('household_collapsed_groups')) || {};
         
         let tokenClient = null;
         let activeAccessToken = null;
         let gdriveFileId = null;
-        
         const recurrenceGroupsConfig = [
             { key: 0, label: "One-Time Only" },
             { key: 1, label: "Monthly" },
@@ -311,13 +263,18 @@
             { key: 12, label: "Yearly" }
         ];
 
+        // Micro Promise Core Engine linking Custom Modals directly into linear async workflows
         function presentCustomChoicePrompt(questionMessage, isDestructive = false) {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('customChoiceOverlay');
                 const textContainer = document.getElementById('choiceOverlayMessage');
                 const leftBtn = document.getElementById('choiceLeftActionBtn');
                 const rightBtn = document.getElementById('choiceRightActionBtn');
-                const cancelBtn = document.getElementById('choiceCancelActionBtn');
+                const container = document.getElementById('choiceButtonsContainer');
+
+                container.className = "choice-buttons-row";
+                leftBtn.style.display = "inline-block";
+                rightBtn.style.display = "inline-block";
 
                 textContainer.innerText = questionMessage;
                 
@@ -329,37 +286,115 @@
 
                 const handleLeftSelection = () => { cleanup(); resolve('current'); };
                 const handleRightSelection = () => { cleanup(); resolve('all'); };
-                const handleCancelSelection = () => { cleanup(); resolve('cancel'); };
 
                 const cleanup = () => {
                     leftBtn.removeEventListener('click', handleLeftSelection);
                     rightBtn.removeEventListener('click', handleRightSelection);
-                    cancelBtn.removeEventListener('click', handleCancelSelection);
                     overlay.style.display = 'none';
                 };
 
                 leftBtn.addEventListener('click', handleLeftSelection);
                 rightBtn.addEventListener('click', handleRightSelection);
-                cancelBtn.addEventListener('click', handleCancelSelection);
                 overlay.style.display = 'flex';
             });
+        }
+
+        // Specialized Custom Direct Review Prompter Modal Loop
+        function presentInteractiveOverrideReview(monthStr, customName, customCost, newName, newCost) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('customChoiceOverlay');
+                const textContainer = document.getElementById('choiceOverlayMessage');
+                const container = document.getElementById('choiceButtonsContainer');
+
+                const prettyMonth = new Date(monthStr + '-01').toLocaleDateString('default', { month: 'long', year: 'numeric' });
+                textContainer.innerHTML = `<strong>Review Custom Override in ${prettyMonth}</strong><br><br>
+                    <span style="font-size:13px; color:var(--text-muted);">Current Custom Entry:</span><br><strong>${customName} (€${customCost.toFixed(2)})</strong><br><br>
+                    <span style="font-size:13px; color:var(--edit-color);">Proposed Master Update:</span><br><strong>${newName} (€${newCost.toFixed(2)})</strong><br><br>
+                    Do you want to overwrite this custom entry or keep it as is?`;
+
+                container.className = "vertical-buttons";
+                container.innerHTML = `
+                    <button class="btn-choice btn-choice-right btn-choice-full" id="btnOverrideOverwrite">Overwrite Custom Entry</button>
+                    <button class="btn-choice btn-choice-left btn-choice-full" id="btnOverrideKeep">Keep My Custom Entry</button>
+                `;
+
+                const overwriteBtn = document.getElementById('btnOverrideOverwrite');
+                const keepBtn = document.getElementById('btnOverrideKeep');
+
+                const handleOverwrite = () => { cleanup(); resolve('overwrite'); };
+                const handleKeep = () => { cleanup(); resolve('keep'); };
+
+                const cleanup = () => {
+                    overwriteBtn.removeEventListener('click', handleOverwrite);
+                    keepBtn.removeEventListener('click', handleKeep);
+                    overlay.style.display = 'none';
+                    // Restore original buttons structure
+                    container.className = "choice-buttons-row";
+                    container.innerHTML = `
+                        <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
+                        <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
+                    `;
+                };
+
+                overwriteBtn.addEventListener('click', handleOverwrite);
+                keepBtn.addEventListener('click', handleKeep);
+                overlay.style.display = 'flex';
+            });
+        }
+
+        // Specialized Modal Multi-Choice Crossroads for Deleting Series Items
+        function presentThreeWayDeleteCrossroads() {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('customChoiceOverlay');
+                const textContainer = document.getElementById('choiceOverlayMessage');
+                const container = document.getElementById('choiceButtonsContainer');
+
+                textContainer.innerHTML = `<strong>Delete Expense Entry</strong><br><br>How would you like to handle this deletion?`;
+                container.className = "vertical-buttons";
+                container.innerHTML = `
+                    <button class="btn-choice btn-choice-left btn-choice-full" id="delCurrentBtn">Delete Current Month Only</button>
+                    <button class="btn-choice btn-choice-danger btn-choice-full" id="delForwardBtn">Delete Whole Series Forward</button>
+                    <button class="btn-choice btn-choice-left btn-choice-full" style="background:#cbd5e1;" id="delCancelBtn">Cancel</button>
+                `;
+
+                const currentBtn = document.getElementById('delCurrentBtn');
+                const forwardBtn = document.getElementById('delForwardBtn');
+                const cancelBtn = document.getElementById('delCancelBtn');
+
+                const handleCurrent = () => { cleanup(); resolve('current'); };
+                const handleForward = () => { cleanup(); resolve('forward'); };
+                const handleCancel = () => { cleanup(); resolve('cancel'); };
+
+                const cleanup = () => {
+                    currentBtn.removeEventListener('click', handleCurrent);
+                    forwardBtn.removeEventListener('click', handleForward);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    overlay.style.display = 'none';
+                    container.className = "choice-buttons-row";
+                    container.innerHTML = `
+                        <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
+                        <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
+                    `;
+                };
+
+                currentBtn.addEventListener('click', handleCurrent);
+                forwardBtn.addEventListener('click', handleForward);
+                cancelBtn.addEventListener('click', handleCancel);
+                overlay.style.display = 'flex';
+            });
+        }
+
+        function generateMonthOriginSuffix(monthKeyString) {
+            if (!monthKeyString || !monthKeyString.includes('-')) return '';
+            const [year, month] = monthKeyString.split('-');
+            const shortYear = year.slice(-2);
+            const cleanMonth = parseInt(month, 10);
+            return ` (${cleanMonth}/${shortYear})`;
         }
 
         function stripAnyDateSuffix(name) {
             const regex = /\s\(\d{1,2}\/\d{2}\)$/;
             return name.replace(regex, '').trim();
-        }
-
-        function sanitizeExistingDatabaseNames() {
-            let optimized = false;
-            expenses.forEach(item => {
-                const clean = stripAnyDateSuffix(item.name);
-                if (item.name !== clean) {
-                    item.name = clean;
-                    optimized = true;
-                }
-            });
-            if (optimized) { save(); }
         }
 
         function getOriginalCreationMonth(item) {
@@ -371,6 +406,13 @@
                 }
             }
             return item.month;
+        }
+
+        function appendOriginSuffixToName(name, originalMonthKey) {
+            const suffix = generateMonthOriginSuffix(originalMonthKey);
+            if (!suffix) return name;
+            const cleanBaseName = stripAnyDateSuffix(name);
+            return cleanBaseName + suffix;
         }
 
         function getMonthList() {
@@ -407,28 +449,86 @@
         };
 
         function loadLocalExpensesAndAudit() {
-            const savedCache = localStorage.getItem('rne_local_backup_cache');
-            if (savedCache) {
-                try { expenses = JSON.parse(savedCache); } catch(e) { expenses = []; }
+            const cached = localStorage.getItem('rne_local_backup_cache');
+            if (cached) { 
+                try { 
+                    const rootData = JSON.parse(cached); 
+                    if (Array.isArray(rootData)) {
+                        expenses = rootData;
+                        templates = [];
+                        meta = { lastMonthPopulated: currentSystemMonth };
+                    } else {
+                        expenses = rootData.expenses || [];
+                        templates = rootData.templates || [];
+                        meta = rootData.meta || { lastMonthPopulated: currentSystemMonth };
+                    }
+                } catch(e) { 
+                    expenses = []; templates = []; meta = { lastMonthPopulated: currentSystemMonth };
+                } 
+            } else {
+                meta.lastMonthPopulated = currentSystemMonth;
             }
-            sanitizeExistingDatabaseNames();
             executeAutomatedMonthRolloverAudit();
         }
 
+        // MASTER GENERATION POPULATION ENGINE WITH AUTO EXTENSION
         function executeAutomatedMonthRolloverAudit() {
             let changesMade = false;
             const lastAuditedMonth = localStorage.getItem('rne_last_processed_month') || currentSystemMonth;
 
+            // 1. Roll over unpaid past single items
             if (currentSystemMonth > lastAuditedMonth) {
                 expenses.forEach(item => {
                     if (item.month === lastAuditedMonth && item.status === 'unpaid') {
                         if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
+                        item.name = appendOriginSuffixToName(item.name, item.originMonth);
                         item.month = currentSystemMonth;
                         changesMade = true;
                     }
                 });
             }
             localStorage.setItem('rne_last_processed_month', currentSystemMonth);
+
+            // 2. Master Template Startup Spawning Engine
+            if (!meta.lastMonthPopulated) meta.lastMonthPopulated = currentSystemMonth;
+            
+            monthsRange.forEach(visibleMonth => {
+                if (visibleMonth > meta.lastMonthPopulated) {
+                    templates.forEach(tpl => {
+                        const [startY, startM] = tpl.startMonth.split('-').map(Number);
+                        const [visY, visM] = visibleMonth.split('-').map(Number);
+                        const monthDiff = (visY - startY) * 12 + (visM - startM);
+
+                        if (monthDiff >= 0 && monthDiff % tpl.recur === 0) {
+                            if (tpl.durationLimit && (monthDiff / tpl.recur) >= tpl.durationLimit) return;
+
+                            const alreadyExists = expenses.some(e => e.seriesId === tpl.seriesId && e.month === visibleMonth);
+                            if (!alreadyExists) {
+                                expenses.push({
+                                    id: Date.now() + Math.random().toString(36).substr(2, 5),
+                                    seriesId: tpl.seriesId,
+                                    name: tpl.name,
+                                    cost: tpl.cost,
+                                    month: visibleMonth,
+                                    recur: tpl.recur,
+                                    status: 'unpaid',
+                                    originMonth: tpl.startMonth,
+                                    isEdited: false
+                                });
+                                changesMade = true;
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Advance the pointer to the furthest visible horizon edge
+            const maxVisibleMonth = monthsRange[monthsRange.length - 1];
+            if (maxVisibleMonth > meta.lastMonthPopulated) {
+                meta.lastMonthPopulated = maxVisibleMonth;
+                changesMade = true;
+            }
+
             if (changesMade) { save(); } else { render(); }
         }
 
@@ -491,6 +591,8 @@
                 render();
             }
         }
+
+        function toggleModal(show) { document.getElementById('guideModal').style.display = show ? 'block' : 'none'; }
         
         function toggleDurationField() {
             if (editingTargetId) return;
@@ -499,7 +601,12 @@
         }
 
         function save() {
-            localStorage.setItem('rne_local_backup_cache', JSON.stringify(expenses));
+            const packageData = {
+                meta: meta,
+                templates: templates,
+                expenses: expenses
+            };
+            localStorage.setItem('rne_local_backup_cache', JSON.stringify(packageData));
             render();
         }
 
@@ -511,29 +618,52 @@
             const item = expenses.find(e => e.id === editingTargetId);
             if (!item) return;
 
-            const newName = stripAnyDateSuffix(document.getElementById('expName').value.trim());
+            const newName = document.getElementById('expName').value.trim();
             const newCost = parseFloat(document.getElementById('expCost').value);
             const newMonth = document.getElementById('expMonthTarget').value;
             if (!newName || isNaN(newCost)) return alert("Fill out Name and Cost fields.");
             if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
-            
+
             if (item.seriesId) {
                 const decision = await presentCustomChoicePrompt("Update only this single current entry, or all upcoming instances in the series?");
-                if (decision === 'cancel') return; // Exit prompt gracefully
-                
                 if (decision === 'all') {
-                    expenses.forEach(e => {
+                    // Update Master Definition Template
+                    const targetTpl = templates.find(t => t.seriesId === item.seriesId);
+                    if (targetTpl) {
+                        targetTpl.name = newName;
+                        targetTpl.cost = newCost;
+                    }
+
+                    // Process Existing Future Instances
+                    for (let e of expenses) {
                         if (e.seriesId === item.seriesId && e.month >= item.month) {
-                            e.name = newName; e.cost = newCost;
+                            if (e.isEdited) {
+                                // Dynamic individual review intercept for modified entries
+                                const userChoice = await presentInteractiveOverrideReview(e.month, e.name, e.cost, newName, newCost);
+                                if (userChoice === 'overwrite') {
+                                    e.name = newName;
+                                    e.cost = newCost;
+                                    e.isEdited = false;
+                                }
+                            } else {
+                                e.name = newName;
+                                e.cost = newCost;
+                            }
                         }
-                    });
+                    }
                 } else {
+                    // Current entry only: Sever link, mark modified status true
                     item.seriesId = null;
-                    item.recur = 0; item.name = newName; item.cost = newCost;
+                    item.recur = 0;
+                    item.name = newName;
+                    item.cost = newCost;
+                    item.isEdited = true;
+                    if (newMonth !== item.month) item.name = appendOriginSuffixToName(newName, item.originMonth);
                     item.month = newMonth;
                 }
             } else {
-                item.name = newName;
+                if (newMonth !== item.month) { item.name = appendOriginSuffixToName(newName, item.originMonth); } 
+                else { item.name = newName; }
                 item.cost = newCost;
                 item.month = newMonth;
             }
@@ -542,37 +672,57 @@
         }
 
         function addExpense() {
-            const cleanName = stripAnyDateSuffix(document.getElementById('expName').value.trim());
+            const name = document.getElementById('expName').value.trim();
             const cost = parseFloat(document.getElementById('expCost').value);
             const startMonth = document.getElementById('expMonthTarget').value;
             const recur = parseInt(document.getElementById('expRecur').value);
             const durationLimit = parseInt(document.getElementById('expDuration').value);
-            if (!cleanName || isNaN(cost)) return alert("Fill out Name and Cost.");
+            if (!name || isNaN(cost)) return alert("Fill out Name and Cost.");
+            
             const seriesId = recur > 0 ? 'series_' + Date.now() : null;
+
+            if (recur > 0) {
+                // Keep structural definition in Master Templates array
+                templates.push({
+                    seriesId: seriesId,
+                    name: name,
+                    cost: cost,
+                    startMonth: startMonth,
+                    recur: recur,
+                    durationLimit: durationLimit === 999 ? null : durationLimit
+                });
+            }
+
             const [startYear, startMonthNum] = startMonth.split('-').map(Number);
             let cycleCount = 0;
             
+            // Render visible timeline loop instantly
             for (let i = 0; i <= 12; i++) {
                 if (recur > 0 && i % recur !== 0) continue;
                 if (recur === 0 && i > 0) break; 
-                if (cycleCount >= durationLimit) break;
+                if (durationLimit !== 999 && cycleCount >= durationLimit) break;
+                
                 let calcMonthRaw = (startMonthNum - 1) + i;
                 let targetKey = `${startYear + Math.floor(calcMonthRaw / 12)}-${((calcMonthRaw % 12) + 1) < 10 ? '0' + ((calcMonthRaw % 12) + 1) : ((calcMonthRaw % 12) + 1)}`;
 
                 if (!monthsRange.includes(targetKey) && recur > 0) continue;
-                
                 expenses.push({
                     id: Date.now() + Math.random().toString(36).substr(2, 5),
                     seriesId: seriesId, 
-                    name: cleanName, 
+                    name: name, 
                     cost: cost, 
                     month: targetKey, 
                     recur: recur, 
                     status: 'unpaid', 
-                    originMonth: targetKey
+                    originMonth: startMonth,
+                    isEdited: false
                 });
                 cycleCount++;
             }
+            
+            // Keep tracker synchronized to furthest visible element edge
+            meta.lastMonthPopulated = monthsRange[monthsRange.length - 1];
+            
             closeFormDisplay(); save();
         }
 
@@ -587,6 +737,8 @@
             if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
             const [y, m] = item.month.split('-').map(Number);
             item.month = `${y + Math.floor(m / 12)}-${(m % 12) + 1 < 10 ? '0' + ((m % 12) + 1) : (m % 12) + 1}`; 
+            item.name = appendOriginSuffixToName(item.name, item.originMonth);
+            if(item.seriesId) item.isEdited = true; // Stepping positions severs pure timeline conformity
             save();
         }
 
@@ -598,6 +750,8 @@
             let prevMonthRaw = (m - 1) - 1;
             let prevMonthStr = (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) < 10 ? '0' + (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) : (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1);
             item.month = `${prevMonthRaw < 0 ? y - 1 : y}-${prevMonthStr}`; 
+            item.name = appendOriginSuffixToName(item.name, item.originMonth);
+            if(item.seriesId) item.isEdited = true;
             save();
         }
 
@@ -606,13 +760,14 @@
             if (!itemToDelete) return;
             
             if (itemToDelete.seriesId) {
-                const decision = await presentCustomChoicePrompt("Delete only this current single entry, or completely remove all matching upcoming items in the series?", true);
-                if (decision === 'cancel') return; // Exit prompt gracefully without mutating array context
-                
-                if (decision === 'all') {
-                    expenses = expenses.filter(e => e.seriesId !== itemToDelete.seriesId);
-                } else { 
+                const choice = await presentThreeWayDeleteCrossroads();
+                if (choice === 'current') {
                     expenses = expenses.filter(e => e.id !== id);
+                } else if (choice === 'forward') {
+                    // Wipe master generation layout instructions from configuration ledger
+                    templates = templates.filter(t => t.seriesId !== itemToDelete.seriesId);
+                    // Filter out future elements safely preserving history logs
+                    expenses = expenses.filter(e => !(e.seriesId === itemToDelete.seriesId && e.month >= itemToDelete.month));
                 }
             } else { 
                 if (confirm("Delete permanently?")) expenses = expenses.filter(e => e.id !== id);
@@ -623,7 +778,9 @@
         function exportToFile() {
             const now = new Date();
             const fileName = `RNE_${String(now.getFullYear()).slice(-2)}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.txt`;
-            const blob = new Blob([JSON.stringify(expenses, null, 2)], { type: "text/plain;charset=utf-8" });
+            
+            const packageData = { meta: meta, templates: templates, expenses: expenses };
+            const blob = new Blob([JSON.stringify(packageData, null, 2)], { type: "text/plain;charset=utf-8" });
             const tempLink = document.createElement('a'); tempLink.href = URL.createObjectURL(blob);
             tempLink.download = fileName; tempLink.click();
         }
@@ -636,10 +793,13 @@
                 try {
                     const parsedData = JSON.parse(e.target.result);
                     if (Array.isArray(parsedData)) { 
-                        expenses = parsedData;
-                        sanitizeExistingDatabaseNames();
-                        executeAutomatedMonthRolloverAudit(); alert("Data imported successfully!"); 
+                        expenses = parsedData; templates = []; meta = { lastMonthPopulated: currentSystemMonth };
+                    } else {
+                        expenses = parsedData.expenses || [];
+                        templates = parsedData.templates || [];
+                        meta = parsedData.meta || { lastMonthPopulated: currentSystemMonth };
                     }
+                    save(); executeAutomatedMonthRolloverAudit(); alert("Data imported successfully!"); 
                 } catch (err) { alert("Error parsing file structure."); }
             };
             reader.readAsText(file);
@@ -683,16 +843,20 @@
                 });
                 const parsedBackupData = await fileResponse.json();
                 if (Array.isArray(parsedBackupData)) {
-                    expenses = parsedBackupData;
-                    sanitizeExistingDatabaseNames();
-                    executeAutomatedMonthRolloverAudit(); alert("Database imported successfully!");
+                    expenses = parsedBackupData; templates = []; meta = { lastMonthPopulated: currentSystemMonth };
+                } else {
+                    expenses = parsedBackupData.expenses || [];
+                    templates = parsedBackupData.templates || [];
+                    meta = parsedBackupData.meta || { lastMonthPopulated: currentSystemMonth };
                 }
+                save(); executeAutomatedMonthRolloverAudit(); alert("Database imported successfully!");
             } catch (err) { alert("Pipeline error parsing target cloud payload."); }
         }
 
         async function uploadToGoogleDrive() {
             if (!activeAccessToken) return alert("No active cloud session found.");
-            const fileContent = JSON.stringify(expenses, null, 2);
+            const packageData = { meta: meta, templates: templates, expenses: expenses };
+            const fileContent = JSON.stringify(packageData, null, 2);
             const boundary = 'RNE_TRACKER_DATA_SPLIT_BOUNDARY';
             const delimiter = `\r\n--${boundary}\r\n`;
             const close_delim = `\r\n--${boundary}--`;
@@ -719,23 +883,19 @@
             const container = document.getElementById('listContainer');
             container.innerHTML = ''; 
             let totalUnpaidOverall = 0;
-            
             const currentMonthItems = expenses.filter(e => e.month === currentFilter);
             currentMonthItems.forEach(e => { if (e.status === 'unpaid') totalUnpaidOverall += e.cost; });
             document.getElementById('totalUnpaid').innerText = `€${totalUnpaidOverall.toFixed(2)}`;
-            
             if (currentMonthItems.length === 0) {
                 container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:24px;">No expenses logged for this month.</div>';
                 return;
             }
 
             recurrenceGroupsConfig.forEach(group => {
-                const groupItems = currentMonthItems.filter(e => (e.recur || 0) === group.key);
-                if (groupItems.length === 0) return;
+                const groupItems = currentMonthItems.filter(e => (e.recur || 0) === group.key); if (groupItems.length === 0) return;
                 let groupUnpaidCost = 0; groupItems.forEach(e => { if (e.status === 'unpaid') groupUnpaidCost += e.cost; });
 
                 let isCollapsed = collapsedGroups[group.key] !== undefined ? collapsedGroups[group.key] : groupUnpaidCost === 0;
-                
                 const groupContainer = document.createElement('div');
                 groupContainer.className = 'group-container';
 
@@ -756,12 +916,19 @@
                     const groupContent = document.createElement('div'); groupContent.className = 'group-content';
                     groupItems.forEach(e => {
                         const itemDiv = document.createElement('div'); itemDiv.className = `expense-item ${e.status}`;
+                        
                         const showMoveBack = (e.month > currentSystemMonth) && (e.status === 'unpaid');
-                        let displayName = stripAnyDateSuffix(e.name);
+                        if (!e.originMonth) e.originMonth = getOriginalCreationMonth(e);
+  
+                        const displayName = (e.month !== e.originMonth && e.status === 'unpaid') ? appendOriginSuffixToName(e.name, e.originMonth) : stripAnyDateSuffix(e.name);
+                        const editedBadgeHtml = e.isEdited ? `<span class="badge-edited">Edited</span>` : '';
                         
                         itemDiv.innerHTML = `
                             <div class="info">
-                                <span class="name">${displayName}</span>
+                                <div class="name-wrapper">
+                                    <span class="name">${displayName}</span>
+                                    ${editedBadgeHtml}
+                                </div>
                                 <div class="cost-row"><span class="cost">€${e.cost.toFixed(2)}</span></div>
                             </div>
                             <div class="actions">
