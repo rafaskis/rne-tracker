@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v12</title>
+    <title>RNE Tracker - v13</title>
+    <!-- Include Google Identity Services library for modern token authentication -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         :root {
@@ -76,8 +77,10 @@
         .name-wrapper { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .name { font-weight: 600; font-size: 17px; color: var(--text-main); line-height: 1.4; word-break: break-word; white-space: normal; }
         .badge-edited { background: #bae6fd; color: #0369a1; font-size: 11px; font-weight: bold; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .cost-row { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+        
+        .cost-row { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; margin-top: 2px; }
         .cost { font-weight: 700; font-size: 18px; color: #111827; }
+        .origin-label { font-size: 11px; font-weight: 600; color: #64748b; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; border: 1px dashed #cbd5e1; margin-top: 1px; }
         
         /* Buttons Row Layout */
         .actions { display: flex; gap: 8px; justify-content: flex-end; width: 100%; border-top: 1px solid #f3f4f6; padding-top: 10px; }
@@ -128,6 +131,7 @@
 </head>
 <body>
 
+    <!-- Discreet Top Cloud Navigation Control Row -->
     <div class="top-cloud-bar">
         <div class="cloud-status-text" id="cloudStatusLabel">☁ Cloud Offline</div>
         <div class="discreet-actions-grid">
@@ -137,6 +141,7 @@
         </div>
     </div>
 
+    <!-- Month Selector with quick toggle arrows -->
     <div class="month-nav-container">
         <button class="btn-nav-arrow" onclick="stepMonth(-1)" title="Previous Month">◀</button>
         <div class="month-select-wrapper">
@@ -145,6 +150,7 @@
         <button class="btn-nav-arrow" onclick="stepMonth(1)" title="Next Month">▶</button>
     </div>
 
+    <!-- Summary & Totals Panel -->
     <div class="top-bar">
         <div class="header-card">
             <div style="font-size: 14px; color: var(--text-muted); font-weight: 500;">TOTAL UNPAID FOR THIS MONTH</div>
@@ -152,6 +158,7 @@
         </div>
     </div>
 
+    <!-- Collapsible Action Entry Form -->
     <button id="formTriggerBtn" class="btn-trigger-form" onclick="openCreateMode()">+ Add New Expense</button>
 
     <div class="form-card" id="expenseFormCard">
@@ -182,8 +189,10 @@
         </div>
     </div>
 
+    <!-- Active List Layout Wrapper -->
     <div class="expense-list" id="listContainer"></div>
 
+    <!-- Collapsible Bottom Utility Interface Drawer -->
     <div class="utility-toggle-header" onclick="toggleUtilityDrawer()">
         <span>Offline Data Options</span>
         <span class="utility-arrow" id="utilArrow">▼</span>
@@ -200,12 +209,14 @@
         </div>
     </div>
 
+    <!-- User Guide Trigger Button -->
     <div class="help-container">
         <button class="btn-help-bottom" onclick="toggleModal(true)">
             <span>❓</span> View User Guide
         </button>
     </div>
 
+    <!-- User Instructional Guide Component -->
     <div class="modal-overlay" id="guideModal" onclick="if(event.target===this) toggleModal(false)">
         <div class="modal-content">
             <div class="modal-header">
@@ -223,6 +234,7 @@
         </div>
     </div>
 
+    <!-- Modern Choice Dialog Engine Overlay Template -->
     <div class="choice-overlay" id="customChoiceOverlay">
         <div class="choice-card">
             <div class="choice-message" id="choiceOverlayMessage">Do you want to apply this action to the current month or all upcoming instances?</div>
@@ -236,7 +248,7 @@
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 210626_v12
+        // VERSION TRACKER REFERENCE: 210626_v13
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -397,22 +409,18 @@
             return name.replace(regex, '').trim();
         }
 
-        function getOriginalCreationMonth(item) {
-            if (item.originMonth) return item.originMonth;
-            if (item.seriesId) {
-                const matchingSeries = expenses.filter(e => e.seriesId === item.seriesId);
-                if (matchingSeries.length > 0) {
-                    return matchingSeries.reduce((earliest, cur) => cur.month < earliest ? cur.month : earliest, matchingSeries[0].month);
-                }
-            }
-            return item.month;
-        }
-
         function appendOriginSuffixToName(name, originalMonthKey) {
             const suffix = generateMonthOriginSuffix(originalMonthKey);
             if (!suffix) return name;
             const cleanBaseName = stripAnyDateSuffix(name);
             return cleanBaseName + suffix;
+        }
+
+        function formatPrettyOriginLabel(monthKeyString) {
+            if (!monthKeyString || !monthKeyString.includes('-')) return '';
+            const [year, month] = monthKeyString.split('-');
+            const labelStr = new Date(year, month - 1, 1).toLocaleDateString('default', { month: 'short', year: 'numeric' });
+            return `Originated: ${labelStr}`;
         }
 
         function getMonthList() {
@@ -468,6 +476,12 @@
             } else {
                 meta.lastMonthPopulated = currentSystemMonth;
             }
+            
+            // Retroactive Data Patch: Guarantee all loaded expenses possess an immutable originMonth setup
+            expenses.forEach(e => {
+                if (!e.originMonth) e.originMonth = e.month;
+            });
+
             executeAutomatedMonthRolloverAudit();
         }
 
@@ -480,7 +494,7 @@
             if (currentSystemMonth > lastAuditedMonth) {
                 expenses.forEach(item => {
                     if (item.month === lastAuditedMonth && item.status === 'unpaid') {
-                        if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
+                        if (!item.originMonth) item.originMonth = lastAuditedMonth;
                         item.name = appendOriginSuffixToName(item.name, item.originMonth);
                         item.month = currentSystemMonth;
                         changesMade = true;
@@ -512,7 +526,7 @@
                                     month: visibleMonth,
                                     recur: tpl.recur,
                                     status: 'unpaid',
-                                    originMonth: tpl.startMonth,
+                                    originMonth: visibleMonth, // Series auto-spawns match their native appearance slot
                                     isEdited: false
                                 });
                                 changesMade = true;
@@ -622,7 +636,7 @@
             const newCost = parseFloat(document.getElementById('expCost').value);
             const newMonth = document.getElementById('expMonthTarget').value;
             if (!newName || isNaN(newCost)) return alert("Fill out Name and Cost fields.");
-            if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
+            if (!item.originMonth) item.originMonth = item.month;
 
             if (item.seriesId) {
                 const decision = await presentCustomChoicePrompt("Update only this single current entry, or all upcoming instances in the series?");
@@ -714,7 +728,7 @@
                     month: targetKey, 
                     recur: recur, 
                     status: 'unpaid', 
-                    originMonth: startMonth,
+                    originMonth: targetKey, // When initially drawn, native slot is the anchor originMonth
                     isEdited: false
                 });
                 cycleCount++;
@@ -734,18 +748,18 @@
         function moveNextMonth(id) {
             const item = expenses.find(e => e.id === id);
             if (!item) return;
-            if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
+            if (!item.originMonth) item.originMonth = item.month;
             const [y, m] = item.month.split('-').map(Number);
             item.month = `${y + Math.floor(m / 12)}-${(m % 12) + 1 < 10 ? '0' + ((m % 12) + 1) : (m % 12) + 1}`; 
             item.name = appendOriginSuffixToName(item.name, item.originMonth);
-            if(item.seriesId) item.isEdited = true; // Stepping positions severs pure timeline conformity
+            if(item.seriesId) item.isEdited = true; // Shifting positions explicitly breaks global continuity
             save();
         }
 
         function movePreviousMonth(id) {
             const item = expenses.find(e => e.id === id);
             if (!item) return;
-            if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
+            if (!item.originMonth) item.originMonth = item.month;
             const [y, m] = item.month.split('-').map(Number);
             let prevMonthRaw = (m - 1) - 1;
             let prevMonthStr = (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) < 10 ? '0' + (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) : (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1);
@@ -799,6 +813,11 @@
                         templates = parsedData.templates || [];
                         meta = parsedData.meta || { lastMonthPopulated: currentSystemMonth };
                     }
+                    
+                    expenses.forEach(item => {
+                        if (!item.originMonth) item.originMonth = item.month;
+                    });
+
                     save(); executeAutomatedMonthRolloverAudit(); alert("Data imported successfully!"); 
                 } catch (err) { alert("Error parsing file structure."); }
             };
@@ -849,6 +868,11 @@
                     templates = parsedBackupData.templates || [];
                     meta = parsedBackupData.meta || { lastMonthPopulated: currentSystemMonth };
                 }
+
+                expenses.forEach(item => {
+                    if (!item.originMonth) item.originMonth = item.month;
+                });
+
                 save(); executeAutomatedMonthRolloverAudit(); alert("Database imported successfully!");
             } catch (err) { alert("Pipeline error parsing target cloud payload."); }
         }
@@ -918,10 +942,14 @@
                         const itemDiv = document.createElement('div'); itemDiv.className = `expense-item ${e.status}`;
                         
                         const showMoveBack = (e.month > currentSystemMonth) && (e.status === 'unpaid');
-                        if (!e.originMonth) e.originMonth = getOriginalCreationMonth(e);
+                        if (!e.originMonth) e.originMonth = e.month;
   
                         const displayName = (e.month !== e.originMonth && e.status === 'unpaid') ? appendOriginSuffixToName(e.name, e.originMonth) : stripAnyDateSuffix(e.name);
                         const editedBadgeHtml = e.isEdited ? `<span class="badge-edited">Edited</span>` : '';
+                        
+                        // Conditional rendering frame for the Origin Tracking Label
+                        const showOriginLabel = e.month !== e.originMonth;
+                        const originLabelHtml = showOriginLabel ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` : '';
                         
                         itemDiv.innerHTML = `
                             <div class="info">
@@ -929,7 +957,10 @@
                                     <span class="name">${displayName}</span>
                                     ${editedBadgeHtml}
                                 </div>
-                                <div class="cost-row"><span class="cost">€${e.cost.toFixed(2)}</span></div>
+                                <div class="cost-row">
+                                    <span class="cost">€${e.cost.toFixed(2)}</span>
+                                    ${originLabelHtml}
+                                </div>
                             </div>
                             <div class="actions">
                                 ${showMoveBack ? `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);">➔</button>` : ''}
