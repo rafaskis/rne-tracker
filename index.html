@@ -19,6 +19,8 @@
             --edit-color: #0284c7;
             --group-header-bg: #e2e8f0;
             --gdrive-color: #0f9d58;
+            --carryover-header-bg: #fee2e2;
+            --carryover-border: #fca5a5;
         }
         * { box-sizing: border-box; margin: 0; padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -92,6 +94,12 @@
         .group-header { background: var(--group-header-bg);
             padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; color: #334155; cursor: pointer; user-select: none;
             border: 1px solid var(--border); border-radius: 10px; gap: 8px; }
+        
+        /* Specialized UI Suffix Variant for Carryovers Group Container */
+        .group-container.carryover-variant .group-header {
+            background: var(--carryover-header-bg); border-color: var(--carryover-border); color: #991b1b;
+        }
+            
         .group-header-title { display: flex;
             align-items: center; gap: 6px; min-width: 0; }
         .group-header-title span:last-child { white-space: nowrap;
@@ -278,13 +286,16 @@
         </div>
     </div>
 
-    <div class="system-version-footer">RNE-Tracker v8.2</div>
+    <div class="system-version-footer">RNE-Tracker v8.3</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: rne-tracker_v8.2
+        // VERSION TRACKER REFERENCE: rne-tracker_v8.3
         // ==========================================
+
+        // MANDATORY REQUIREMENT: Clear local client cache context explicitly on every single runtime execution setup block
+        localStorage.removeItem('rne_local_backup_cache');
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
         const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
@@ -297,7 +308,9 @@
         let tokenClient = null;
         let activeAccessToken = null;
         let gdriveFileId = null;
+        
         const recurrenceGroupsConfig = [
+            { key: 'carryover', label: "Overdue Carryovers" }, // Custom Carryover container at position index 0
             { key: 0, label: "One-Time Only" },
             { key: 1, label: "Monthly" },
             { key: 2, label: "Every 2 Months" },
@@ -341,7 +354,6 @@
             return name.replace(regex, '').trim();
         }
 
-        // Sanitization feature to permanently strip accidental suffixes saved directly into your database storage entries
         function sanitizeExistingDatabaseNames() {
             let optimized = false;
             expenses.forEach(item => {
@@ -411,11 +423,13 @@
             let changesMade = false;
             const lastAuditedMonth = localStorage.getItem('rne_last_processed_month') || currentSystemMonth;
 
+            // Automation: Run on first-day detection sequence matching a calendar month jump change window
             if (currentSystemMonth > lastAuditedMonth) {
                 expenses.forEach(item => {
                     if (item.month === lastAuditedMonth && item.status === 'unpaid') {
                         if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
                         item.month = currentSystemMonth;
+                        item.isCarryover = true; // Flag permanently to process within the "Overdue Carryovers" layout slot
                         changesMade = true;
                     }
                 });
@@ -559,7 +573,8 @@
                     month: targetKey, 
                     recur: recur, 
                     status: 'unpaid', 
-                    originMonth: targetKey 
+                    originMonth: targetKey,
+                    isCarryover: false
                 });
                 cycleCount++;
             }
@@ -707,21 +722,36 @@
             const container = document.getElementById('listContainer');
             container.innerHTML = ''; 
             let totalUnpaidOverall = 0;
+            
             const currentMonthItems = expenses.filter(e => e.month === currentFilter);
             currentMonthItems.forEach(e => { if (e.status === 'unpaid') totalUnpaidOverall += e.cost; });
             document.getElementById('totalUnpaid').innerText = `€${totalUnpaidOverall.toFixed(2)}`;
+            
             if (currentMonthItems.length === 0) {
                 container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:24px;">No expenses logged for this month.</div>';
                 return;
             }
 
             recurrenceGroupsConfig.forEach(group => {
-                const groupItems = currentMonthItems.filter(e => (e.recur || 0) === group.key); if (groupItems.length === 0) return;
+                let groupItems = [];
+                
+                // Route entries based on the newly introduced carryover metadata parameter tags
+                if (group.key === 'carryover') {
+                    groupItems = currentMonthItems.filter(e => e.isCarryover === true);
+                } else {
+                    groupItems = currentMonthItems.filter(e => (e.recur || 0) === group.key && !e.isCarryover);
+                }
+                
+                if (groupItems.length === 0) return;
                 let groupUnpaidCost = 0; groupItems.forEach(e => { if (e.status === 'unpaid') groupUnpaidCost += e.cost; });
 
                 let isCollapsed = collapsedGroups[group.key] !== undefined ? collapsedGroups[group.key] : groupUnpaidCost === 0;
+                
                 const groupContainer = document.createElement('div');
                 groupContainer.className = 'group-container';
+                if (group.key === 'carryover') {
+                    groupContainer.classList.add('carryover-variant');
+                }
 
                 const groupHeader = document.createElement('div');
                 groupHeader.className = 'group-header';
@@ -741,8 +771,6 @@
                     groupItems.forEach(e => {
                         const itemDiv = document.createElement('div'); itemDiv.className = `expense-item ${e.status}`;
                         const showMoveBack = (e.month > currentSystemMonth) && (e.status === 'unpaid');
-                        
-                        // FIXED FOR v8.2: Render names cleanly without dynamically forcing the month/year suffix template on matching records
                         let displayName = stripAnyDateSuffix(e.name);
                         
                         itemDiv.innerHTML = `
