@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v13</title>
+    <title>RNE Tracker - v14</title>
     <!-- Include Google Identity Services library for modern token authentication -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
@@ -22,7 +22,7 @@
             --gdrive-color: #0f9d58;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-main); padding: 16px; padding-bottom: 80px; position: relative; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 16px; padding-bottom: 100px; position: relative; min-height: 100vh; }
         
         /* Discreet, Streamlined Top Cloud Bar Placement */
         .top-cloud-bar { display: flex; justify-content: space-between; align-items: center; background: #e2e8f0; padding: 8px 12px; border-radius: 10px; margin-bottom: 12px; border: 1px dashed #cbd5e1; font-size: 13px; }
@@ -103,19 +103,6 @@
         .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
         .btn-fake-file { background: #ffffff; color: var(--utility); border: 1px solid var(--border); font-size: 16px; font-weight: normal; text-align: center; }
 
-        /* Help & Modal Box Universal Frameworks */
-        .help-container { display: flex; justify-content: center; margin-top: 16px; margin-bottom: 24px; }
-        .btn-help-bottom { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: auto; max-width: 200px; padding: 10px 20px; background: #e5e5e5; color: var(--text-main); border: 1px solid var(--border); border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; padding: 16px; overflow-y: auto; }
-        .modal-content { background: var(--card-bg); border-radius: 16px; padding: 20px; max-width: 500px; margin: 20px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        .modal-title { font-size: 18px; font-weight: bold; }
-        .modal-close { font-size: 24px; background: none; border: none; cursor: pointer; color: var(--text-muted); width: auto; padding: 0; text-align: right; }
-        .guide-section { margin-bottom: 16px; }
-        .guide-section h4 { font-size: 14px; color: var(--primary); text-transform: uppercase; margin-bottom: 6px; }
-        .guide-section p { font-size: 14px; color: var(--text-main); line-height: 1.5; margin-bottom: 8px; }
-        
         /* Modern Choice Dialog Engine Overlay Template */
         .choice-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; padding: 24px; align-items: center; justify-content: center; }
         .choice-card { background: var(--card-bg); border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); border: 1px solid var(--border); }
@@ -127,6 +114,9 @@
         .btn-choice-danger { background: var(--danger); color: white; }
         .btn-choice-full { width: 100%; margin-bottom: 8px; }
         .vertical-buttons { flex-direction: column; gap: 4px; width: 100%; display: flex; }
+
+        /* Persistent Version Watermark */
+        .version-watermark { position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; user-select: none; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -209,31 +199,6 @@
         </div>
     </div>
 
-    <!-- User Guide Trigger Button -->
-    <div class="help-container">
-        <button class="btn-help-bottom" onclick="toggleModal(true)">
-            <span>❓</span> View User Guide
-        </button>
-    </div>
-
-    <!-- User Instructional Guide Component -->
-    <div class="modal-overlay" id="guideModal" onclick="if(event.target===this) toggleModal(false)">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span class="modal-title">App User Guide</span>
-                <button class="modal-close" onclick="toggleModal(false)">✕</button>
-            </div>
-            <div class="guide-section">
-                <h4>Managing Recurring Cycles</h4>
-                <p>When updating or removing item sequences tied to continuous intervals, a distinct selection prompt will guide your target action scope:</p>
-                <ul>
-                    <li><strong>"Current"</strong>: Focuses changes exclusively to your active display month.</li>
-                    <li><strong>"All"</strong>: Sweeps changes entirely across all matching future cycles down the series roadmap.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
     <!-- Modern Choice Dialog Engine Overlay Template -->
     <div class="choice-overlay" id="customChoiceOverlay">
         <div class="choice-card">
@@ -245,10 +210,13 @@
         </div>
     </div>
 
+    <!-- Application Version Watermark Label -->
+    <div class="version-watermark">RNE Tracker • v14</div>
+
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 210626_v13
+        // VERSION TRACKER REFERENCE: 210626_v14
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -396,26 +364,6 @@
             });
         }
 
-        function generateMonthOriginSuffix(monthKeyString) {
-            if (!monthKeyString || !monthKeyString.includes('-')) return '';
-            const [year, month] = monthKeyString.split('-');
-            const shortYear = year.slice(-2);
-            const cleanMonth = parseInt(month, 10);
-            return ` (${cleanMonth}/${shortYear})`;
-        }
-
-        function stripAnyDateSuffix(name) {
-            const regex = /\s\(\d{1,2}\/\d{2}\)$/;
-            return name.replace(regex, '').trim();
-        }
-
-        function appendOriginSuffixToName(name, originalMonthKey) {
-            const suffix = generateMonthOriginSuffix(originalMonthKey);
-            if (!suffix) return name;
-            const cleanBaseName = stripAnyDateSuffix(name);
-            return cleanBaseName + suffix;
-        }
-
         function formatPrettyOriginLabel(monthKeyString) {
             if (!monthKeyString || !monthKeyString.includes('-')) return '';
             const [year, month] = monthKeyString.split('-');
@@ -495,7 +443,6 @@
                 expenses.forEach(item => {
                     if (item.month === lastAuditedMonth && item.status === 'unpaid') {
                         if (!item.originMonth) item.originMonth = lastAuditedMonth;
-                        item.name = appendOriginSuffixToName(item.name, item.originMonth);
                         item.month = currentSystemMonth;
                         changesMade = true;
                     }
@@ -568,7 +515,7 @@
             document.getElementById('editBannerElement').style.display = 'block';
             document.getElementById('formSubmitBtn').innerText = 'Update Changes';
             document.getElementById('formSubmitBtn').style.background = 'var(--edit-color)';
-            document.getElementById('expName').value = stripAnyDateSuffix(item.name);
+            document.getElementById('expName').value = item.name;
             document.getElementById('expCost').value = item.cost;
             document.getElementById('expMonthTarget').value = item.month;
             document.getElementById('expRecur').value = item.recur || '0';
@@ -605,8 +552,6 @@
                 render();
             }
         }
-
-        function toggleModal(show) { document.getElementById('guideModal').style.display = show ? 'block' : 'none'; }
         
         function toggleDurationField() {
             if (editingTargetId) return;
@@ -672,12 +617,10 @@
                     item.name = newName;
                     item.cost = newCost;
                     item.isEdited = true;
-                    if (newMonth !== item.month) item.name = appendOriginSuffixToName(newName, item.originMonth);
                     item.month = newMonth;
                 }
             } else {
-                if (newMonth !== item.month) { item.name = appendOriginSuffixToName(newName, item.originMonth); } 
-                else { item.name = newName; }
+                item.name = newName;
                 item.cost = newCost;
                 item.month = newMonth;
             }
@@ -751,7 +694,6 @@
             if (!item.originMonth) item.originMonth = item.month;
             const [y, m] = item.month.split('-').map(Number);
             item.month = `${y + Math.floor(m / 12)}-${(m % 12) + 1 < 10 ? '0' + ((m % 12) + 1) : (m % 12) + 1}`; 
-            item.name = appendOriginSuffixToName(item.name, item.originMonth);
             if(item.seriesId) item.isEdited = true; // Shifting positions explicitly breaks global continuity
             save();
         }
@@ -764,7 +706,6 @@
             let prevMonthRaw = (m - 1) - 1;
             let prevMonthStr = (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) < 10 ? '0' + (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) : (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1);
             item.month = `${prevMonthRaw < 0 ? y - 1 : y}-${prevMonthStr}`; 
-            item.name = appendOriginSuffixToName(item.name, item.originMonth);
             if(item.seriesId) item.isEdited = true;
             save();
         }
@@ -944,7 +885,6 @@
                         const showMoveBack = (e.month > currentSystemMonth) && (e.status === 'unpaid');
                         if (!e.originMonth) e.originMonth = e.month;
   
-                        const displayName = (e.month !== e.originMonth && e.status === 'unpaid') ? appendOriginSuffixToName(e.name, e.originMonth) : stripAnyDateSuffix(e.name);
                         const editedBadgeHtml = e.isEdited ? `<span class="badge-edited">Edited</span>` : '';
                         
                         // Conditional rendering frame for the Origin Tracking Label
@@ -954,7 +894,7 @@
                         itemDiv.innerHTML = `
                             <div class="info">
                                 <div class="name-wrapper">
-                                    <span class="name">${displayName}</span>
+                                    <span class="name">${e.name}</span>
                                     ${editedBadgeHtml}
                                 </div>
                                 <div class="cost-row">
