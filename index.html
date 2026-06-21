@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RNE</title>
-    <!-- Include Google Identity Services library for modern token authentication -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         :root {
@@ -197,7 +196,6 @@
 </head>
 <body>
 
-    <!-- Discreet Top Cloud Navigation Control Row -->
     <div class="top-cloud-bar">
         <div class="cloud-status-text" id="cloudStatusLabel">☁ Cloud Offline</div>
         <div class="discreet-actions-grid">
@@ -207,7 +205,6 @@
         </div>
     </div>
 
-    <!-- Month Selector with quick toggle arrows -->
     <div class="month-nav-container">
         <button class="btn-nav-arrow" onclick="stepMonth(-1)" title="Previous Month">◀</button>
         <div class="month-select-wrapper">
@@ -216,7 +213,6 @@
         <button class="btn-nav-arrow" onclick="stepMonth(1)" title="Next Month">▶</button>
     </div>
 
-    <!-- Summary & Totals Panel -->
     <div class="top-bar">
         <div class="header-card">
             <div style="font-size: 14px; color: var(--text-muted); font-weight: 500;">TOTAL UNPAID FOR THIS MONTH</div>
@@ -224,7 +220,6 @@
         </div>
     </div>
 
-    <!-- Collapsible Action Entry Form -->
     <button id="formTriggerBtn" class="btn-trigger-form" onclick="openCreateMode()">+ Add New Expense</button>
 
     <div class="form-card" id="expenseFormCard">
@@ -255,10 +250,8 @@
         </div>
     </div>
 
-    <!-- Active List Layout Wrapper -->
     <div class="expense-list" id="listContainer"></div>
 
-    <!-- Collapsible Bottom Utility Interface Drawer -->
     <div class="utility-toggle-header" onclick="toggleUtilityDrawer()">
         <span>Offline Data Options</span>
         <span class="utility-arrow" id="utilArrow">▼</span>
@@ -275,7 +268,6 @@
         </div>
     </div>
 
-    <!-- Modern Choice Dialog Engine Overlay Template -->
     <div class="choice-overlay" id="customChoiceOverlay">
         <div class="choice-card">
             <div class="choice-message" id="choiceOverlayMessage">Do you want to apply this action to the current month or all upcoming instances?</div>
@@ -286,13 +278,12 @@
         </div>
     </div>
 
-    <!-- Dynamic Layout Version Footnote -->
-    <div class="system-version-footer">RNE-Tracker v8.1</div>
+    <div class="system-version-footer">RNE-Tracker v8.2</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: rne-tracker_v8.1
+        // VERSION TRACKER REFERENCE: rne-tracker_v8.2
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -345,17 +336,22 @@
             });
         }
 
-        function generateMonthOriginSuffix(monthKeyString) {
-            if (!monthKeyString || !monthKeyString.includes('-')) return '';
-            const [year, month] = monthKeyString.split('-');
-            const shortYear = year.slice(-2);
-            const cleanMonth = parseInt(month, 10);
-            return ` (${cleanMonth}/${shortYear})`;
-        }
-
         function stripAnyDateSuffix(name) {
             const regex = /\s\(\d{1,2}\/\d{2}\)$/;
             return name.replace(regex, '').trim();
+        }
+
+        // Sanitization feature to permanently strip accidental suffixes saved directly into your database storage entries
+        function sanitizeExistingDatabaseNames() {
+            let optimized = false;
+            expenses.forEach(item => {
+                const clean = stripAnyDateSuffix(item.name);
+                if (item.name !== clean) {
+                    item.name = clean;
+                    optimized = true;
+                }
+            });
+            if (optimized) { save(); }
         }
 
         function getOriginalCreationMonth(item) {
@@ -407,6 +403,7 @@
             if (savedCache) {
                 try { expenses = JSON.parse(savedCache); } catch(e) { expenses = []; }
             }
+            sanitizeExistingDatabaseNames();
             executeAutomatedMonthRolloverAudit();
         }
 
@@ -628,7 +625,8 @@
                     const parsedData = JSON.parse(e.target.result);
                     if (Array.isArray(parsedData)) { 
                         expenses = parsedData;
-                        save(); executeAutomatedMonthRolloverAudit(); alert("Data imported successfully!"); 
+                        sanitizeExistingDatabaseNames();
+                        executeAutomatedMonthRolloverAudit(); alert("Data imported successfully!"); 
                     }
                 } catch (err) { alert("Error parsing file structure."); }
             };
@@ -674,7 +672,8 @@
                 const parsedBackupData = await fileResponse.json();
                 if (Array.isArray(parsedBackupData)) {
                     expenses = parsedBackupData;
-                    save(); executeAutomatedMonthRolloverAudit(); alert("Database imported successfully!");
+                    sanitizeExistingDatabaseNames();
+                    executeAutomatedMonthRolloverAudit(); alert("Database imported successfully!");
                 }
             } catch (err) { alert("Pipeline error parsing target cloud payload."); }
         }
@@ -743,13 +742,8 @@
                         const itemDiv = document.createElement('div'); itemDiv.className = `expense-item ${e.status}`;
                         const showMoveBack = (e.month > currentSystemMonth) && (e.status === 'unpaid');
                         
-                        const baseName = stripAnyDateSuffix(e.name);
-                        const initialCreationMonth = getOriginalCreationMonth(e);
-                        
-                        let displayName = baseName;
-                        if (e.status === 'unpaid' && e.month !== initialCreationMonth) {
-                            displayName = displayName + generateMonthOriginSuffix(initialCreationMonth);
-                        }
+                        // FIXED FOR v8.2: Render names cleanly without dynamically forcing the month/year suffix template on matching records
+                        let displayName = stripAnyDateSuffix(e.name);
                         
                         itemDiv.innerHTML = `
                             <div class="info">
