@@ -328,7 +328,7 @@
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260620_v11
+        // VERSION TRACKER REFERENCE: 260620_v11_REPAIRED
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -390,13 +390,12 @@
             return ` (${cleanMonth}/${shortYear})`;
         }
 
-        // FIXED FOR v11: Strip generic date suffixes safely to extract base item clean names
+        // Helper function to extract purely clean database name strings
         function stripAnyDateSuffix(name) {
             const regex = /\s\(\d{1,2}\/\d{2}\)$/;
             return name.replace(regex, '').trim();
         }
 
-        // FIXED FOR v11: Identify original month an entry or series sequence was explicitly generated for
         function getOriginalCreationMonth(item) {
             if (item.originMonth) return item.originMonth;
             if (item.seriesId) {
@@ -406,13 +405,6 @@
                 }
             }
             return item.month;
-        }
-
-        function appendOriginSuffixToName(name, originalMonthKey) {
-            const suffix = generateMonthOriginSuffix(originalMonthKey);
-            if (!suffix) return name;
-            const cleanBaseName = stripAnyDateSuffix(name);
-            return cleanBaseName + suffix;
         }
 
         function getMonthList() {
@@ -454,7 +446,6 @@
             executeAutomatedMonthRolloverAudit();
         }
 
-        // FIXED FOR v11: Uses locked creation origin month tracker fields
         function executeAutomatedMonthRolloverAudit() {
             let changesMade = false;
             const lastAuditedMonth = localStorage.getItem('rne_last_processed_month') || currentSystemMonth;
@@ -553,11 +544,12 @@
             const item = expenses.find(e => e.id === editingTargetId);
             if (!item) return;
 
-            const newName = document.getElementById('expName').value.trim();
+            const newName = stripAnyDateSuffix(document.getElementById('expName').value.trim());
             const newCost = parseFloat(document.getElementById('expCost').value);
             const newMonth = document.getElementById('expMonthTarget').value;
             if (!newName || isNaN(newCost)) return alert("Fill out Name and Cost fields.");
             if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
+            
             if (item.seriesId) {
                 const decision = await presentCustomChoicePrompt("Update only this single current entry, or all upcoming instances in the series?");
                 if (decision === 'all') {
@@ -581,15 +573,16 @@
         }
 
         function addExpense() {
-            const name = document.getElementById('expName').value.trim();
+            const cleanName = stripAnyDateSuffix(document.getElementById('expName').value.trim());
             const cost = parseFloat(document.getElementById('expCost').value);
             const startMonth = document.getElementById('expMonthTarget').value;
             const recur = parseInt(document.getElementById('expRecur').value);
             const durationLimit = parseInt(document.getElementById('expDuration').value);
-            if (!name || isNaN(cost)) return alert("Fill out Name and Cost.");
+            if (!cleanName || isNaN(cost)) return alert("Fill out Name and Cost.");
             const seriesId = recur > 0 ? 'series_' + Date.now() : null;
             const [startYear, startMonthNum] = startMonth.split('-').map(Number);
             let cycleCount = 0;
+            
             for (let i = 0; i <= 12; i++) {
                 if (recur > 0 && i % recur !== 0) continue;
                 if (recur === 0 && i > 0) break; 
@@ -598,9 +591,16 @@
                 let targetKey = `${startYear + Math.floor(calcMonthRaw / 12)}-${((calcMonthRaw % 12) + 1) < 10 ? '0' + ((calcMonthRaw % 12) + 1) : ((calcMonthRaw % 12) + 1)}`;
 
                 if (!monthsRange.includes(targetKey) && recur > 0) continue;
+                
                 expenses.push({
                     id: Date.now() + Math.random().toString(36).substr(2, 5),
-                    seriesId: seriesId, name: name, cost: cost, month: targetKey, recur: recur, status: 'unpaid', originMonth: targetKey
+                    seriesId: seriesId, 
+                    name: cleanName, 
+                    cost: cost, 
+                    month: targetKey, 
+                    recur: recur, 
+                    status: 'unpaid', 
+                    originMonth: targetKey // Lock structural baseline creation month permanently here
                 });
                 cycleCount++;
             }
@@ -615,6 +615,7 @@
         function moveNextMonth(id) {
             const item = expenses.find(e => e.id === id);
             if (!item) return;
+            if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
             const [y, m] = item.month.split('-').map(Number);
             item.month = `${y + Math.floor(m / 12)}-${(m % 12) + 1 < 10 ? '0' + ((m % 12) + 1) : (m % 12) + 1}`; 
             save();
@@ -623,6 +624,7 @@
         function movePreviousMonth(id) {
             const item = expenses.find(e => e.id === id);
             if (!item) return;
+            if (!item.originMonth) item.originMonth = getOriginalCreationMonth(item);
             const [y, m] = item.month.split('-').map(Number);
             let prevMonthRaw = (m - 1) - 1;
             let prevMonthStr = (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) < 10 ? '0' + (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) : (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1);
@@ -779,10 +781,16 @@
                         const itemDiv = document.createElement('div'); itemDiv.className = `expense-item ${e.status}`;
                         const showMoveBack = (e.month > currentSystemMonth) && (e.status === 'unpaid');
                         
-                        // Dynamically pull the short month tag relative to the active tab being viewed
+                        // FIXES FOR v11 SUFFIX MATRIX RENDER SYSTEM:
                         const baseName = stripAnyDateSuffix(e.name);
-                        const displayMonthKey = e.month;
-                        const displayName = (e.recur > 0 && e.status === 'unpaid') ? appendOriginSuffixToName(baseName, displayMonthKey) : baseName;
+                        const initialCreationMonth = getOriginalCreationMonth(e);
+                        
+                        // Condition A: Suffix only applies if the item has traveled away from its authentic birth month
+                        // Condition B: Checked off / Paid items clear tracking artifacts dynamically to prevent screen clutter
+                        let displayName = baseName;
+                        if (e.status === 'unpaid' && e.month !== initialCreationMonth) {
+                            displayName = displayName + generateMonthOriginSuffix(initialCreationMonth);
+                        }
                         
                         itemDiv.innerHTML = `
                             <div class="info">
