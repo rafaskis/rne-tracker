@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RNE</title>
+    <!-- Include Google Identity Services library for modern token authentication -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         :root {
@@ -23,7 +24,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { background-color: var(--bg-color);
-            color: var(--text-main); padding: 16px; padding-bottom: 80px; position: relative; }
+            color: var(--text-main); padding: 16px; padding-bottom: 100px; position: relative; }
         
         /* Discreet, Streamlined Top Cloud Bar Placement */
         .top-cloud-bar { display: flex;
@@ -158,7 +159,6 @@
         .utility-grid { display: grid; grid-template-columns: 1fr;
             gap: 8px; }
         
-        /* FIXED FOR v11: Harmonized Export/Import visual appearance completely */
         .btn-util { background: #ffffff;
             color: var(--utility); border: 1px solid var(--border); font-size: 16px; font-weight: normal; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center;
             -webkit-appearance: none; }
@@ -216,10 +216,15 @@
         }
         .btn-choice-danger { background: var(--danger); color: white;
         }
+
+        /* Persistent System Version Overlay Badge */
+        .system-version-footer { position: fixed; bottom: 8px; right: 12px; font-size: 11px;
+            font-weight: 700; color: var(--text-muted); opacity: 0.6; pointer-events: none; text-transform: uppercase; letter-spacing: 0.5px; z-index: 5000; }
     </style>
 </head>
 <body>
 
+    <!-- Discreet Top Cloud Navigation Control Row -->
     <div class="top-cloud-bar">
         <div class="cloud-status-text" id="cloudStatusLabel">☁ Cloud Offline</div>
         <div class="discreet-actions-grid">
@@ -229,6 +234,7 @@
         </div>
     </div>
 
+    <!-- Month Selector with quick toggle arrows -->
     <div class="month-nav-container">
         <button class="btn-nav-arrow" onclick="stepMonth(-1)" title="Previous Month">◀</button>
         <div class="month-select-wrapper">
@@ -237,6 +243,7 @@
         <button class="btn-nav-arrow" onclick="stepMonth(1)" title="Next Month">▶</button>
     </div>
 
+    <!-- Summary & Totals Panel -->
     <div class="top-bar">
         <div class="header-card">
             <div style="font-size: 14px; color: var(--text-muted); font-weight: 500;">TOTAL UNPAID FOR THIS MONTH</div>
@@ -244,6 +251,7 @@
         </div>
     </div>
 
+    <!-- Collapsible Action Entry Form -->
     <button id="formTriggerBtn" class="btn-trigger-form" onclick="openCreateMode()">+ Add New Expense</button>
 
     <div class="form-card" id="expenseFormCard">
@@ -274,8 +282,10 @@
         </div>
     </div>
 
+    <!-- Active List Layout Wrapper -->
     <div class="expense-list" id="listContainer"></div>
 
+    <!-- Collapsible Bottom Utility Interface Drawer -->
     <div class="utility-toggle-header" onclick="toggleUtilityDrawer()">
         <span>Offline Data Options</span>
         <span class="utility-arrow" id="utilArrow">▼</span>
@@ -292,12 +302,14 @@
         </div>
     </div>
 
+    <!-- User Guide Trigger Button -->
     <div class="help-container">
         <button class="btn-help-bottom" onclick="toggleModal(true)">
             <span>❓</span> View User Guide
         </button>
     </div>
 
+    <!-- User Instructional Guide Component -->
     <div class="modal-overlay" id="guideModal" onclick="if(event.target===this) toggleModal(false)">
         <div class="modal-content">
             <div class="modal-header">
@@ -315,6 +327,7 @@
         </div>
     </div>
 
+    <!-- Modern Choice Dialog Engine Overlay Template -->
     <div class="choice-overlay" id="customChoiceOverlay">
         <div class="choice-card">
             <div class="choice-message" id="choiceOverlayMessage">Do you want to apply this action to the current month or all upcoming instances?</div>
@@ -325,10 +338,13 @@
         </div>
     </div>
 
+    <!-- Dynamic Layout Version Footnote -->
+    <div class="system-version-footer">RNE-Tracker v11.1</div>
+
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260620_v11_REPAIRED
+        // VERSION TRACKER REFERENCE: rne-tracker_v11.1
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -351,7 +367,6 @@
             { key: 12, label: "Yearly" }
         ];
 
-        // Micro Promise Core Engine linking Custom Modals directly into linear async workflows
         function presentCustomChoicePrompt(questionMessage, isDestructive = false) {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('customChoiceOverlay');
@@ -390,7 +405,6 @@
             return ` (${cleanMonth}/${shortYear})`;
         }
 
-        // Helper function to extract purely clean database name strings
         function stripAnyDateSuffix(name) {
             const regex = /\s\(\d{1,2}\/\d{2}\)$/;
             return name.replace(regex, '').trim();
@@ -440,9 +454,9 @@
             loadLocalExpensesAndAudit();
         };
 
+        // FIXED FOR v11.1: Forces the instance registry data model array to start completely empty on initial access
         function loadLocalExpensesAndAudit() {
-            const cached = localStorage.getItem('rne_local_backup_cache');
-            if (cached) { try { expenses = JSON.parse(cached); } catch(e) { expenses = []; } }
+            expenses = [];
             executeAutomatedMonthRolloverAudit();
         }
 
@@ -600,7 +614,7 @@
                     month: targetKey, 
                     recur: recur, 
                     status: 'unpaid', 
-                    originMonth: targetKey // Lock structural baseline creation month permanently here
+                    originMonth: targetKey 
                 });
                 cycleCount++;
             }
@@ -781,12 +795,9 @@
                         const itemDiv = document.createElement('div'); itemDiv.className = `expense-item ${e.status}`;
                         const showMoveBack = (e.month > currentSystemMonth) && (e.status === 'unpaid');
                         
-                        // FIXES FOR v11 SUFFIX MATRIX RENDER SYSTEM:
                         const baseName = stripAnyDateSuffix(e.name);
                         const initialCreationMonth = getOriginalCreationMonth(e);
                         
-                        // Condition A: Suffix only applies if the item has traveled away from its authentic birth month
-                        // Condition B: Checked off / Paid items clear tracking artifacts dynamically to prevent screen clutter
                         let displayName = baseName;
                         if (e.status === 'unpaid' && e.month !== initialCreationMonth) {
                             displayName = displayName + generateMonthOriginSuffix(initialCreationMonth);
