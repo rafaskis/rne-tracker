@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v29.1</title>
+    <title>RNE Tracker - v29.2</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -163,19 +163,19 @@
            NATIVE CSS PRINT LAYOUT OPTIMIZATION ENGINE
            ======================================================== */
         @media print {
-            .top-cloud-bar, 
-            .month-nav-container, 
-            .top-bar, 
-            #formTriggerBtn, 
-            #expenseFormCard, 
-            .utility-toggle-header, 
-            .utility-card, 
-            .version-watermark, 
-            .actions,
-            .choice-overlay,
-            .group-badge,
-            .group-header span:first-child { 
-                display: none !important; 
+            body * {
+                display: none !important; /* Hide absolutely everything by default */
+            }
+            #listContainer, #listContainer * {
+                display: block !important; /* Force only print content container to show */
+            }
+            #listContainer {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
             }
             body { 
                 background: #fff !important; 
@@ -187,44 +187,60 @@
                 display: block !important; 
             }
             .print-month-block {
-                page-break-after: always; /* Ensure each selected month begins crisp on a fresh page */
+                display: block !important;
+                page-break-after: always !important; /* Ensure each selected month begins crisp on a fresh page */
             }
             .print-month-block:last-child {
-                page-break-after: avoid;
+                page-break-after: avoid !important;
             }
             .group-container { 
+                display: block !important;
                 margin-bottom: 16px !important; 
                 box-shadow: none !important; 
                 border: 1px solid #cbd5e1 !important;
-                page-break-inside: avoid; 
+                page-break-inside: avoid !important; 
             }
             .group-header { 
+                display: flex !important;
                 background: #f1f5f9 !important; 
                 border-bottom: 1px solid #cbd5e1 !important; 
                 color: #000 !important;
                 padding: 8px 12px !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+            }
+            .group-badges-container, .group-unpaid-cost {
+                display: block !important;
             }
             .group-unpaid-cost {
                 border: none !important;
                 background: transparent !important;
                 padding: 0 !important;
                 color: #000 !important;
+                font-weight: bold !important;
+            }
+            .group-content {
+                display: flex !important;
+                flex-direction: column !important;
             }
             .expense-item { 
+                display: flex !important;
+                flex-direction: column !important;
                 box-shadow: none !important; 
                 border: none !important;
                 border-bottom: 1px dashed #e2e8f0 !important;
                 background: #fff !important; 
                 color: #000 !important; 
                 padding: 10px 12px !important;
-                page-break-inside: avoid;
+                page-break-inside: avoid !important;
             }
             .expense-item:last-child {
                 border-bottom: none !important;
             }
             .expense-item.paid { border-left: 4px solid var(--success) !important; opacity: 1 !important; }
             .expense-item.unpaid { border-left: 4px solid var(--danger) !important; }
-            .name, .cost { color: #000 !important; }
+            .info, .name-wrapper, .cost-row { display: block !important; }
+            .name, .cost { color: #000 !important; display: inline-block !important; }
         }
     </style>
 </head>
@@ -326,12 +342,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v29.1</div>
+    <div class="version-watermark">RNE Tracker • v29.2</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 220626_v29_1
+        // VERSION TRACKER REFERENCE: 220626_v29_2
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -600,7 +616,6 @@
             printEndSelect.options.add(new Option(label, mStr));
         });
 
-        // Default set the end range selector slightly downstream to assist user accessibility
         printEndSelect.selectedIndex = Math.min(3, monthsRange.length - 1);
 
         window.onload = function() {
@@ -626,8 +641,8 @@
             // Filter all months falling inside selection bounds
             const activeRangeMonths = monthsRange.filter(m => m >= startVal && m <= endVal);
             
-            // Flush container and stack months together for document parser compilation
-            targetContainer.innerHTML = '';
+            // Create a temporary document fragment to prevent layout thrashing
+            const printWrapperFragment = document.createDocumentFragment();
             
             activeRangeMonths.forEach(monthKey => {
                 const monthBlock = document.createElement('div');
@@ -636,7 +651,6 @@
                 const [y, m] = monthKey.split('-');
                 const prettyMonthLabel = new Date(y, m - 1, 1).toLocaleDateString('default', { month: 'long', year: 'numeric' });
                 
-                // Add a hidden print header that CSS un-hides automatically on print execution
                 const printHeader = document.createElement('div');
                 printHeader.className = 'print-only-month-header';
                 printHeader.innerText = `RNE Expense Statement Summary — ${prettyMonthLabel}`;
@@ -705,22 +719,46 @@
                 if (!dataAddedForMonth) {
                     const emptyNotice = document.createElement('div');
                     emptyNotice.style.padding = '20px';
-                    emptyNotice.style.color = 'var(--text-muted)';
+                    emptyNotice.style.color = '#666';
                     emptyNotice.style.textAlign = 'center';
                     emptyNotice.innerText = "No expense ledger entries logged for this month block period.";
                     monthBlock.appendChild(emptyNotice);
                 }
 
-                targetContainer.appendChild(monthBlock);
+                printWrapperFragment.appendChild(monthBlock);
             });
 
-            // Execute native device Print / Save to PDF systems pipeline
-            setTimeout(() => {
-                window.print();
-                // Immediately revert the viewport state back to single month layout configuration rules flawlessly
-                filterSelect.value = activeCachedView;
-                render();
-            }, 150);
+            // Swap out active view and append full timeline compilation to DOM tree
+            targetContainer.innerHTML = '';
+            targetContainer.appendChild(printWrapperFragment);
+
+            // Generate Timestamp Formatting: RNE_yymmdd_hhmm
+            const now = new Date();
+            const yy = String(now.getFullYear()).slice(-2);
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            
+            const originalTitle = document.title;
+            const computedFilename = `RNE_${yy}${mm}${dd}_${hh}${min}`;
+            
+            // Set document page title to override the saved PDF default file property structure
+            document.title = computedFilename;
+
+            // Wait for DOM layout calculations and image buffers to flush safely to viewport
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    window.print();
+                    
+                    // Restore original title configuration state context
+                    document.title = originalTitle;
+                    
+                    // Revert viewport single month container array
+                    filterSelect.value = activeCachedView;
+                    render();
+                }, 350);
+            });
         }
 
         // ========================================================
@@ -1012,6 +1050,7 @@
             render();
         }
 
+        // Stepper Control Configuration Setup
         function stepMonth(direction) {
             let nextIndex = filterSelect.selectedIndex + direction;
             if(nextIndex >= 0 && nextIndex < filterSelect.options.length) { filterSelect.selectedIndex = nextIndex; render(); }
