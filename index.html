@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v29.4</title>
+    <title>RNE Tracker - v29.5</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -52,7 +52,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-main); padding: 16px; padding-bottom: 100px; position: relative; min-height: 100vh; transition: background-color 0.2s, color 0.2s; }
         
-        /* Discreet, Streamlined Top Cloud Bar Placement */
+        /* Top Cloud Bar Layout */
         .top-cloud-bar { display: flex; justify-content: space-between; align-items: center; background: var(--cloud-bar-bg); padding: 8px 12px; border-radius: 10px; margin-bottom: 12px; border: 1px dashed var(--cloud-bar-border); font-size: 13px; }
         .cloud-status-text { font-weight: 600; color: var(--cloud-bar-text); display: flex; align-items: center; gap: 4px; }
         .btn-cloud-discreet { width: auto; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 4px; }
@@ -61,10 +61,9 @@
         .btn-cloud-pull { background: #16a34a; }
         .discreet-actions-grid { display: flex; gap: 6px; align-items: center; }
 
-        /* Unified Layout Control Component for Theme Toggling */
         .btn-theme-toggle { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); font-size: 12px; font-weight: bold; padding: 6px 12px; border-radius: 6px; cursor: pointer; height: auto; width: auto; display: inline-flex; align-items: center; justify-content: center; }
 
-        /* Top Navigation Hierarchy */
+        /* Navigation Hierarchy */
         .month-nav-container { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
         .btn-nav-arrow { width: 48px; height: 48px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary); }
         .month-select-wrapper { flex-grow: 1; }
@@ -76,7 +75,6 @@
         select, input, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background: var(--card-bg); color: var(--text-main); -webkit-appearance: none; }
         select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M0 3l5 5 5-5z' fill='%23666'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
         
-        /* Collapsible Action Entry Form */
         .btn-trigger-form { background: var(--primary); color: white; font-weight: bold; border: none; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); cursor: pointer; }
         .form-card { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px; display: none; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
@@ -84,10 +82,9 @@
         .btn-primary { background: var(--primary); color: white; font-weight: bold; border: none; margin-top: 8px; cursor: pointer; }
         .btn-cancel-form { background: transparent; color: var(--text-muted); border: none; margin-top: 4px; font-size: 14px; text-decoration: underline; cursor: pointer; }
         
-        /* Dynamic Inline Edit Mode Styling */
         .edit-banner { background: var(--edit-color); color: white; padding: 8px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 12px; text-align: center; grid-column: span 2; }
 
-        /* Categorized Group Framework Elements */
+        /* Group Containers */
         .group-container { margin-bottom: 14px; border-radius: 12px; overflow: hidden; background: transparent; }
         .group-header { background: var(--group-header-bg); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; color: var(--text-main); cursor: pointer; user-select: none; border: 1px solid var(--border); border-radius: 10px; gap: 8px; }
         .group-header-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
@@ -101,7 +98,7 @@
         .group-badge { background: #64748b; color: white; font-size: 11px; padding: 3px 7px; border-radius: 10px; font-weight: 600; }
         .group-content { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; padding: 2px; }
 
-        /* Item Display Grid */
+        /* Expense Items */
         .expense-item { background: var(--card-bg); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
         .expense-item.paid { opacity: 0.6; border-left: 5px solid var(--success); }
         .expense-item.unpaid { border-left: 5px solid var(--danger); }
@@ -116,7 +113,6 @@
         .cost { font-weight: 700; font-size: 18px; color: var(--cost-text); }
         .origin-label { font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg-color); padding: 2px 6px; border-radius: 4px; border: 1px dashed var(--border); margin-top: 1px; }
         
-        /* Buttons Row Layout */
         .actions { display: flex; gap: 8px; justify-content: flex-end; width: 100%; border-top: 1px solid var(--border); padding-top: 10px; }
         .btn-action { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 8px; border: 1px solid var(--border); background: var(--btn-action-bg); cursor: pointer; font-size: 16px; }
         .btn-pay { color: var(--success); }
@@ -125,7 +121,7 @@
         .btn-edit { color: var(--edit-color); }
         .btn-delete { color: var(--danger); }
 
-        /* Collapsible Bottom Utility Interface Drawer */
+        /* Drawer Utilities */
         .utility-toggle-header { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 32px; color: var(--utility); font-size: 14px; font-weight: 600; cursor: pointer; user-select: none; padding: 8px; }
         .utility-arrow { font-size: 11px; transition: transform 0.2s ease; }
         .utility-card { background: var(--utility-card-bg); padding: 16px; border-radius: 12px; border: 1px dashed var(--utility); margin-top: 8px; display: none; }
@@ -137,11 +133,10 @@
         .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
         .btn-fake-file { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; text-align: center; }
 
-        /* Timeline Statement Custom Controls Block layout styling */
         .print-config-block { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px dashed var(--border); margin-top: 14px; }
         .print-config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 
-        /* Modern Choice Dialog Engine Overlay Template */
+        /* Choice Overlays */
         .choice-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; padding: 24px; align-items: center; justify-content: center; }
         .choice-card { background: var(--card-bg); border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); border: 1px solid var(--border); }
         .choice-message { font-size: 16px; font-weight: 500; color: var(--text-main); line-height: 1.5; margin-bottom: 24px; text-align: center; }
@@ -153,7 +148,6 @@
         .btn-choice-full { width: 100%; margin-bottom: 8px; }
         .vertical-buttons { flex-direction: column; gap: 4px; width: 100%; display: flex; }
 
-        /* Persistent Version Watermark */
         .version-watermark { position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; user-select: none; pointer-events: none; }
     </style>
 </head>
@@ -258,18 +252,25 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v29.4</div>
+    <div class="version-watermark">RNE Tracker • v29.5</div>
 
     <script>
-        // ==========================================
-        // APPLICATION CORE ARCHITECTURE LOGIC
-        // ==========================================
-
+        // ========================================================
+        // ENGINE CORE VARIABLES & GLOBAL SCOPE SETUP
+        // ========================================================
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
         const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
         const DEDICATED_FILE_NAME = 'rne_database.json';
 
-        // Master Architecture State Tracking Arrays
+        const recurrenceGroupsConfig = [
+            { key: 0, label: "One-Time Only" },
+            { key: 1, label: "Monthly" },
+            { key: 2, label: "Every 2 Months" },
+            { key: 3, label: "Quarterly" },
+            { key: 6, label: "Every 6 Months" },
+            { key: 12, label: "Yearly" }
+        ];
+
         let expenses = [];
         let templates = [];
         let meta = { lastMonthPopulated: "", lastUpdated: 0 };
@@ -280,15 +281,6 @@
         let tokenClient = null;
         let activeAccessToken = null;
         let gdriveFileId = null;
-
-        const recurrenceGroupsConfig = [
-            { key: 0, label: "One-Time Only" },
-            { key: 1, label: "Monthly" },
-            { key: 2, label: "Every 2 Months" },
-            { key: 3, label: "Quarterly" },
-            { key: 6, label: "Every 6 Months" },
-            { key: 12, label: "Yearly" }
-        ];
 
         // Theme Toggle Persistence Logic
         function initializeSavedDisplayTheme() {
@@ -303,7 +295,7 @@
             localStorage.setItem('rne_app_theme', targetTheme);
         }
 
-        // Micro Promise Core Engine linking Custom Modals directly into linear async workflows
+        // Custom Selection Dialog Engine
         function presentCustomChoicePrompt(questionMessage, leftLabel = "Current", rightLabel = "All", isDestructive = false) {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('customChoiceOverlay');
@@ -341,7 +333,6 @@
             });
         }
 
-        // Specialized Custom Direct Review Prompter Modal Loop
         function presentInteractiveOverrideReview(monthStr, customName, customCost, newName, newCost) {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('customChoiceOverlay');
@@ -381,7 +372,6 @@
             });
         }
 
-        // Specialized Modal Multi-Choice Crossroads for Deleting Series Items
         function presentThreeWayDeleteCrossroads() {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('customChoiceOverlay');
@@ -493,7 +483,6 @@
             executeAutomatedMonthRolloverAudit();
         }
 
-        // MASTER GENERATION POPULATION ENGINE WITH AUTO EXTENSION
         function executeAutomatedMonthRolloverAudit() {
             let changesMade = false;
             const lastAuditedMonth = localStorage.getItem('rne_last_processed_month') || currentSystemMonth;
@@ -845,7 +834,9 @@
                 const visibleItems = expenses.filter(e => e.month === monthKey);
                 
                 const itemsGroupedByRecurrence = {};
-                recurrenceGroupsConfig.forEach(g => { itemsGroupedByRecurrence[g.key] = []; });
+                // Locally reference internal layout keys securely to eliminate parsing dependencies
+                [0, 1, 2, 3, 6, 12].forEach(k => { itemsGroupedByRecurrence[k] = []; });
+                
                 visibleItems.forEach(e => {
                     const recurKey = e.recur !== undefined ? e.recur : 0;
                     if (itemsGroupedByRecurrence[recurKey]) itemsGroupedByRecurrence[recurKey].push(e);
@@ -853,9 +844,18 @@
 
                 let dataAddedForMonth = false;
 
-                recurrenceGroupsConfig.forEach(groupDef => {
+                const localGroupMapping = [
+                    { key: 0, label: "One-Time Only" },
+                    { key: 1, label: "Monthly" },
+                    { key: 2, label: "Every 2 Months" },
+                    { key: 3, label: "Quarterly" },
+                    { key: 6, label: "Every 6 Months" },
+                    { key: 12, label: "Yearly" }
+                ];
+
+                localGroupMapping.forEach(groupDef => {
                     const list = itemsGroupedByRecurrence[groupDef.key];
-                    if (list.length === 0) return;
+                    if (!list || list.length === 0) return;
                     dataAddedForMonth = true;
 
                     list.sort((a, b) => b.cost - a.cost);
@@ -901,14 +901,16 @@
             printWindow.document.close();
 
             printWindow.focus();
-            printWindow.onload = function() {
+            
+            // Modern cross-platform fallback strategy to guarantee document elements have completely painted
+            setTimeout(() => {
                 printWindow.print();
                 printWindow.close();
-            };
+            }, 450);
         }
 
         // ========================================================
-        // CORE RENDER AND DISPLAY INTERFACE PIPELINE
+        // DISPLAY ARCHITECTURE CONTROLLER INTERFACE 
         // ========================================================
         function render() {
             const currentSelectedMonth = filterSelect.value;
@@ -1011,7 +1013,7 @@
         }
 
         // ==========================================
-        // LOCAL BACKUP MANUAL EXPORT SYSTEM
+        // LOCAL BACKUP EXPORT ENGINE
         // ==========================================
         function exportToFile() {
             const dataStr = localStorage.getItem('rne_local_backup_cache');
@@ -1046,7 +1048,7 @@
         }
 
         // ==========================================
-        // GOOGLE DRIVE SANDBOX INTEGRATION HOOKS
+        // GOOGLE DRIVE CLOUD PLATFORM MANAGEMENT
         // ==========================================
         function updateDiscreetCloudUiIndicators(statusText, actionBtnLabel, ongoingState) {
             document.getElementById('cloudStatusLabel').innerText = statusText;
