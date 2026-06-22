@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v29.5</title>
+    <title>RNE Tracker</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -252,7 +252,7 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v29.5</div>
+    <div class="version-watermark">RNE Tracker</div>
 
     <script>
         // ========================================================
@@ -787,7 +787,7 @@
         }
 
         // ========================================================
-        // HIGH PERFORMANCE SEPARATED PRINT ENGINE (WINDOW APPROACH)
+        // STABLE SEPARATED PRINT ENGINE (PRESERVED VIEW APPROACH)
         // ========================================================
         function triggerTimelinePrintJob() {
             const startVal = printStartSelect.value;
@@ -802,7 +802,7 @@
             let printHTML = `
             <html>
             <head>
-                <title>RNE_Report</title>
+                <title>RNE Expense Statement Report</title>
                 <style>
                     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: #fff; color: #000; padding: 20px; font-size: 12pt; }
                     .print-month-block { page-break-after: always; display: block; }
@@ -834,7 +834,6 @@
                 const visibleItems = expenses.filter(e => e.month === monthKey);
                 
                 const itemsGroupedByRecurrence = {};
-                // Locally reference internal layout keys securely to eliminate parsing dependencies
                 [0, 1, 2, 3, 6, 12].forEach(k => { itemsGroupedByRecurrence[k] = []; });
                 
                 visibleItems.forEach(e => {
@@ -902,11 +901,10 @@
 
             printWindow.focus();
             
-            // Modern cross-platform fallback strategy to guarantee document elements have completely painted
+            // Allow the window to paint content completely without forcing a quick kill step
             setTimeout(() => {
                 printWindow.print();
-                printWindow.close();
-            }, 450);
+            }, 300);
         }
 
         // ========================================================
