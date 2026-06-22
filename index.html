@@ -790,7 +790,7 @@
         }
 
         // ========================================================
-        // STABLE SEPARATED PRINT ENGINE (PRESERVED VIEW APPROACH)
+        // MOBILE-SAFE IFRAME PRINT ENGINE
         // ========================================================
         function triggerTimelinePrintJob() {
             const startVal = printStartSelect.value;
@@ -898,15 +898,29 @@
 
             printHTML += `</body></html>`;
 
-            const printWindow = window.open('', '_blank', 'width=800,height=600');
-            printWindow.document.write(printHTML);
-            printWindow.document.close();
+            // Create invisible container iframe for sandboxed mobile-safe compilation
+            const printIframe = document.createElement('iframe');
+            printIframe.style.position = 'fixed';
+            printIframe.style.right = '0';
+            printIframe.style.bottom = '0';
+            printIframe.style.width = '0';
+            printIframe.style.height = '0';
+            printIframe.style.border = '0';
+            document.body.appendChild(printIframe);
 
-            printWindow.focus();
-            
+            const iframeDoc = printIframe.contentWindow.document || printIframe.contentDocument;
+            iframeDoc.open();
+            iframeDoc.write(printHTML);
+            iframeDoc.close();
+
+            // Wait for internal asset allocation layout cycles, execute and purge the DOM element wrapper
             setTimeout(() => {
-                printWindow.print();
-            }, 300);
+                printIframe.contentWindow.focus();
+                printIframe.contentWindow.print();
+                setTimeout(() => {
+                    document.body.removeChild(printIframe);
+                }, 1000);
+            }, 500);
         }
 
         // ========================================================
@@ -1006,7 +1020,7 @@
                         `;
                         groupContent.appendChild(itemDiv);
                     });
-                    groupContent.appendChild(itemDiv);
+                    groupContainer.appendChild(groupContent);
                 }
                 container.appendChild(groupContainer);
             });
@@ -1084,6 +1098,7 @@
                 let data = await response.json();
                 if (data.files && data.files.length > 0) {
                     gdriveFileId = data.files[0].id;
+                    updateDiscreetCloudUiIndicators("☁ Cloud Synchronized", "", "connected");
                     await checkCloudVersionTimestamps();
                 } else {
                     await uploadToGoogleDrive();
