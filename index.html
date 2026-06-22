@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v27</title>
+    <title>RNE Tracker - v28</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -238,12 +238,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v27</div>
+    <div class="version-watermark">RNE Tracker • v28</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 210626_v27
+        // VERSION TRACKER REFERENCE: 210626_v28
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -319,6 +319,53 @@
 
                 leftBtn.addEventListener('click', handleLeftSelection);
                 rightBtn.addEventListener('click', handleRightSelection);
+                overlay.style.display = 'flex';
+            });
+        }
+
+        // Specialized Custom Delta Synchronization Decision Prompt Overlay Drawer Loop
+        function presentCloudSyncCrossroadsPrompt(statusHeadline, localDateStr, cloudDateStr) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('customChoiceOverlay');
+                const textContainer = document.getElementById('choiceOverlayMessage');
+                const container = document.getElementById('choiceButtonsContainer');
+
+                textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
+                    ${statusHeadline}<br><br>
+                    <span style="font-size:12px; color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
+                    <span style="font-size:12px; color:var(--primary);">Cloud Backup Last Updated:</span><br><strong>${cloudDateStr}</strong><br><br>
+                    What action would you like to take?`;
+                
+                container.className = "vertical-buttons";
+                container.innerHTML = `
+                    <button class="btn-choice btn-choice-right btn-choice-full" id="btnSyncPush">Backup (Upload Local to Cloud)</button>
+                    <button class="btn-choice btn-choice-left btn-choice-full" style="background:var(--success); color:white; border-color:var(--success);" id="btnSyncPull">Restore (Download Cloud to Local)</button>
+                    <button class="btn-choice btn-choice-left btn-choice-full" id="btnSyncIgnore">Do Nothing (Keep Offline Split)</button>
+                `;
+
+                const pushBtn = document.getElementById('btnSyncPush');
+                const pullBtn = document.getElementById('btnSyncPull');
+                const ignoreBtn = document.getElementById('btnSyncIgnore');
+
+                const handlePush = () => { cleanup(); resolve('push'); };
+                const handlePull = () => { cleanup(); resolve('pull'); };
+                const handleIgnore = () => { cleanup(); resolve('ignore'); };
+
+                const cleanup = () => {
+                    pushBtn.removeEventListener('click', handlePush);
+                    pullBtn.removeEventListener('click', handlePull);
+                    ignoreBtn.removeEventListener('click', handleIgnore);
+                    overlay.style.display = 'none';
+                    container.className = "choice-buttons-row";
+                    container.innerHTML = `
+                        <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
+                        <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
+                    `;
+                };
+
+                pushBtn.addEventListener('click', handlePush);
+                pullBtn.addEventListener('click', handlePull);
+                ignoreBtn.addEventListener('click', handleIgnore);
                 overlay.style.display = 'flex';
             });
         }
@@ -511,7 +558,7 @@
                 if (data.files && data.files.length > 0) {
                     gdriveFileId = data.files[0].id;
                     document.getElementById('cloudStatusLabel').innerText = "☁ Linked to Cloud Backup";
-                    await performAutomatedCloudDeltaSyncCheck();
+                    await evaluateCloudDeltaSyncChoices(isSilentMode);
                 } else {
                     document.getElementById('cloudStatusLabel').innerText = "✅ New Cloud Storage Ready";
                     if (!isSilentMode) {
@@ -534,43 +581,89 @@
             document.getElementById('cloudStatusLabel').innerText = "☁ Session Expired";
         }
 
-        async function performAutomatedCloudDeltaSyncCheck() {
+        // Unified Delta Evaluation Strategy Engine Matrix
+        async function evaluateCloudDeltaSyncChoices(isAutomatedSilentStartup = false) {
             if (!activeAccessToken || !gdriveFileId) return;
             try {
                 const fetchUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
                 const resp = await fetch(fetchUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
-                if (resp.status === 200) {
-                    const cloudData = await resp.json();
-                    const cloudTimestamp = (cloudData.meta && cloudData.meta.lastUpdated) ? cloudData.meta.lastUpdated : 0;
-                    const localTimestamp = meta.lastUpdated || 0;
+                if (resp.status !== 200) return;
 
-                    if (cloudTimestamp > localTimestamp) {
-                        expenses = cloudData.expenses || [];
-                        templates = cloudData.templates || [];
-                        meta = cloudData.meta || meta;
-                        localStorage.setItem('rne_local_backup_cache', JSON.stringify(cloudData));
-                        executeAutomatedMonthRolloverAudit();
-                    } else if (localTimestamp > cloudTimestamp) {
+                const cloudData = await resp.json();
+                const cloudTimestamp = (cloudData.meta && cloudData.meta.lastUpdated) ? cloudData.meta.lastUpdated : 0;
+                const localTimestamp = meta.lastUpdated || 0;
+
+                const localDateStr = localTimestamp ? new Date(localTimestamp).toLocaleString() : "Never (Empty Empty)";
+                const cloudDateStr = cloudTimestamp ? new Date(cloudTimestamp).toLocaleString() : "Never (Empty Empty)";
+
+                let statusHeadline = "";
+                let triggerPromptScreen = false;
+
+                if (cloudTimestamp > localTimestamp) {
+                    statusHeadline = "👉 <strong>The Cloud Backup database file is newer than your offline local cache data.</strong>";
+                    triggerPromptScreen = !isAutomatedSilentStartup; // If manual push/pull click or initial interactive login
+                    
+                    if (isAutomatedSilentStartup) {
+                        // Safe historical fallback default behavior pathing
+                        applyDownloadedCloudPayload(cloudData);
+                        return;
+                    }
+                } else if (localTimestamp > cloudTimestamp) {
+                    statusHeadline = "👈 <strong>Your local data records are newer than the file currently backed up on the cloud.</strong>";
+                    triggerPromptScreen = !isAutomatedSilentStartup;
+
+                    if (isAutomatedSilentStartup) {
                         await uploadToGoogleDrive();
+                        return;
+                    }
+                } else {
+                    statusHeadline = "✨ <strong>Your local offline file matches your remote Google Drive cloud copy exactly.</strong>";
+                    if (isAutomatedSilentStartup) {
+                        executeAutomatedMonthRolloverAudit();
+                        return;
+                    }
+                    triggerPromptScreen = true; // Still show choice panel if they explicitly pressed "Backup" or "Restore"
+                }
+
+                if (triggerPromptScreen) {
+                    const chosenDirection = await presentCloudSyncCrossroadsPrompt(statusHeadline, localDateStr, cloudDateStr);
+                    if (chosenDirection === 'push') {
+                        await uploadToGoogleDrive();
+                    } else if (chosenDirection === 'pull') {
+                        applyDownloadedCloudPayload(cloudData);
+                        alert("Database restoration successful!");
+                    } else {
+                        executeAutomatedMonthRolloverAudit();
                     }
                 }
             } catch (e) {
-                console.error("Delta synchronization check fault:", e);
+                console.error("Sync comparison runtime fault:", e);
             }
+        }
+
+        function applyDownloadedCloudPayload(cloudData) {
+            expenses = cloudData.expenses || [];
+            templates = cloudData.templates || [];
+            meta = cloudData.meta || meta;
+            localStorage.setItem('rne_local_backup_cache', JSON.stringify(cloudData));
+            executeAutomatedMonthRolloverAudit();
         }
 
         async function manuallyTriggerCloudBackup() {
             if (!activeAccessToken) return alert("Cloud account is not authenticated.");
-            const confirmation = confirm("Are you sure you want to manually upload your local data? This will overwrite the backup file currently saved on Google Drive.");
-            if (confirmation) {
-                await uploadToGoogleDrive();
-            }
+            await evaluateCloudDeltaSyncChoices(false);
+        }
+
+        async function manuallyTriggerCloudRestore() {
+            if (!activeAccessToken || !gdriveFileId) return alert("Cloud account is not authenticated.");
+            await evaluateCloudDeltaSyncChoices(false);
         }
 
         async function uploadToGoogleDrive() {
             if (!activeAccessToken) return;
             document.getElementById('cloudStatusLabel').innerText = "⏳ Saving to Cloud...";
             try {
+                meta.lastUpdated = Date.now();
                 const packageData = { meta: meta, templates: templates, expenses: expenses };
                 const blob = new Blob([JSON.stringify(packageData)], { type: 'application/json' });
                 
@@ -596,41 +689,15 @@
                 if (resp.ok) {
                     const resData = await resp.json();
                     if (!gdriveFileId && resData.id) gdriveFileId = resData.id;
+                    localStorage.setItem('rne_local_backup_cache', JSON.stringify(packageData));
                     document.getElementById('cloudStatusLabel').innerText = "☁ Linked to Cloud Backup";
+                    render();
                 } else {
                     document.getElementById('cloudStatusLabel').innerText = "❌ Backup Error";
                 }
             } catch(e) {
                 console.error("Cloud push operation failure:", e);
                 document.getElementById('cloudStatusLabel').innerText = "❌ Sync Failure";
-            }
-        }
-
-        async function manuallyTriggerCloudRestore() {
-            if (!activeAccessToken || !gdriveFileId) return alert("Cloud account is not authenticated.");
-            const confirmation = confirm("Are you sure you want to download your cloud database file? This action replaces your existing local offline records.");
-            if (!confirmation) return;
-
-            document.getElementById('cloudStatusLabel').innerText = "⏳ Downloading Setup...";
-            try {
-                const fetchUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
-                const resp = await fetch(fetchUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
-                if (resp.status === 200) {
-                    const cloudData = await resp.json();
-                    expenses = cloudData.expenses || [];
-                    templates = cloudData.templates || [];
-                    meta = cloudData.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
-                    
-                    localStorage.setItem('rne_local_backup_cache', JSON.stringify(cloudData));
-                    document.getElementById('cloudStatusLabel').innerText = "☁ Linked to Cloud Backup";
-                    executeAutomatedMonthRolloverAudit();
-                    alert("Database restoration successful!");
-                } else {
-                    alert("Failed to pull remote backup resource file from server.");
-                }
-            } catch (e) {
-                console.error(e);
-                alert("An unexpected transport layer fault prevented restoration processing.");
             }
         }
 
