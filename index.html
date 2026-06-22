@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v26</title>
+    <title>RNE Tracker - v27</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -160,8 +160,8 @@
         <div class="discreet-actions-grid">
             <button class="btn-theme-toggle" id="themeToggleBtn" onclick="toggleDisplayTheme()">Toggle Theme</button>
             <button class="btn-cloud-discreet btn-cloud-signin" id="gdriveMainActionBtn" onclick="initiateGoogleDriveSyncFlow()">Sign In</button>
-            <button class="btn-cloud-discreet btn-cloud-push" id="gdrivePushBtn" onclick="uploadToGoogleDrive()" style="display: none;">Backup</button>
-            <button class="btn-cloud-discreet btn-cloud-pull" id="gdrivePullBtn" onclick="manuallyTriggerCloudRestore()" style="display: none;">Restore</button>
+            <button class="btn-cloud-discreet btn-cloud-push" id="gdrivePushBtn" onclick="manuallyTriggerCloudBackup()">Backup</button>
+            <button class="btn-cloud-discreet btn-cloud-pull" id="gdrivePullBtn" onclick="manuallyTriggerCloudRestore()">Restore</button>
         </div>
     </div>
 
@@ -238,12 +238,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v26</div>
+    <div class="version-watermark">RNE Tracker • v27</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 210626_v26
+        // VERSION TRACKER REFERENCE: 210626_v27
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -556,6 +556,14 @@
                 }
             } catch (e) {
                 console.error("Delta synchronization check fault:", e);
+            }
+        }
+
+        async function manuallyTriggerCloudBackup() {
+            if (!activeAccessToken) return alert("Cloud account is not authenticated.");
+            const confirmation = confirm("Are you sure you want to manually upload your local data? This will overwrite the backup file currently saved on Google Drive.");
+            if (confirmation) {
+                await uploadToGoogleDrive();
             }
         }
 
