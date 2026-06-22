@@ -79,57 +79,13 @@
             border-radius: 20px;
             cursor: pointer;
             font-weight: 600;
+            transition: border-color 0.2s, color 0.2s;
         }
 
-        .section {
-            margin-bottom: 35px;
+        .theme-toggle:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
         }
-
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 25px;
-        }
-
-        @media (min-width: 768px) {
-            .grid-layout {
-                grid-template-columns: 1fr 2fr;
-            }
-        }
-
-        textarea {
-            width: 100%;
-            height: 180px;
-            padding: 12px;
-            font-family: monospace;
-            font-size: 13px;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            resize: vertical;
-            margin-bottom: 15px;
-        }
-
-        .btn {
-            display: inline-block;
-            background-color: var(--primary-color);
-            color: #fff;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: background-color 0.2s;
-        }
-
-        [data-theme="light"] .btn { color: #fff; }
-        .btn:hover { background-color: var(--primary-hover); }
-        .btn-success { background-color: var(--success-color); }
-        .btn-success:hover { background-color: #43a047; }
-        .btn-danger { background-color: var(--danger-color); }
-        .btn-danger:hover { background-color: #e53935; }
 
         .months-container {
             display: grid;
@@ -217,23 +173,12 @@
         }
 
         .empty-state {
-            grid-column: 1 / -1;
             color: var(--text-muted);
             font-style: italic;
             text-align: center;
             padding: 40px 0;
+            width: 100%;
         }
-
-        .alert {
-            padding: 12px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            font-size: 14px;
-            display: none;
-            font-weight: 600;
-        }
-        .alert-success { background-color: rgba(76, 175, 80, 0.2); color: #4caf50; border: 1px solid #4caf50; }
-        .alert-danger { background-color: rgba(244, 67, 54, 0.2); color: #f44336; border: 1px solid #f44336; }
 
         footer {
             text-align: center;
@@ -253,23 +198,8 @@
             <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
         </header>
 
-        <div class="grid-layout">
-            <div class="section">
-                <h2>Database Management</h2>
-                <div id="msgContainer" class="alert"></div>
-                <textarea id="rawJsonArea" placeholder="Paste your structural JSON records here..."></textarea>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <button class="btn btn-success" onclick="processIncomingDatabase()">Parse & Initialize</button>
-                    <button class="btn btn-danger" onclick="wipeLocalWorkspace()">Reset Board</button>
-                </div>
-            </div>
-
-            <div class="section">
-                <h2>Expenses Overview Ledger</h2>
-                <div id="ledgerDashboard" class="months-container">
-                    <div class="empty-state">No database layout detected. Paste operational data into the panel editor to initialize views.</div>
-                </div>
-            </div>
+        <div id="ledgerDashboard" class="months-container">
+            <div class="empty-state">Loading tracking ledger configuration...</div>
         </div>
     </div>
 
@@ -278,6 +208,7 @@
     </footer>
 
     <script>
+        // Global App State - Tied to your internal local/sync initialization hooks
         let appState = {
             meta: { lastMonthPopulated: "" },
             templates: [],
@@ -300,63 +231,37 @@
                 .replace(/'/g, "&#039;");
         }
 
-        function triggerNotification(text, mode = 'success') {
-            const box = document.getElementById('msgContainer');
-            box.className = `alert alert-${mode}`;
-            box.textContent = text;
-            box.style.display = 'block';
-            setTimeout(() => { box.style.display = 'none'; }, 4000);
-        }
-
-        function wipeLocalWorkspace() {
-            document.getElementById('rawJsonArea').value = "";
-            appState = { meta: { lastMonthPopulated: "" }, templates: [], expenses: [] };
-            triggerNotification("Workspace cleared successfully.", "success");
-            buildDynamicLedger();
-        }
-
-        function processIncomingDatabase() {
-            const analyticalText = document.getElementById('rawJsonArea').value.trim();
-
-            if (!analyticalText) {
+        // Exposed core init hook for your custom data engine loader script
+        function initTrackerDatabase(rawObject) {
+            if (!rawObject) {
                 appState = { meta: { lastMonthPopulated: "" }, templates: [], expenses: [] };
-                triggerNotification("Initialized blank template footprint configuration.", "success");
                 buildDynamicLedger();
                 return;
             }
 
-            try {
-                const parsedObject = JSON.parse(analyticalText);
-                
-                // Establish structured objects safely checking input properties
-                appState = {
-                    meta: parsedObject.meta || { lastMonthPopulated: "" },
-                    templates: Array.isArray(parsedObject.templates) ? parsedObject.templates : [],
-                    expenses: Array.isArray(parsedObject.expenses) ? parsedObject.expenses : []
-                };
+            appState = {
+                meta: rawObject.meta || { lastMonthPopulated: "" },
+                templates: Array.isArray(rawObject.templates) ? rawObject.templates : [],
+                expenses: Array.isArray(rawObject.expenses) ? rawObject.expenses : []
+            };
 
-                // CRITICAL CORRECTION (v15): Prevent moving a regular templates item across months from auto-triggering isEdited labels 
-                if (appState.expenses.length > 0 && appState.templates.length > 0) {
-                    appState.expenses = appState.expenses.map(expense => {
-                        if (expense.seriesId) {
-                            const parentTemplate = appState.templates.find(t => t.seriesId === expense.seriesId);
-                            if (parentTemplate) {
-                                // If name and cost match perfectly, ensure isEdited is strictly false
-                                if (expense.name === parentTemplate.name && Number(expense.cost) === Number(parentTemplate.cost)) {
-                                    expense.isEdited = false;
-                                }
+            // CRITICAL FIX: Prevent moving template items across months from tripping incorrect 'edited' labels
+            if (appState.expenses.length > 0 && appState.templates.length > 0) {
+                appState.expenses = appState.expenses.map(expense => {
+                    if (expense.seriesId) {
+                        const parentTemplate = appState.templates.find(t => t.seriesId === expense.seriesId);
+                        if (parentTemplate) {
+                            // If name and cost remain exactly identical, enforce that isEdited is strictly false
+                            if (expense.name === parentTemplate.name && Number(expense.cost) === Number(parentTemplate.cost)) {
+                                expense.isEdited = false;
                             }
                         }
+                    }
                         return expense;
-                    });
-                }
-
-                triggerNotification("Ledger structures synced successfully.", "success");
-                buildDynamicLedger();
-            } catch (err) {
-                triggerNotification("Invalid database structure framework: " + err.message, "danger");
-                console.error("Layout Compilation Blockage Error Details:", err);
+                });
             }
+
+            buildDynamicLedger();
         }
 
         function buildDynamicLedger() {
@@ -366,11 +271,10 @@
             const workingItems = appState.expenses;
 
             if (!workingItems || workingItems.length === 0) {
-                outputBoard.innerHTML = `<div class="empty-state">No database layout detected. Paste operational data into the panel editor to initialize views.</div>`;
+                outputBoard.innerHTML = `<div class="empty-state">No database records loaded.</div>`;
                 return;
             }
 
-            // Determine unique collection profiles
             const isolatedMonths = [...new Set(workingItems.map(item => item.month))].sort();
 
             if (isolatedMonths.length === 0 || (isolatedMonths.length === 1 && !isolatedMonths[0])) {
@@ -402,18 +306,15 @@
                     const rowItem = document.createElement('li');
                     rowItem.className = 'expense-item';
 
-                    // Generate functional status metrics badges
                     const trackerStateClass = item.status === 'paid' ? 'badge-paid' : 'badge-unpaid';
                     const trackerStateText = item.status === 'paid' ? 'Paid' : 'Unpaid';
 
                     let microBadgesMarkup = `<span class="badge ${trackerStateClass}">${trackerStateText}</span>`;
 
-                    // Originated tracking label assignment logic checks
                     if (item.originMonth && item.originMonth !== item.month) {
                         microBadgesMarkup += `<span class="badge badge-originated">originated: ${safeHtml(item.originMonth)}</span>`;
                     }
 
-                    // Edited tracking classification flag logic checks
                     if (item.isEdited) {
                         microBadgesMarkup += `<span class="badge badge-edited">edited</span>`;
                     }
@@ -434,6 +335,15 @@
                 outputBoard.appendChild(layoutCard);
             });
         }
+
+        // Fallback placeholder execution on initialization if standalone
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.loadedDatabasePayload) {
+                initTrackerDatabase(window.loadedDatabasePayload);
+            } else {
+                buildDynamicLedger();
+            }
+        });
     </script>
 </body>
 </html>
