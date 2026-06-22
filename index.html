@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v29.2</title>
+    <title>RNE Tracker - v29.3</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -159,17 +159,20 @@
         /* Custom Document Headers generated exclusively inside Print-Mode compilation arrays */
         .print-only-month-header { display: none; font-size: 20px; font-weight: bold; margin: 24px 0 12px 0; border-bottom: 2px solid #333; padding-bottom: 4px; color: #000; }
 
+        /* Offscreen Dedicated Print Buffer Area Setup */
+        #rnePrintBufferZone { display: none; }
+
         /* ========================================================
            NATIVE CSS PRINT LAYOUT OPTIMIZATION ENGINE
            ======================================================== */
         @media print {
             body * {
-                display: none !important; /* Hide absolutely everything by default */
+                display: none !important; /* Hide absolutely everything on the active screen */
             }
-            #listContainer, #listContainer * {
-                display: block !important; /* Force only print content container to show */
+            #rnePrintBufferZone, #rnePrintBufferZone * {
+                display: block !important; /* Force ONLY our dedicated print buffer container to render */
             }
-            #listContainer {
+            #rnePrintBufferZone {
                 position: absolute;
                 left: 0;
                 top: 0;
@@ -303,6 +306,8 @@
 
     <div class="expense-list" id="listContainer"></div>
 
+    <div id="rnePrintBufferZone"></div>
+
     <div class="utility-toggle-header" onclick="toggleUtilityDrawer()">
         <span>Offline Data & Reports Options</span>
         <span class="utility-arrow" id="utilArrow">▼</span>
@@ -342,12 +347,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v29.2</div>
+    <div class="version-watermark">RNE Tracker • v29.3</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 220626_v29_2
+        // VERSION TRACKER REFERENCE: 220626_v29_3
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -551,7 +556,7 @@
                 textContainer.innerHTML = `<strong>Delete Expense Entry</strong><br><br>How would you like to handle this deletion?`;
                 container.className = "vertical-buttons";
                 container.innerHTML = `
-                    <button class="btn-choice btn-choice-left btn-choice-full" id="delCurrentBtn">Delete Current Month Only</button>
+                    <button class="btn-choice btn-choice-left" id="delCurrentBtn">Delete Current Month Only</button>
                     <button class="btn-choice btn-choice-danger btn-choice-full" id="delForwardBtn">Delete Whole Series Forward</button>
                     <button class="btn-choice btn-choice-left btn-choice-full" style="background:#cbd5e1;" id="delCancelBtn">Cancel</button>
                 `;
@@ -625,7 +630,7 @@
         };
 
         // ========================================================
-        // HIGH PERFORMANCE PRINT BATCH TIMELINE COMPILED GENERATOR
+        // HIGH PERFORMANCE SEPARATED OFF-SCREEN PRINT COMPILER
         // ========================================================
         function triggerTimelinePrintJob() {
             const startVal = printStartSelect.value;
@@ -635,13 +640,12 @@
                 return alert("Operational Fault: The 'From Month' selection cannot be positioned chronologically after your chosen 'To Month' timeline boundary target.");
             }
 
-            const activeCachedView = filterSelect.value;
-            const targetContainer = document.getElementById('listContainer');
+            const printBufferZone = document.getElementById('rnePrintBufferZone');
             
             // Filter all months falling inside selection bounds
             const activeRangeMonths = monthsRange.filter(m => m >= startVal && m <= endVal);
             
-            // Create a temporary document fragment to prevent layout thrashing
+            // Create a temporary document fragment to construct elements completely detached from layout tree
             const printWrapperFragment = document.createDocumentFragment();
             
             activeRangeMonths.forEach(monthKey => {
@@ -728,9 +732,9 @@
                 printWrapperFragment.appendChild(monthBlock);
             });
 
-            // Swap out active view and append full timeline compilation to DOM tree
-            targetContainer.innerHTML = '';
-            targetContainer.appendChild(printWrapperFragment);
+            // Flush the buffer cleanly and inject the brand new compiled markup list
+            printBufferZone.innerHTML = '';
+            printBufferZone.appendChild(printWrapperFragment);
 
             // Generate Timestamp Formatting: RNE_yymmdd_hhmm
             const now = new Date();
@@ -743,21 +747,20 @@
             const originalTitle = document.title;
             const computedFilename = `RNE_${yy}${mm}${dd}_${hh}${min}`;
             
-            // Set document page title to override the saved PDF default file property structure
+            // Set title block structure context cleanly
             document.title = computedFilename;
 
-            // Wait for DOM layout calculations and image buffers to flush safely to viewport
+            // Wait fully for the layout structure metrics to compile within the offscreen engine
             requestAnimationFrame(() => {
                 setTimeout(() => {
                     window.print();
                     
-                    // Restore original title configuration state context
+                    // Cleanup title configuration context seamlessly
                     document.title = originalTitle;
                     
-                    // Revert viewport single month container array
-                    filterSelect.value = activeCachedView;
-                    render();
-                }, 350);
+                    // Clear out buffer space cleanly to release memory allocation channels
+                    printBufferZone.innerHTML = '';
+                }, 500);
             });
         }
 
@@ -1050,7 +1053,6 @@
             render();
         }
 
-        // Stepper Control Configuration Setup
         function stepMonth(direction) {
             let nextIndex = filterSelect.selectedIndex + direction;
             if(nextIndex >= 0 && nextIndex < filterSelect.options.length) { filterSelect.selectedIndex = nextIndex; render(); }
