@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v14</title>
-    <!-- Include Google Identity Services library for modern token authentication -->
+    <title>RNE Tracker - v20</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
+        /* Color Palette Themes Engine Base Configuration */
         :root {
             --bg-color: #f4f6f9;
             --card-bg: #ffffff;
@@ -20,18 +20,49 @@
             --edit-color: #0284c7;
             --group-header-bg: #e2e8f0;
             --gdrive-color: #0f9d58;
+            --cost-text: #111827;
+            --cloud-bar-bg: #e2e8f0;
+            --cloud-bar-text: #475569;
+            --cloud-bar-border: #cbd5e1;
+            --btn-action-bg: #f9fafb;
+            --utility-card-bg: #eaede4;
         }
+
+        /* Dark Theme Variables Layer Override */
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --primary: #3b82f6;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --border: #333333;
+            --utility: #9ca3af;
+            --edit-color: #0ea5e9;
+            --group-header-bg: #2d3748;
+            --cost-text: #ffffff;
+            --cloud-bar-bg: #1a202c;
+            --cloud-bar-text: #a0aec0;
+            --cloud-bar-border: #4a5568;
+            --btn-action-bg: #2d3748;
+            --utility-card-bg: #2d3129;
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-main); padding: 16px; padding-bottom: 100px; position: relative; min-height: 100vh; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 16px; padding-bottom: 100px; position: relative; min-height: 100vh; transition: background-color 0.2s, color 0.2s; }
         
         /* Discreet, Streamlined Top Cloud Bar Placement */
-        .top-cloud-bar { display: flex; justify-content: space-between; align-items: center; background: #e2e8f0; padding: 8px 12px; border-radius: 10px; margin-bottom: 12px; border: 1px dashed #cbd5e1; font-size: 13px; }
-        .cloud-status-text { font-weight: 600; color: #475569; display: flex; align-items: center; gap: 4px; }
+        .top-cloud-bar { display: flex; justify-content: space-between; align-items: center; background: var(--cloud-bar-bg); padding: 8px 12px; border-radius: 10px; margin-bottom: 12px; border: 1px dashed var(--cloud-bar-border); font-size: 13px; }
+        .cloud-status-text { font-weight: 600; color: var(--cloud-bar-text); display: flex; align-items: center; gap: 4px; }
         .btn-cloud-discreet { width: auto; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 4px; }
         .btn-cloud-signin { background: var(--gdrive-color); box-shadow: 0 1px 2px rgba(15, 157, 88, 0.2); }
         .btn-cloud-push { background: #4285f4; }
         .btn-cloud-pull { background: #16a34a; }
-        .discreet-actions-grid { display: flex; gap: 6px; }
+        .discreet-actions-grid { display: flex; gap: 6px; align-items: center; }
+
+        /* Unified Layout Control Component for Theme Toggling */
+        .btn-theme-toggle { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); font-size: 12px; font-weight: bold; padding: 6px 12px; border-radius: 6px; cursor: pointer; height: auto; width: auto; display: inline-flex; align-items: center; justify-content: center; }
 
         /* Top Navigation Hierarchy */
         .month-nav-container { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
@@ -42,15 +73,15 @@
         .header-card { background: var(--card-bg); padding: 16px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-grow: 1; }
         .unpaid-badge { font-size: 24px; font-weight: bold; color: var(--danger); margin-top: 4px; }
         
-        select, input, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background: var(--card-bg); -webkit-appearance: none; }
+        select, input, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background: var(--card-bg); color: var(--text-main); -webkit-appearance: none; }
         select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M0 3l5 5 5-5z' fill='%23666'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
         
         /* Collapsible Action Entry Form */
-        .btn-trigger-form { background: var(--primary); color: white; font-weight: bold; border: none; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
+        .btn-trigger-form { background: var(--primary); color: white; font-weight: bold; border: none; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); cursor: pointer; }
         .form-card { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px; display: none; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
         .form-card input[type="text"] { grid-column: span 2; }
-        .btn-primary { background: var(--primary); color: white; font-weight: bold; border: none; margin-top: 8px; }
+        .btn-primary { background: var(--primary); color: white; font-weight: bold; border: none; margin-top: 8px; cursor: pointer; }
         .btn-cancel-form { background: transparent; color: var(--text-muted); border: none; margin-top: 4px; font-size: 14px; text-decoration: underline; cursor: pointer; }
         
         /* Dynamic Inline Edit Mode Styling */
@@ -58,13 +89,15 @@
 
         /* Categorized Group Framework Elements */
         .group-container { margin-bottom: 14px; border-radius: 12px; overflow: hidden; background: transparent; }
-        .group-header { background: var(--group-header-bg); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; color: #334155; cursor: pointer; user-select: none; border: 1px solid var(--border); border-radius: 10px; gap: 8px; }
+        .group-header { background: var(--group-header-bg); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; color: var(--text-main); cursor: pointer; user-select: none; border: 1px solid var(--border); border-radius: 10px; gap: 8px; }
         .group-header-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
         .group-header-title span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .group-badges-container { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .group-unpaid-cost { font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
-        .group-unpaid-cost.has-unpaid { color: var(--danger); background: #fee2e2; border: 1px solid #fca5a5; }
-        .group-unpaid-cost.all-paid { color: var(--success); background: #dcfce7; border: 1px solid #86efac; }
+        .group-unpaid-cost.has-unpaid { color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; }
+        [data-theme="dark"] .group-unpaid-cost.has-unpaid { color: #fca5a5; background: #7f1d1d; border: 1px solid #991b1b; }
+        .group-unpaid-cost.all-paid { color: #16a34a; background: #dcfce7; border: 1px solid #86efac; }
+        [data-theme="dark"] .group-unpaid-cost.all-paid { color: #86efac; background: #14532d; border: 1px solid #166534; }
         .group-badge { background: #64748b; color: white; font-size: 11px; padding: 3px 7px; border-radius: 10px; font-weight: 600; }
         .group-content { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; padding: 2px; }
 
@@ -77,14 +110,15 @@
         .name-wrapper { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .name { font-weight: 600; font-size: 17px; color: var(--text-main); line-height: 1.4; word-break: break-word; white-space: normal; }
         .badge-edited { background: #bae6fd; color: #0369a1; font-size: 11px; font-weight: bold; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        [data-theme="dark"] .badge-edited { background: #0c4a6e; color: #7dd3fc; }
         
         .cost-row { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; margin-top: 2px; }
-        .cost { font-weight: 700; font-size: 18px; color: #111827; }
-        .origin-label { font-size: 11px; font-weight: 600; color: #64748b; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; border: 1px dashed #cbd5e1; margin-top: 1px; }
+        .cost { font-weight: 700; font-size: 18px; color: var(--cost-text); }
+        .origin-label { font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg-color); padding: 2px 6px; border-radius: 4px; border: 1px dashed var(--border); margin-top: 1px; }
         
         /* Buttons Row Layout */
-        .actions { display: flex; gap: 8px; justify-content: flex-end; width: 100%; border-top: 1px solid #f3f4f6; padding-top: 10px; }
-        .btn-action { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 8px; border: 1px solid var(--border); background: #f9fafb; cursor: pointer; font-size: 16px; }
+        .actions { display: flex; gap: 8px; justify-content: flex-end; width: 100%; border-top: 1px solid var(--border); padding-top: 10px; }
+        .btn-action { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 8px; border: 1px solid var(--border); background: var(--btn-action-bg); cursor: pointer; font-size: 16px; }
         .btn-pay { color: var(--success); }
         .btn-move { color: #f59e0b; }
         .btn-back { color: #6366f1; }
@@ -94,14 +128,14 @@
         /* Collapsible Bottom Utility Interface Drawer */
         .utility-toggle-header { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 32px; color: var(--utility); font-size: 14px; font-weight: 600; cursor: pointer; user-select: none; padding: 8px; }
         .utility-arrow { font-size: 11px; transition: transform 0.2s ease; }
-        .utility-card { background: #eaede4; padding: 16px; border-radius: 12px; border: 1px dashed var(--utility); margin-top: 8px; display: none; }
+        .utility-card { background: var(--utility-card-bg); padding: 16px; border-radius: 12px; border: 1px dashed var(--utility); margin-top: 8px; display: none; }
         .utility-title { font-size: 12px; font-weight: bold; color: var(--utility); margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
         .utility-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
         
-        .btn-util { background: #ffffff; color: var(--utility); border: 1px solid var(--border); font-size: 16px; font-weight: normal; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center; -webkit-appearance: none; }
+        .btn-util { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center; -webkit-appearance: none; }
         .file-input-wrapper { position: relative; width: 100%; }
         .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
-        .btn-fake-file { background: #ffffff; color: var(--utility); border: 1px solid var(--border); font-size: 16px; font-weight: normal; text-align: center; }
+        .btn-fake-file { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; text-align: center; }
 
         /* Modern Choice Dialog Engine Overlay Template */
         .choice-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; padding: 24px; align-items: center; justify-content: center; }
@@ -121,17 +155,16 @@
 </head>
 <body>
 
-    <!-- Discreet Top Cloud Navigation Control Row -->
     <div class="top-cloud-bar">
         <div class="cloud-status-text" id="cloudStatusLabel">☁ Cloud Offline</div>
         <div class="discreet-actions-grid">
+            <button class="btn-theme-toggle" id="themeToggleBtn" onclick="toggleDisplayTheme()">Toggle Theme</button>
             <button class="btn-cloud-discreet btn-cloud-signin" id="gdriveMainActionBtn" onclick="initiateGoogleDriveSyncFlow()">Sign In</button>
             <button class="btn-cloud-discreet btn-cloud-push" id="gdrivePushBtn" onclick="uploadToGoogleDrive()" style="display: none;">Backup</button>
             <button class="btn-cloud-discreet btn-cloud-pull" id="gdrivePullBtn" onclick="manuallyTriggerCloudRestore()" style="display: none;">Restore</button>
         </div>
     </div>
 
-    <!-- Month Selector with quick toggle arrows -->
     <div class="month-nav-container">
         <button class="btn-nav-arrow" onclick="stepMonth(-1)" title="Previous Month">◀</button>
         <div class="month-select-wrapper">
@@ -140,7 +173,6 @@
         <button class="btn-nav-arrow" onclick="stepMonth(1)" title="Next Month">▶</button>
     </div>
 
-    <!-- Summary & Totals Panel -->
     <div class="top-bar">
         <div class="header-card">
             <div style="font-size: 14px; color: var(--text-muted); font-weight: 500;">TOTAL UNPAID FOR THIS MONTH</div>
@@ -148,7 +180,6 @@
         </div>
     </div>
 
-    <!-- Collapsible Action Entry Form -->
     <button id="formTriggerBtn" class="btn-trigger-form" onclick="openCreateMode()">+ Add New Expense</button>
 
     <div class="form-card" id="expenseFormCard">
@@ -179,10 +210,8 @@
         </div>
     </div>
 
-    <!-- Active List Layout Wrapper -->
     <div class="expense-list" id="listContainer"></div>
 
-    <!-- Collapsible Bottom Utility Interface Drawer -->
     <div class="utility-toggle-header" onclick="toggleUtilityDrawer()">
         <span>Offline Data Options</span>
         <span class="utility-arrow" id="utilArrow">▼</span>
@@ -199,7 +228,6 @@
         </div>
     </div>
 
-    <!-- Modern Choice Dialog Engine Overlay Template -->
     <div class="choice-overlay" id="customChoiceOverlay">
         <div class="choice-card">
             <div class="choice-message" id="choiceOverlayMessage">Do you want to apply this action to the current month or all upcoming instances?</div>
@@ -210,13 +238,12 @@
         </div>
     </div>
 
-    <!-- Application Version Watermark Label -->
-    <div class="version-watermark">RNE Tracker • v14</div>
+    <div class="version-watermark">RNE Tracker • v20</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 210626_v14
+        // VERSION TRACKER REFERENCE: 210626_v20
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -224,7 +251,7 @@
         const DEDICATED_FILE_NAME = 'rne_database.json';
 
         // Master Architecture State Tracking Arrays
-        let expenses = []; 
+        let expenses = [];
         let templates = [];
         let meta = { lastMonthPopulated: "" };
 
@@ -234,6 +261,7 @@
         let tokenClient = null;
         let activeAccessToken = null;
         let gdriveFileId = null;
+
         const recurrenceGroupsConfig = [
             { key: 0, label: "One-Time Only" },
             { key: 1, label: "Monthly" },
@@ -242,6 +270,19 @@
             { key: 6, label: "Every 6 Months" },
             { key: 12, label: "Yearly" }
         ];
+
+        // Theme Toggle Persistence Logic
+        function initializeSavedDisplayTheme() {
+            const savedTheme = localStorage.getItem('rne_app_theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+
+        function toggleDisplayTheme() {
+            const activeTheme = document.documentElement.getAttribute('data-theme');
+            const targetTheme = activeTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', targetTheme);
+            localStorage.setItem('rne_app_theme', targetTheme);
+        }
 
         // Micro Promise Core Engine linking Custom Modals directly into linear async workflows
         function presentCustomChoicePrompt(questionMessage, isDestructive = false) {
@@ -266,7 +307,6 @@
 
                 const handleLeftSelection = () => { cleanup(); resolve('current'); };
                 const handleRightSelection = () => { cleanup(); resolve('all'); };
-
                 const cleanup = () => {
                     leftBtn.removeEventListener('click', handleLeftSelection);
                     rightBtn.removeEventListener('click', handleRightSelection);
@@ -396,6 +436,7 @@
         });
 
         window.onload = function() {
+            initializeSavedDisplayTheme();
             if (typeof google !== 'undefined' && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID_HERE') {
                 tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: GOOGLE_CLIENT_ID, scope: GOOGLE_DRIVE_SCOPE, callback: '', 
@@ -408,7 +449,7 @@
             const cached = localStorage.getItem('rne_local_backup_cache');
             if (cached) { 
                 try { 
-                    const rootData = JSON.parse(cached); 
+                    const rootData = JSON.parse(cached);
                     if (Array.isArray(rootData)) {
                         expenses = rootData;
                         templates = [];
@@ -419,17 +460,16 @@
                         meta = rootData.meta || { lastMonthPopulated: currentSystemMonth };
                     }
                 } catch(e) { 
-                    expenses = []; templates = []; meta = { lastMonthPopulated: currentSystemMonth };
+                    expenses = [];
+                    templates = []; meta = { lastMonthPopulated: currentSystemMonth };
                 } 
             } else {
                 meta.lastMonthPopulated = currentSystemMonth;
             }
             
-            // Retroactive Data Patch: Guarantee all loaded expenses possess an immutable originMonth setup
             expenses.forEach(e => {
                 if (!e.originMonth) e.originMonth = e.month;
             });
-
             executeAutomatedMonthRolloverAudit();
         }
 
@@ -438,7 +478,6 @@
             let changesMade = false;
             const lastAuditedMonth = localStorage.getItem('rne_last_processed_month') || currentSystemMonth;
 
-            // 1. Roll over unpaid past single items
             if (currentSystemMonth > lastAuditedMonth) {
                 expenses.forEach(item => {
                     if (item.month === lastAuditedMonth && item.status === 'unpaid') {
@@ -450,9 +489,7 @@
             }
             localStorage.setItem('rne_last_processed_month', currentSystemMonth);
 
-            // 2. Master Template Startup Spawning Engine
             if (!meta.lastMonthPopulated) meta.lastMonthPopulated = currentSystemMonth;
-            
             monthsRange.forEach(visibleMonth => {
                 if (visibleMonth > meta.lastMonthPopulated) {
                     templates.forEach(tpl => {
@@ -473,7 +510,7 @@
                                     month: visibleMonth,
                                     recur: tpl.recur,
                                     status: 'unpaid',
-                                    originMonth: visibleMonth, // Series auto-spawns match their native appearance slot
+                                    originMonth: visibleMonth, 
                                     isEdited: false
                                 });
                                 changesMade = true;
@@ -483,7 +520,6 @@
                 }
             });
 
-            // Advance the pointer to the furthest visible horizon edge
             const maxVisibleMonth = monthsRange[monthsRange.length - 1];
             if (maxVisibleMonth > meta.lastMonthPopulated) {
                 meta.lastMonthPopulated = maxVisibleMonth;
@@ -535,8 +571,13 @@
         function toggleUtilityDrawer() {
             const drawer = document.getElementById('utilityDrawerCard');
             const arrow = document.getElementById('utilArrow');
-            if(drawer.style.display === 'block') { drawer.style.display = 'none'; arrow.innerText = '▼'; } 
-            else { drawer.style.display = 'block'; arrow.innerText = '▲'; }
+            if(drawer.style.display === 'block') {
+                drawer.style.display = 'none';
+                arrow.innerText = '▼';
+            } else {
+                drawer.style.display = 'block';
+                arrow.innerText = '▲';
+            }
         }
 
         function toggleGroupCollapse(groupKey) {
@@ -552,7 +593,7 @@
                 render();
             }
         }
-        
+
         function toggleDurationField() {
             if (editingTargetId) return;
             const recurVal = parseInt(document.getElementById('expRecur').value);
@@ -560,44 +601,40 @@
         }
 
         function save() {
-            const packageData = {
-                meta: meta,
-                templates: templates,
-                expenses: expenses
-            };
+            const packageData = { meta: meta, templates: templates, expenses: expenses };
             localStorage.setItem('rne_local_backup_cache', JSON.stringify(packageData));
             render();
         }
 
         function processFormSubmit() {
-            if (editingTargetId) { executeEditSave(); } else { addExpense(); }
+            if (editingTargetId) {
+                executeEditSave();
+            } else {
+                addExpense();
+            }
         }
 
         async function executeEditSave() {
             const item = expenses.find(e => e.id === editingTargetId);
             if (!item) return;
-
             const newName = document.getElementById('expName').value.trim();
             const newCost = parseFloat(document.getElementById('expCost').value);
             const newMonth = document.getElementById('expMonthTarget').value;
+
             if (!newName || isNaN(newCost)) return alert("Fill out Name and Cost fields.");
             if (!item.originMonth) item.originMonth = item.month;
 
             if (item.seriesId) {
                 const decision = await presentCustomChoicePrompt("Update only this single current entry, or all upcoming instances in the series?");
                 if (decision === 'all') {
-                    // Update Master Definition Template
                     const targetTpl = templates.find(t => t.seriesId === item.seriesId);
                     if (targetTpl) {
                         targetTpl.name = newName;
                         targetTpl.cost = newCost;
                     }
-
-                    // Process Existing Future Instances
                     for (let e of expenses) {
                         if (e.seriesId === item.seriesId && e.month >= item.month) {
                             if (e.isEdited) {
-                                // Dynamic individual review intercept for modified entries
                                 const userChoice = await presentInteractiveOverrideReview(e.month, e.name, e.cost, newName, newCost);
                                 if (userChoice === 'overwrite') {
                                     e.name = newName;
@@ -611,7 +648,6 @@
                         }
                     }
                 } else {
-                    // Current entry only: Sever link, mark modified status true
                     item.seriesId = null;
                     item.recur = 0;
                     item.name = newName;
@@ -624,8 +660,8 @@
                 item.cost = newCost;
                 item.month = newMonth;
             }
-
-            closeFormDisplay(); save();
+            closeFormDisplay();
+            save();
         }
 
         function addExpense() {
@@ -634,58 +670,39 @@
             const startMonth = document.getElementById('expMonthTarget').value;
             const recur = parseInt(document.getElementById('expRecur').value);
             const durationLimit = parseInt(document.getElementById('expDuration').value);
+
             if (!name || isNaN(cost)) return alert("Fill out Name and Cost.");
-            
             const seriesId = recur > 0 ? 'series_' + Date.now() : null;
 
             if (recur > 0) {
-                // Keep structural definition in Master Templates array
-                templates.push({
-                    seriesId: seriesId,
-                    name: name,
-                    cost: cost,
-                    startMonth: startMonth,
-                    recur: recur,
-                    durationLimit: durationLimit === 999 ? null : durationLimit
-                });
+                templates.push({ seriesId: seriesId, name: name, cost: cost, startMonth: startMonth, recur: recur, durationLimit: durationLimit === 999 ? null : durationLimit });
             }
-
             const [startYear, startMonthNum] = startMonth.split('-').map(Number);
             let cycleCount = 0;
-            
-            // Render visible timeline loop instantly
+
             for (let i = 0; i <= 12; i++) {
                 if (recur > 0 && i % recur !== 0) continue;
-                if (recur === 0 && i > 0) break; 
+                if (recur === 0 && i > 0) break;
                 if (durationLimit !== 999 && cycleCount >= durationLimit) break;
-                
+
                 let calcMonthRaw = (startMonthNum - 1) + i;
                 let targetKey = `${startYear + Math.floor(calcMonthRaw / 12)}-${((calcMonthRaw % 12) + 1) < 10 ? '0' + ((calcMonthRaw % 12) + 1) : ((calcMonthRaw % 12) + 1)}`;
-
                 if (!monthsRange.includes(targetKey) && recur > 0) continue;
-                expenses.push({
-                    id: Date.now() + Math.random().toString(36).substr(2, 5),
-                    seriesId: seriesId, 
-                    name: name, 
-                    cost: cost, 
-                    month: targetKey, 
-                    recur: recur, 
-                    status: 'unpaid', 
-                    originMonth: targetKey, // When initially drawn, native slot is the anchor originMonth
-                    isEdited: false
-                });
+
+                expenses.push({ id: Date.now() + Math.random().toString(36).substr(2, 5), seriesId: seriesId, name: name, cost: cost, month: targetKey, recur: recur, status: 'unpaid', originMonth: targetKey, isEdited: false });
                 cycleCount++;
             }
-            
-            // Keep tracker synchronized to furthest visible element edge
             meta.lastMonthPopulated = monthsRange[monthsRange.length - 1];
-            
-            closeFormDisplay(); save();
+            closeFormDisplay();
+            save();
         }
 
         function togglePaid(id) {
             const item = expenses.find(e => e.id === id);
-            if (item) { item.status = (item.status === 'unpaid') ? 'paid' : 'unpaid'; save(); }
+            if (item) {
+                item.status = (item.status === 'unpaid') ? 'paid' : 'unpaid';
+                save();
+            }
         }
 
         function moveNextMonth(id) {
@@ -693,8 +710,8 @@
             if (!item) return;
             if (!item.originMonth) item.originMonth = item.month;
             const [y, m] = item.month.split('-').map(Number);
-            item.month = `${y + Math.floor(m / 12)}-${(m % 12) + 1 < 10 ? '0' + ((m % 12) + 1) : (m % 12) + 1}`; 
-            if(item.seriesId) item.isEdited = true; // Shifting positions explicitly breaks global continuity
+            item.month = `${y + Math.floor(m / 12)}-${(m % 12) + 1 < 10 ? '0' + ((m % 12) + 1) : (m % 12) + 1}`;
+            if(item.seriesId) item.isEdited = true;
             save();
         }
 
@@ -705,39 +722,56 @@
             const [y, m] = item.month.split('-').map(Number);
             let prevMonthRaw = (m - 1) - 1;
             let prevMonthStr = (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) < 10 ? '0' + (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) : (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1);
-            item.month = `${prevMonthRaw < 0 ? y - 1 : y}-${prevMonthStr}`; 
+            item.month = `${prevMonthRaw < 0 ? y - 1 : y}-${prevMonthStr}`;
             if(item.seriesId) item.isEdited = true;
             save();
         }
 
         async function deleteExpense(id) {
-            const itemToDelete = expenses.find(e => e.id === id);
-            if (!itemToDelete) return;
-            
-            if (itemToDelete.seriesId) {
+            const item = expenses.find(e => e.id === id);
+            if (!item) return;
+
+            if (item.seriesId) {
                 const choice = await presentThreeWayDeleteCrossroads();
                 if (choice === 'current') {
                     expenses = expenses.filter(e => e.id !== id);
                 } else if (choice === 'forward') {
-                    // Wipe master generation layout instructions from configuration ledger
-                    templates = templates.filter(t => t.seriesId !== itemToDelete.seriesId);
-                    // Filter out future elements safely preserving history logs
-                    expenses = expenses.filter(e => !(e.seriesId === itemToDelete.seriesId && e.month >= itemToDelete.month));
+                    expenses = expenses.filter(e => !(e.seriesId === item.seriesId && e.month >= item.month));
+                    const targetTpl = templates.find(t => t.seriesId === item.seriesId);
+                    if (targetTpl) {
+                        const [y, m] = item.month.split('-').map(Number);
+                        let prevMonthRaw = (m - 1) - 1;
+                        let prevMonthStr = (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) < 10 ? '0' + (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) : (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1);
+                        let targetEndBoundaryMonth = `${prevMonthRaw < 0 ? y - 1 : y}-${prevMonthStr}`;
+                        
+                        const [startY, startM] = targetTpl.startMonth.split('-').map(Number);
+                        const [endY, endM] = targetEndBoundaryMonth.split('-').map(Number);
+                        const totalMonthsPassed = (endY - startY) * 12 + (endM - startM);
+                        
+                        if (totalMonthsPassed < 0) {
+                            templates = templates.filter(t => t.seriesId !== item.seriesId);
+                        } else {
+                            targetTpl.durationLimit = Math.floor(totalMonthsPassed / targetTpl.recur) + 1;
+                        }
+                    }
+                } else {
+                    return;
                 }
-            } else { 
-                if (confirm("Delete permanently?")) expenses = expenses.filter(e => e.id !== id);
+            } else {
+                expenses = expenses.filter(e => e.id !== id);
             }
             save();
         }
 
         function exportToFile() {
-            const now = new Date();
-            const fileName = `RNE_${String(now.getFullYear()).slice(-2)}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.txt`;
-            
             const packageData = { meta: meta, templates: templates, expenses: expenses };
-            const blob = new Blob([JSON.stringify(packageData, null, 2)], { type: "text/plain;charset=utf-8" });
-            const tempLink = document.createElement('a'); tempLink.href = URL.createObjectURL(blob);
-            tempLink.download = fileName; tempLink.click();
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(packageData));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "rne_tracker_backup.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
         }
 
         function importFromFile(event) {
@@ -746,156 +780,232 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const parsedData = JSON.parse(e.target.result);
-                    if (Array.isArray(parsedData)) { 
-                        expenses = parsedData; templates = []; meta = { lastMonthPopulated: currentSystemMonth };
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed.expenses && parsed.templates) {
+                        expenses = parsed.expenses;
+                        templates = parsed.templates;
+                        meta = parsed.meta || { lastMonthPopulated: currentSystemMonth };
+                    } else if (Array.isArray(parsed)) {
+                        expenses = parsed;
+                        templates = [];
+                        meta = { lastMonthPopulated: currentSystemMonth };
                     } else {
-                        expenses = parsedData.expenses || [];
-                        templates = parsedData.templates || [];
-                        meta = parsedData.meta || { lastMonthPopulated: currentSystemMonth };
+                        alert("Invalid backup schema configuration file.");
+                        return;
                     }
-                    
-                    expenses.forEach(item => {
-                        if (!item.originMonth) item.originMonth = item.month;
-                    });
-
-                    save(); executeAutomatedMonthRolloverAudit(); alert("Data imported successfully!"); 
-                } catch (err) { alert("Error parsing file structure."); }
+                    expenses.forEach(ex => { if (!ex.originMonth) ex.originMonth = ex.month; });
+                    save();
+                    alert("Local file configuration database imported successfully.");
+                } catch (err) {
+                    alert("Failure parsing backup structure data file.");
+                }
             };
             reader.readAsText(file);
         }
 
+        // ==========================================
+        // GOOGLE DRIVE CLOUD SYNC OPERATIONS
+        // ==========================================
+
+        function updateCloudStatusBarUI(statusText, isConnected = false) {
+            const statusLabel = document.getElementById('cloudStatusLabel');
+            const mainActionBtn = document.getElementById('gdriveMainActionBtn');
+            const pushBtn = document.getElementById('gdrivePushBtn');
+            const pullBtn = document.getElementById('gdrivePullBtn');
+
+            statusLabel.innerText = statusText;
+            if (isConnected) {
+                mainActionBtn.innerText = "Disconnect";
+                mainActionBtn.style.background = "var(--danger)";
+                pushBtn.style.display = "inline-flex";
+                pullBtn.style.display = "inline-flex";
+            } else {
+                mainActionBtn.innerText = "Sign In";
+                mainActionBtn.style.background = "var(--gdrive-color)";
+                pushBtn.style.display = "none";
+                pullBtn.style.display = "none";
+            }
+        }
+
         function initiateGoogleDriveSyncFlow() {
-            if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') return alert("Google Cloud Execution Missing!");
-            if (!tokenClient) return alert("Google Identity Library context missing.");
-            tokenClient.callback = async (response) => {
-                if (response.error !== undefined) throw (response);
-                activeAccessToken = response.access_token;
-                document.getElementById('gdriveMainActionBtn').style.display = "none";
-                document.getElementById('gdrivePushBtn').style.display = "inline-flex";
-                document.getElementById('gdrivePullBtn').style.display = "inline-flex";
-                document.getElementById('cloudStatusLabel').innerHTML = "🟢 Cloud Connected";
-                await resolveCloudFileIdentifier();
+            if (activeAccessToken) {
+                activeAccessToken = null;
+                gdriveFileId = null;
+                updateCloudStatusBarUI("☁ Cloud Offline", false);
+                return;
+            }
+            updateCloudStatusBarUI("⌛ Authenticating...", false);
+            tokenClient.callback = async (resp) => {
+                if (resp.error) {
+                    updateCloudStatusBarUI("❌ Auth Failed", false);
+                    return;
+                }
+                activeAccessToken = resp.access_token;
+                updateCloudStatusBarUI("🔄 Connected. Locating File...", true);
+                await queryAndLocateDatabaseFileOnCloud();
             };
             tokenClient.requestAccessToken({ prompt: 'consent' });
         }
 
-        async function resolveCloudFileIdentifier() {
-            if (!activeAccessToken) return;
+        async function queryAndLocateDatabaseFileOnCloud() {
             try {
-                const listUrl = 'https://www.googleapis.com/drive/v3/files?' + new URLSearchParams({
-                    q: `name = '${DEDICATED_FILE_NAME}' and trashed = false`, pageSize: '1', fields: 'files(id, name)'
-                });
-                const listResponse = await fetch(listUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
-                const listData = await listResponse.json();
-                gdriveFileId = (listData.files && listData.files.length > 0) ? listData.files[0].id : null;
-            } catch (err) { console.error(err); }
-        }
-
-        async function manuallyTriggerCloudRestore() {
-            if (!activeAccessToken) return alert("Session expired. Please re-authenticate.");
-            await resolveCloudFileIdentifier();
-            if (!gdriveFileId) return alert(`No backup file found under the name "${DEDICATED_FILE_NAME}".`);
-            if (expenses.length > 0 && !confirm("Overwrite current parameters with data from cloud backup?")) return;
-            try {
-                const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, {
-                    headers: { 'Authorization': `Bearer ${activeAccessToken}` }
-                });
-                const parsedBackupData = await fileResponse.json();
-                if (Array.isArray(parsedBackupData)) {
-                    expenses = parsedBackupData; templates = []; meta = { lastMonthPopulated: currentSystemMonth };
+                const url = `https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}'+and+trashed=false&fields=files(id)`;
+                const response = await fetch(url, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
+                const result = await response.json();
+                if (result.files && result.files.length > 0) {
+                    gdriveFileId = result.files[0].id;
+                    updateCloudStatusBarUI("☁ Cloud Connected", true);
+                    await downloadAndRestoreFromGoogleDrive(false);
                 } else {
-                    expenses = parsedBackupData.expenses || [];
-                    templates = parsedBackupData.templates || [];
-                    meta = parsedBackupData.meta || { lastMonthPopulated: currentSystemMonth };
+                    updateCloudStatusBarUI("☁ Cloud Active (No Remote File Found)", true);
                 }
-
-                expenses.forEach(item => {
-                    if (!item.originMonth) item.originMonth = item.month;
-                });
-
-                save(); executeAutomatedMonthRolloverAudit(); alert("Database imported successfully!");
-            } catch (err) { alert("Pipeline error parsing target cloud payload."); }
+            } catch (err) {
+                updateCloudStatusBarUI("❌ Cloud Query Error", true);
+            }
         }
 
         async function uploadToGoogleDrive() {
-            if (!activeAccessToken) return alert("No active cloud session found.");
-            const packageData = { meta: meta, templates: templates, expenses: expenses };
-            const fileContent = JSON.stringify(packageData, null, 2);
-            const boundary = 'RNE_TRACKER_DATA_SPLIT_BOUNDARY';
-            const delimiter = `\r\n--${boundary}\r\n`;
-            const close_delim = `\r\n--${boundary}--`;
-            let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-            let method = 'POST';
-            const metadata = { 'mimeType': 'application/json' };
-            if (gdriveFileId) { url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`; method = 'PATCH'; } 
-            else { metadata.name = DEDICATED_FILE_NAME; }
-            const multipartRequestBody = delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(metadata) + delimiter + 'Content-Type: application/json\r\n\r\n' + fileContent + close_delim;
+            if (!activeAccessToken) return;
+            updateCloudStatusBarUI("📤 Syncing local backup payload...", true);
+            const localData = { meta: meta, templates: templates, expenses: expenses };
+            const metadata = { name: DEDICATED_FILE_NAME, mimeType: 'application/json' };
+            
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            form.append('file', new Blob([JSON.stringify(localData)], { type: 'application/json' }));
+
             try {
-                const uploadResponse = await fetch(url, {
-                    method: method, headers: { 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': `multipart/related; boundary=${boundary}` }, body: multipartRequestBody
-                });
-                if (uploadResponse.ok) {
-                    const responseData = await uploadResponse.json();
-                    if (!gdriveFileId && responseData.id) gdriveFileId = responseData.id; 
-                    alert("Cloud sync complete!");
-                } else { alert("Cloud Transfer Rejection."); }
-            } catch (err) { console.error(err); }
+                let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id';
+                let method = 'POST';
+                if (gdriveFileId) {
+                    url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart&fields=id`;
+                    method = 'PATCH';
+                }
+                const response = await fetch(url, { method: method, headers: { 'Authorization': `Bearer ${activeAccessToken}` }, body: form });
+                const result = await response.json();
+                if (result.id) gdriveFileId = result.id;
+                updateCloudStatusBarUI("✓ Cloud Synchronized", true);
+            } catch (err) {
+                updateCloudStatusBarUI("❌ Backup Transmission Interrupted", true);
+            }
         }
 
+        function manuallyTriggerCloudRestore() {
+            if (confirm("Replace all structural local tables inside your local memory with data stored on the cloud?")) {
+                downloadAndRestoreFromGoogleDrive(true);
+            }
+        }
+
+        async function downloadAndRestoreFromGoogleDrive(explicitUserAlerts = false) {
+            if (!activeAccessToken || !gdriveFileId) return;
+            if (explicitUserAlerts) updateCloudStatusBarUI("📥 Fetching infrastructure file...", true);
+            
+            try {
+                const url = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
+                const response = await fetch(url, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
+                const cloudData = await response.json();
+                
+                if (cloudData.expenses && cloudData.templates) {
+                    expenses = cloudData.expenses;
+                    templates = cloudData.templates;
+                    meta = cloudData.meta || { lastMonthPopulated: currentSystemMonth };
+                    expenses.forEach(ex => { if (!ex.originMonth) ex.originMonth = ex.month; });
+                    localStorage.setItem('rne_local_backup_cache', JSON.stringify(cloudData));
+                    executeAutomatedMonthRolloverAudit();
+                    updateCloudStatusBarUI("✓ Cloud Data Restored", true);
+                    if (explicitUserAlerts) alert("Cloud data pull matching complete.");
+                }
+            } catch (err) {
+                updateCloudStatusBarUI("❌ Restore Process Interrupted", true);
+                if (explicitUserAlerts) alert("Could not fetch media content down from file structure endpoints.");
+            }
+        }
+
+        // ==========================================
+        // DYNAMIC RENDERING INTERFACES ENGINE
+        // ==========================================
+
         function render() {
-            const currentFilter = filterSelect.value;
+            const activeTargetFilterMonth = filterSelect.value;
             const container = document.getElementById('listContainer');
-            container.innerHTML = ''; 
-            let totalUnpaidOverall = 0;
-            const currentMonthItems = expenses.filter(e => e.month === currentFilter);
-            currentMonthItems.forEach(e => { if (e.status === 'unpaid') totalUnpaidOverall += e.cost; });
-            document.getElementById('totalUnpaid').innerText = `€${totalUnpaidOverall.toFixed(2)}`;
-            if (currentMonthItems.length === 0) {
-                container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:24px;">No expenses logged for this month.</div>';
+            container.innerHTML = '';
+
+            const filteredList = expenses.filter(e => e.month === activeTargetFilterMonth);
+            
+            let currentMonthRunningUnpaidTotal = 0;
+            filteredList.forEach(e => {
+                if (e.status === 'unpaid') currentMonthRunningUnpaidTotal += e.cost;
+            });
+            document.getElementById('totalUnpaid').innerText = `€${currentMonthRunningUnpaidTotal.toFixed(2)}`;
+
+            if (filteredList.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:32px; color:var(--text-muted); font-size:15px;">No expenses logged for this month.</div>`;
                 return;
             }
 
-            recurrenceGroupsConfig.forEach(group => {
-                const groupItems = currentMonthItems.filter(e => (e.recur || 0) === group.key); if (groupItems.length === 0) return;
-                let groupUnpaidCost = 0; groupItems.forEach(e => { if (e.status === 'unpaid') groupUnpaidCost += e.cost; });
+            const nestedCategorizedGroupsMap = {};
+            recurrenceGroupsConfig.forEach(g => {
+                nestedCategorizedGroupsMap[g.key] = { label: g.label, list: [], unpaidSum: 0 };
+            });
 
-                let isCollapsed = collapsedGroups[group.key] !== undefined ? collapsedGroups[group.key] : groupUnpaidCost === 0;
+            filteredList.forEach(e => {
+                const recurKey = e.recur || 0;
+                if (!nestedCategorizedGroupsMap[recurKey]) {
+                    nestedCategorizedGroupsMap[recurKey] = { label: "Custom Recurrence", list: [], unpaidSum: 0 };
+                }
+                nestedCategorizedGroupsMap[recurKey].list.push(e);
+                if (e.status === 'unpaid') {
+                    nestedCategorizedGroupsMap[recurKey].unpaidSum += e.cost;
+                }
+            });
+
+            recurrenceGroupsConfig.forEach(gConfig => {
+                const groupData = nestedCategorizedGroupsMap[gConfig.key];
+                if (!groupData || groupData.list.length === 0) return;
+
+                const uniqueGroupStorageHTMLKey = `${activeTargetFilterMonth}_group_${gConfig.key}`;
+                const isCurrentlyCollapsed = collapsedGroups[uniqueGroupStorageHTMLKey] === true;
+
                 const groupContainer = document.createElement('div');
                 groupContainer.className = 'group-container';
 
-                const groupHeader = document.createElement('div');
-                groupHeader.className = 'group-header';
-                groupHeader.onclick = () => toggleGroupCollapse(group.key);
-    
-                groupHeader.innerHTML = `
-                    <div class="group-header-title"><span>${isCollapsed ? '▶' : '▼'}</span><span>${group.label}</span></div>
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'group-header';
+                headerDiv.onclick = () => toggleGroupCollapse(uniqueGroupStorageHTMLKey);
+
+                const countBadgeHTML = `<span class="group-badge">${groupData.list.length}</span>`;
+                const costBadgeClass = groupData.unpaidSum > 0 ? 'has-unpaid' : 'all-paid';
+                const costBadgeHTML = `<span class="group-unpaid-cost ${costBadgeClass}">€${groupData.unpaidSum.toFixed(2)}</span>`;
+
+                headerDiv.innerHTML = `
+                    <div class="group-header-title">
+                        <span style="font-size:11px; transform:rotate(${isCurrentlyCollapsed ? '-90deg' : '0deg'}); transition:transform 0.1s linear;">▼</span>
+                        <span>${groupData.label}</span>
+                    </div>
                     <div class="group-badges-container">
-                        <span class="group-unpaid-cost ${groupUnpaidCost > 0 ? 'has-unpaid' : 'all-paid'}">€${groupUnpaidCost.toFixed(2)}</span>
-                        <span class="group-badge">${groupItems.length}</span>
+                        ${costBadgeHTML}
+                        ${countBadgeHTML}
                     </div>
                 `;
-                groupContainer.appendChild(groupHeader);
+                groupContainer.appendChild(headerDiv);
 
-                if (!isCollapsed) {
-                    const groupContent = document.createElement('div'); groupContent.className = 'group-content';
-                    groupItems.forEach(e => {
-                        const itemDiv = document.createElement('div'); itemDiv.className = `expense-item ${e.status}`;
-                        
-                        const showMoveBack = (e.month > currentSystemMonth) && (e.status === 'unpaid');
-                        if (!e.originMonth) e.originMonth = e.month;
-  
-                        const editedBadgeHtml = e.isEdited ? `<span class="badge-edited">Edited</span>` : '';
-                        
-                        // Conditional rendering frame for the Origin Tracking Label
-                        const showOriginLabel = e.month !== e.originMonth;
-                        const originLabelHtml = showOriginLabel ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` : '';
-                        
+                if (!isCurrentlyCollapsed) {
+                    const groupContent = document.createElement('div');
+                    groupContent.className = 'group-content';
+
+                    groupData.list.forEach(e => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = `expense-item ${e.status}`;
+
+                        const displayOrigin = (e.seriesId && e.originMonth && e.originMonth !== e.month);
+                        const originLabelHtml = displayOrigin ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` : '';
+                        const showMoveBack = (e.seriesId && e.month !== e.originMonth);
+
                         itemDiv.innerHTML = `
                             <div class="info">
                                 <div class="name-wrapper">
                                     <span class="name">${e.name}</span>
-                                    ${editedBadgeHtml}
+                                    ${e.isEdited ? `<span class="badge-edited">Modified</span>` : ''}
                                 </div>
                                 <div class="cost-row">
                                     <span class="cost">€${e.cost.toFixed(2)}</span>
