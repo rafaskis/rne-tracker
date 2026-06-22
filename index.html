@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v28</title>
+    <title>RNE Tracker - v29</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -238,12 +238,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v28</div>
+    <div class="version-watermark">RNE Tracker • v29</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 210626_v28
+        // VERSION TRACKER REFERENCE: 220626_v29
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -324,12 +324,44 @@
         }
 
         // Specialized Custom Delta Synchronization Decision Prompt Overlay Drawer Loop
-        function presentCloudSyncCrossroadsPrompt(statusHeadline, localDateStr, cloudDateStr) {
+        function presentCloudSyncCrossroadsPrompt(statusHeadline, localDateStr, cloudDateStr, forceShowOptions = false) {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('customChoiceOverlay');
                 const textContainer = document.getElementById('choiceOverlayMessage');
                 const container = document.getElementById('choiceButtonsContainer');
 
+                // Check if files are perfectly matched
+                const isIdentical = (localDateStr === cloudDateStr && localDateStr !== "Never (Empty Empty)");
+
+                if (isIdentical && !forceShowOptions) {
+                    // Sign in event scenario with identical logs -> Inform user with clean OK acknowledge pipeline
+                    textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
+                        ✨ <span>Your local offline file matches your remote Google Drive cloud copy exactly.</span><br><br>
+                        <span style="font-size:12px; color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
+                        <span style="font-size:12px; color:var(--primary);">Cloud Backup Last Updated:</span><br><strong>${cloudDateStr}</strong>`;
+                    
+                    container.className = "vertical-buttons";
+                    container.innerHTML = `
+                        <button class="btn-choice btn-choice-right btn-choice-full" id="btnSyncOk">OK</button>
+                    `;
+
+                    const okBtn = document.getElementById('btnSyncOk');
+                    const handleOk = () => {
+                        overlay.style.display = 'none';
+                        container.className = "choice-buttons-row";
+                        container.innerHTML = `
+                            <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
+                            <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
+                        `;
+                        okBtn.removeEventListener('click', handleOk);
+                        resolve('ignore');
+                    };
+                    okBtn.addEventListener('click', handleOk);
+                    overlay.style.display = 'flex';
+                    return;
+                }
+
+                // Default standard comparison workflow view displaying interactive option forks
                 textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
                     ${statusHeadline}<br><br>
                     <span style="font-size:12px; color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
@@ -558,7 +590,7 @@
                 if (data.files && data.files.length > 0) {
                     gdriveFileId = data.files[0].id;
                     document.getElementById('cloudStatusLabel').innerText = "☁ Linked to Cloud Backup";
-                    await evaluateCloudDeltaSyncChoices(isSilentMode);
+                    await evaluateCloudDeltaSyncChoices(isSilentMode, false);
                 } else {
                     document.getElementById('cloudStatusLabel').innerText = "✅ New Cloud Storage Ready";
                     if (!isSilentMode) {
@@ -582,7 +614,7 @@
         }
 
         // Unified Delta Evaluation Strategy Engine Matrix
-        async function evaluateCloudDeltaSyncChoices(isAutomatedSilentStartup = false) {
+        async function evaluateCloudDeltaSyncChoices(isAutomatedSilentStartup = false, forceShowOptions = false) {
             if (!activeAccessToken || !gdriveFileId) return;
             try {
                 const fetchUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
@@ -601,34 +633,35 @@
 
                 if (cloudTimestamp > localTimestamp) {
                     statusHeadline = "👉 <strong>The Cloud Backup database file is newer than your offline local cache data.</strong>";
-                    triggerPromptScreen = !isAutomatedSilentStartup; // If manual push/pull click or initial interactive login
+                    triggerPromptScreen = !isAutomatedSilentStartup || forceShowOptions;
                     
-                    if (isAutomatedSilentStartup) {
-                        // Safe historical fallback default behavior pathing
+                    if (isAutomatedSilentStartup && !forceShowOptions) {
                         applyDownloadedCloudPayload(cloudData);
                         return;
                     }
                 } else if (localTimestamp > cloudTimestamp) {
                     statusHeadline = "👈 <strong>Your local data records are newer than the file currently backed up on the cloud.</strong>";
-                    triggerPromptScreen = !isAutomatedSilentStartup;
+                    triggerPromptScreen = !isAutomatedSilentStartup || forceShowOptions;
 
-                    if (isAutomatedSilentStartup) {
-                        await uploadToGoogleDrive();
+                    if (isAutomatedSilentStartup && !forceShowOptions) {
+                        // Crucial correction adjustment requirement: Changes no longer auto-push out of silent startup initialization sequence
+                        executeAutomatedMonthRolloverAudit();
                         return;
                     }
                 } else {
                     statusHeadline = "✨ <strong>Your local offline file matches your remote Google Drive cloud copy exactly.</strong>";
-                    if (isAutomatedSilentStartup) {
+                    if (isAutomatedSilentStartup && !forceShowOptions) {
                         executeAutomatedMonthRolloverAudit();
                         return;
                     }
-                    triggerPromptScreen = true; // Still show choice panel if they explicitly pressed "Backup" or "Restore"
+                    triggerPromptScreen = true; 
                 }
 
                 if (triggerPromptScreen) {
-                    const chosenDirection = await presentCloudSyncCrossroadsPrompt(statusHeadline, localDateStr, cloudDateStr);
+                    const chosenDirection = await presentCloudSyncCrossroadsPrompt(statusHeadline, localDateStr, cloudDateStr, forceShowOptions);
                     if (chosenDirection === 'push') {
                         await uploadToGoogleDrive();
+                        alert("Database backup successful!");
                     } else if (chosenDirection === 'pull') {
                         applyDownloadedCloudPayload(cloudData);
                         alert("Database restoration successful!");
@@ -651,12 +684,13 @@
 
         async function manuallyTriggerCloudBackup() {
             if (!activeAccessToken) return alert("Cloud account is not authenticated.");
-            await evaluateCloudDeltaSyncChoices(false);
+            // Pass true to force manual layout mode selections panel fork options interface bypass layout rules
+            await evaluateCloudDeltaSyncChoices(false, true);
         }
 
         async function manuallyTriggerCloudRestore() {
             if (!activeAccessToken || !gdriveFileId) return alert("Cloud account is not authenticated.");
-            await evaluateCloudDeltaSyncChoices(false);
+            await evaluateCloudDeltaSyncChoices(false, true);
         }
 
         async function uploadToGoogleDrive() {
@@ -852,7 +886,7 @@
             const packageData = { meta: meta, templates: templates, expenses: expenses };
             localStorage.setItem('rne_local_backup_cache', JSON.stringify(packageData));
             render();
-            uploadToGoogleDrive();
+            // CRITICAL CHANGE ADJUSTMENT NOTE: Automatic dynamic Google Drive backend upload triggers completely removed from save() loop context.
         }
 
         async function processFormSubmit() {
@@ -962,7 +996,9 @@
                     }
                 } else { return; }
             } else {
-                if (confirm(`Remove custom layout index item point for "${item.name}"?`)) {
+                // FIXED DELETION PROMPT LOOKUP: Replaced the rigid multi-choice panel fork layout with a friendly confirmation prompt.
+                const cleanDeletionConfirmation = await presentCustomChoicePrompt(`Are you sure you want to delete the expense "${item.name}"?`, "Cancel", "Delete", true);
+                if (cleanDeletionConfirmation === 'right') {
                     expenses = expenses.filter(e => e.id !== id);
                 } else { return; }
             }
@@ -1019,6 +1055,7 @@
             save();
         }
 
+        // Offline Data Portability Handling 
         function exportToFile() {
             const packageData = { meta: meta, templates: templates, expenses: expenses };
             const blob = new Blob([JSON.stringify(packageData, null, 2)], { type: 'text/plain' });
