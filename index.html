@@ -397,9 +397,9 @@
                     `;
                 };
 
-                currentBtn.addEventListener('click', handleCurrent);
-                forwardBtn.addEventListener('click', handleForward);
-                cancelBtn.addEventListener('click', handleCancel);
+                currentBtn.removeEventListener('click', handleCurrent);
+                forwardBtn.removeEventListener('click', handleForward);
+                cancelBtn.removeEventListener('click', handleCancel);
                 overlay.style.display = 'flex';
             });
         }
@@ -566,6 +566,18 @@
             document.getElementById('expenseFormCard').style.display = 'none';
             document.getElementById('formTriggerBtn').style.display = 'block';
             editingTargetId = null;
+        }
+
+        function toggleUtilityDrawer() {
+            const drawer = document.getElementById('utilityDrawerCard');
+            const arrow = document.getElementById('utilArrow');
+            if(drawer.style.display === 'block') {
+                drawer.style.display = 'none';
+                arrow.innerText = '▼';
+            } else {
+                drawer.style.display = 'block';
+                arrow.innerText = '▲';
+            }
         }
 
         function toggleUtilityDrawer() {
@@ -997,9 +1009,12 @@
                         const itemDiv = document.createElement('div');
                         itemDiv.className = `expense-item ${e.status}`;
 
-                        const displayOrigin = (e.seriesId && e.originMonth && e.originMonth !== e.month);
+                        // Unified Label logic: Show origin label if current month differs from origin month
+                        const displayOrigin = (e.originMonth && e.originMonth !== e.month);
                         const originLabelHtml = displayOrigin ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` : '';
-                        const showMoveBack = (e.seriesId && e.month !== e.originMonth);
+                        
+                        // Condition updated: Series items can move back if they rolled forward; One-time items can always move back
+                        const showMoveBack = (!e.seriesId || (e.seriesId && e.month !== e.originMonth));
 
                         itemDiv.innerHTML = `
                             <div class="info">
