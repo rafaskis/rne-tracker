@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v20</title>
+    <title>RNE Tracker - v21</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -238,12 +238,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v20</div>
+    <div class="version-watermark">RNE Tracker • v21</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 210626_v20
+        // VERSION TRACKER REFERENCE: 210626_v21
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -253,7 +253,7 @@
         // Master Architecture State Tracking Arrays
         let expenses = [];
         let templates = [];
-        let meta = { lastMonthPopulated: "" };
+        let meta = { lastMonthPopulated: "", lastUpdated: 0 };
 
         let editingTargetId = null;
         let collapsedGroups = JSON.parse(localStorage.getItem('household_collapsed_groups')) || {};
@@ -285,7 +285,7 @@
         }
 
         // Micro Promise Core Engine linking Custom Modals directly into linear async workflows
-        function presentCustomChoicePrompt(questionMessage, isDestructive = false) {
+        function presentCustomChoicePrompt(questionMessage, leftLabel = "Current", rightLabel = "All", isDestructive = false) {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('customChoiceOverlay');
                 const textContainer = document.getElementById('choiceOverlayMessage');
@@ -298,6 +298,8 @@
                 rightBtn.style.display = "inline-block";
 
                 textContainer.innerText = questionMessage;
+                leftBtn.innerText = leftLabel;
+                rightBtn.innerText = rightLabel;
                 
                 if (isDestructive) {
                     rightBtn.className = "btn-choice btn-choice-danger";
@@ -305,12 +307,15 @@
                     rightBtn.className = "btn-choice btn-choice-right";
                 }
 
-                const handleLeftSelection = () => { cleanup(); resolve('current'); };
-                const handleRightSelection = () => { cleanup(); resolve('all'); };
+                const handleLeftSelection = () => { cleanup(); resolve('left'); };
+                const handleRightSelection = () => { cleanup(); resolve('right'); };
                 const cleanup = () => {
                     leftBtn.removeEventListener('click', handleLeftSelection);
                     rightBtn.removeEventListener('click', handleRightSelection);
                     overlay.style.display = 'none';
+                    // Reset labels back to defaults
+                    leftBtn.innerText = "Current";
+                    rightBtn.innerText = "All";
                 };
 
                 leftBtn.addEventListener('click', handleLeftSelection);
@@ -397,9 +402,9 @@
                     `;
                 };
 
-                currentBtn.removeEventListener('click', handleCurrent);
-                forwardBtn.removeEventListener('click', handleForward);
-                cancelBtn.removeEventListener('click', handleCancel);
+                currentBtn.addEventListener('click', handleCurrent);
+                forwardBtn.addEventListener('click', handleForward);
+                cancelBtn.addEventListener('click', handleCancel);
                 overlay.style.display = 'flex';
             });
         }
@@ -453,18 +458,19 @@
                     if (Array.isArray(rootData)) {
                         expenses = rootData;
                         templates = [];
-                        meta = { lastMonthPopulated: currentSystemMonth };
+                        meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: 0 };
                     } else {
                         expenses = rootData.expenses || [];
                         templates = rootData.templates || [];
-                        meta = rootData.meta || { lastMonthPopulated: currentSystemMonth };
+                        meta = rootData.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: 0 };
                     }
                 } catch(e) { 
                     expenses = [];
-                    templates = []; meta = { lastMonthPopulated: currentSystemMonth };
+                    templates = []; meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: 0 };
                 } 
             } else {
                 meta.lastMonthPopulated = currentSystemMonth;
+                meta.lastUpdated = 0;
             }
             
             expenses.forEach(e => {
@@ -601,14 +607,15 @@
         }
 
         function save() {
+            meta.lastUpdated = Date.now(); // Stamp the local modifications log instantly
             const packageData = { meta: meta, templates: templates, expenses: expenses };
             localStorage.setItem('rne_local_backup_cache', JSON.stringify(packageData));
             render();
         }
 
-        function processFormSubmit() {
+        async function processFormSubmit() {
             if (editingTargetId) {
-                executeEditSave();
+                await executeEditSave();
             } else {
                 addExpense();
             }
@@ -624,12 +631,11 @@
             if (!newName || isNaN(newCost)) return alert("Fill out Name and Cost fields.");
             if (!item.originMonth) item.originMonth = item.month;
 
-            // Flag as edited ONLY if name or cost changed
             const nameOrCostChanged = (item.name !== newName || item.cost !== newCost);
 
             if (item.seriesId) {
-                const decision = await presentCustomChoicePrompt("Update only this single current entry, or all upcoming instances in the series?");
-                if (decision === 'all') {
+                const decision = await presentCustomChoicePrompt("Update only this single current entry, or all upcoming instances in the series?", "Current", "All");
+                if (decision === 'right') { // 'right' corresponds to "All"
                     const targetTpl = templates.find(t => t.seriesId === item.seriesId);
                     if (targetTpl) {
                         targetTpl.name = newName;
@@ -642,7 +648,7 @@
                                 if (userChoice === 'overwrite') {
                                     e.name = newName;
                                     e.cost = newCost;
-                                    e.isEdited = nameOrCostChanged; // preserve state based on change
+                                    e.isEdited = nameOrCostChanged; 
                                 }
                             } else {
                                 e.name = newName;
@@ -651,7 +657,7 @@
                             }
                         }
                     }
-                } else {
+                } else { // 'left' corresponds to "Current"
                     item.seriesId = null;
                     item.recur = 0;
                     item.name = newName;
@@ -716,7 +722,6 @@
             if (!item.originMonth) item.originMonth = item.month;
             const [y, m] = item.month.split('-').map(Number);
             item.month = `${y + Math.floor(m / 12)}-${(m % 12) + 1 < 10 ? '0' + ((m % 12) + 1) : (m % 12) + 1}`;
-            // Removed item.isEdited trigger from here so simple relocations don't flag the item
             save();
         }
 
@@ -728,7 +733,6 @@
             let prevMonthRaw = (m - 1) - 1;
             let prevMonthStr = (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) < 10 ? '0' + (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) : (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1);
             item.month = `${prevMonthRaw < 0 ? y - 1 : y}-${prevMonthStr}`;
-            // Removed item.isEdited trigger from here so simple relocations don't flag the item
             save();
         }
 
@@ -789,11 +793,11 @@
                     if (parsed.expenses && parsed.templates) {
                         expenses = parsed.expenses;
                         templates = parsed.templates;
-                        meta = parsed.meta || { lastMonthPopulated: currentSystemMonth };
+                        meta = parsed.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
                     } else if (Array.isArray(parsed)) {
                         expenses = parsed;
                         templates = [];
-                        meta = { lastMonthPopulated: currentSystemMonth };
+                        meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
                     } else {
                         alert("Invalid backup schema configuration file.");
                         return;
@@ -857,21 +861,72 @@
                 const url = `https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}'+and+trashed=false&fields=files(id)`;
                 const response = await fetch(url, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
                 const result = await response.json();
+                
                 if (result.files && result.files.length > 0) {
                     gdriveFileId = result.files[0].id;
-                    updateCloudStatusBarUI("☁ Cloud Connected", true);
-                    await downloadAndRestoreFromGoogleDrive(false);
+                    
+                    // 1. Fetch cloud content to extract its meta timestamp
+                    const fileUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
+                    const fileResponse = await fetch(fileUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
+                    const cloudData = await fileResponse.json();
+                    
+                    const cloudTime = (cloudData.meta && cloudData.meta.lastUpdated) ? cloudData.meta.lastUpdated : 0;
+                    const localTime = meta.lastUpdated || 0;
+                    
+                    // 2. Perform the directional intelligent timestamp review checks
+                    if (localTime > cloudTime) {
+                        // Local changes were made offline and are newer
+                        const userDecision = await presentCustomChoicePrompt(
+                            "You have made changes on this device since your last cloud backup. Would you like to backup your new data to Google Drive now, or keep working offline?",
+                            "Keep Offline",
+                            "Backup Now"
+                        );
+                        if (userDecision === 'right') { // User selected 'Backup Now'
+                            await uploadToGoogleDrive();
+                        } else {
+                            updateCloudStatusBarUI("☁ Cloud Connected (Using Offline Data)", true);
+                        }
+                    } else if (cloudTime > localTime) {
+                        // Cloud changes were completed on another device and are newer
+                        const userDecision = await presentCustomChoicePrompt(
+                            "We found a more recent backup on Google Drive. Would you like to restore it to this device now, or keep your current local data?",
+                            "Keep Local",
+                            "Restore Now"
+                        );
+                        if (userDecision === 'right') { // User selected 'Restore Now'
+                            applyCloudDataToLocal(cloudData);
+                            updateCloudStatusBarUI("✓ Cloud Data Restored", true);
+                        } else {
+                            updateCloudStatusBarUI("☁ Cloud Connected (Using Local Data)", true);
+                        }
+                    } else {
+                        // Both storage metrics are already in clean sync parity
+                        applyCloudDataToLocal(cloudData);
+                        updateCloudStatusBarUI("☁ Cloud Synchronized", true);
+                    }
                 } else {
-                    updateCloudStatusBarUI("☁ Cloud Active (No Remote File Found)", true);
+                    // Entirely blank remote environment footprint -> execute original initialization push
+                    updateCloudStatusBarUI("📤 Creating initial cloud file...", true);
+                    await uploadToGoogleDrive();
                 }
             } catch (err) {
                 updateCloudStatusBarUI("❌ Cloud Query Error", true);
             }
         }
 
+        // Shared utility helper to safely map down fields parsed back from remote fetches
+        function applyCloudDataToLocal(cloudData) {
+            expenses = cloudData.expenses || [];
+            templates = cloudData.templates || [];
+            meta = cloudData.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
+            expenses.forEach(ex => { if (!ex.originMonth) ex.originMonth = ex.month; });
+            localStorage.setItem('rne_local_backup_cache', JSON.stringify(cloudData));
+            executeAutomatedMonthRolloverAudit();
+        }
+
         async function uploadToGoogleDrive() {
             if (!activeAccessToken) return;
-            updateCloudStatusBarUI("📤 Syncing local backup payload...", true);
+            updateCloudStatusBarUI("📤 Syncing backup payload...", true);
             const localData = { meta: meta, templates: templates, expenses: expenses };
             const metadata = { name: DEDICATED_FILE_NAME, mimeType: 'application/json' };
             
@@ -895,34 +950,21 @@
             }
         }
 
-        function manuallyTriggerCloudRestore() {
+        async function manuallyTriggerCloudRestore() {
             if (confirm("Replace all structural local tables inside your local memory with data stored on the cloud?")) {
-                downloadAndRestoreFromGoogleDrive(true);
-            }
-        }
-
-        async function downloadAndRestoreFromGoogleDrive(explicitUserAlerts = false) {
-            if (!activeAccessToken || !gdriveFileId) return;
-            if (explicitUserAlerts) updateCloudStatusBarUI("📥 Fetching infrastructure file...", true);
-            
-            try {
-                const url = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
-                const response = await fetch(url, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
-                const cloudData = await response.json();
-                
-                if (cloudData.expenses && cloudData.templates) {
-                    expenses = cloudData.expenses;
-                    templates = cloudData.templates;
-                    meta = cloudData.meta || { lastMonthPopulated: currentSystemMonth };
-                    expenses.forEach(ex => { if (!ex.originMonth) ex.originMonth = ex.month; });
-                    localStorage.setItem('rne_local_backup_cache', JSON.stringify(cloudData));
-                    executeAutomatedMonthRolloverAudit();
+                if (!activeAccessToken || !gdriveFileId) return;
+                updateCloudStatusBarUI("📥 Fetching infrastructure file...", true);
+                try {
+                    const url = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
+                    const response = await fetch(url, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
+                    const cloudData = await response.json();
+                    applyCloudDataToLocal(cloudData);
                     updateCloudStatusBarUI("✓ Cloud Data Restored", true);
-                    if (explicitUserAlerts) alert("Cloud data pull matching complete.");
+                    alert("Cloud data pull matching complete.");
+                } catch(e) {
+                    updateCloudStatusBarUI("❌ Restore Process Interrupted", true);
+                    alert("Could not fetch media content down from file structure endpoints.");
                 }
-            } catch (err) {
-                updateCloudStatusBarUI("❌ Restore Process Interrupted", true);
-                if (explicitUserAlerts) alert("Could not fetch media content down from file structure endpoints.");
             }
         }
 
@@ -1002,11 +1044,8 @@
                         const itemDiv = document.createElement('div');
                         itemDiv.className = `expense-item ${e.status}`;
 
-                        // Unified Label logic: Show origin label if current month differs from origin month
                         const displayOrigin = (e.originMonth && e.originMonth !== e.month);
                         const originLabelHtml = displayOrigin ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` : '';
-                        
-                        // Condition: Series items can move back if they rolled forward; One-time items can always move back
                         const showMoveBack = (!e.seriesId || (e.seriesId && e.month !== e.originMonth));
 
                         itemDiv.innerHTML = `
