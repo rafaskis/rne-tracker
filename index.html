@@ -204,6 +204,8 @@
         }
         .utility-card { background: var(--utility-card-bg); padding: 16px; border-radius: 12px; border: 1px dashed var(--utility);
             margin-top: 8px; display: none; }
+        .utility-card { background: var(--utility-card-bg); padding: 16px; border-radius: 12px; border: 1px dashed var(--utility);
+            margin-top: 8px; display: none; }
         .utility-title { font-size: 12px; font-weight: bold; color: var(--utility);
             margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
         .utility-grid { display: grid; grid-template-columns: 1fr;
@@ -402,13 +404,55 @@
                     leftBtn.removeEventListener('click', handleLeftSelection);
                     rightBtn.removeEventListener('click', handleRightSelection);
                     overlay.style.display = 'none';
-                    // Reset labels back to defaults
                     leftBtn.innerText = "Current";
                     rightBtn.innerText = "All";
                 };
 
                 leftBtn.addEventListener('click', handleLeftSelection);
                 rightBtn.addEventListener('click', handleRightSelection);
+                overlay.style.display = 'flex';
+            });
+        }
+
+        // Specialized Custom Multi-Choice Crossroads for Automated Conflict Matrix Resolutions
+        function presentThreeWaySyncConflictCrossroads(cloudDateStr, localDateStr) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('customChoiceOverlay');
+                const textContainer = document.getElementById('choiceOverlayMessage');
+                const container = document.getElementById('choiceButtonsContainer');
+
+                textContainer.innerHTML = `<strong>Cloud Sync Delta Alignment Mismatch Found</strong><br><br>
+                    <span style="font-size:13px; color:var(--text-muted);">Cloud Version:</span> ${cloudDateStr}<br>
+                    <span style="font-size:13px; color:var(--text-muted);">Local Version:</span> ${localDateStr}<br><br>
+                    How would you like to reconcile data maps across tracking engines?`;
+                container.className = "vertical-buttons";
+                container.innerHTML = `
+                    <button class="btn-choice btn-choice-right btn-choice-full" id="syncReloadBtn">Download Cloud (Overwrite Local)</button>
+                    <button class="btn-choice btn-choice-left btn-choice-full" style="background: #4285f4; color:white; border:none;" id="syncBackupBtn">Upload Local (Overwrite Cloud)</button>
+                    <button class="btn-choice btn-choice-left btn-choice-full" style="background: #64748b; color:white; border:none;" id="syncStayBtn">Stay Local Only (Postpone Sync)</button>
+                `;
+                const reloadBtn = document.getElementById('syncReloadBtn');
+                const backupBtn = document.getElementById('syncBackupBtn');
+                const stayBtn = document.getElementById('syncStayBtn');
+
+                const handleReload = () => { cleanup(); resolve('reload'); };
+                const handleBackup = () => { cleanup(); resolve('backup'); };
+                const handleStay = () => { cleanup(); resolve('stay'); };
+                const cleanup = () => {
+                    reloadBtn.removeEventListener('click', handleReload);
+                    backupBtn.removeEventListener('click', handleBackup);
+                    stayBtn.removeEventListener('click', handleStay);
+                    overlay.style.display = 'none';
+                    container.className = "choice-buttons-row";
+                    container.innerHTML = `
+                        <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
+                        <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
+                    `;
+                };
+
+                reloadBtn.addEventListener('click', handleReload);
+                backupBtn.addEventListener('click', handleBackup);
+                stayBtn.addEventListener('click', handleStay);
                 overlay.style.display = 'flex';
             });
         }
@@ -440,7 +484,6 @@
                     overwriteBtn.removeEventListener('click', handleOverwrite);
                     keepBtn.removeEventListener('click', handleKeep);
                     overlay.style.display = 'none';
-                    // Restore original buttons structure
                     container.className = "choice-buttons-row";
                     container.innerHTML = `
                         <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
@@ -533,6 +576,7 @@
                 });
             }
             loadLocalExpensesAndAudit();
+            attemptSilentCloudDiscovery();
         };
 
         function loadLocalExpensesAndAudit() {
@@ -675,9 +719,7 @@
             }
         }
 
-        function toggleDurationField() {
-            // Context logic minimized as requested since elements are removed
-        }
+        function toggleDurationField() {}
 
         function save() {
             meta.lastUpdated = Date.now();
@@ -707,7 +749,6 @@
             if (item.seriesId) {
                 const decision = await presentCustomChoicePrompt("Update only this single current entry, or all upcoming instances in the series?", "Current", "All");
                 if (decision === 'right') {
-                    // Update master schema rules configuration 
                     const tpl = templates.find(t => t.seriesId === item.seriesId);
                     if (tpl) {
                         tpl.name = newName;
@@ -748,7 +789,6 @@
             
             if (recur > 0) {
                 const seriesId = 'series_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-                // Hardcoded indefinite limits as fields are removed
                 const durationLimit = null; 
                 templates.push({ seriesId, name, cost, startMonth: month, recur, durationLimit });
                 
@@ -785,7 +825,6 @@
                     expenses = expenses.filter(e => e.id !== id);
                 } else if (action === 'forward') {
                     expenses = expenses.filter(e => !(e.seriesId === item.seriesId && e.month >= item.month));
-                    // Remove template layout tracking if entirely wiped out configuration
                     const remainingInstances = expenses.some(e => e.seriesId === item.seriesId);
                     if (!remainingInstances) {
                         templates = templates.filter(t => t.seriesId !== item.seriesId);
@@ -871,20 +910,33 @@
         }
 
         // GOOGLE DRIVE CLOUD ACCESS MANAGEMENT IMPLEMENTATION VIA EXPLICIT REST SCOPES
+        function attemptSilentCloudDiscovery() {
+            const cachedToken = localStorage.getItem('rne_gdrive_token');
+            if (cachedToken) {
+                activeAccessToken = cachedToken;
+                document.getElementById('gdriveMainActionBtn').style.display = 'none';
+                document.getElementById('gdrivePushBtn').style.display = 'inline-flex';
+                document.getElementById('gdrivePullBtn').style.display = 'inline-flex';
+                document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Connecting...";
+                findExistingDatabaseOnCloud(true);
+            }
+        }
+
         function initiateGoogleDriveSyncFlow() {
             tokenClient.callback = async (response) => {
                 if (response.error) return;
                 activeAccessToken = response.access_token;
+                localStorage.setItem('rne_gdrive_token', activeAccessToken);
                 document.getElementById('gdriveMainActionBtn').style.display = 'none';
                 document.getElementById('gdrivePushBtn').style.display = 'inline-flex';
                 document.getElementById('gdrivePullBtn').style.display = 'inline-flex';
                 document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Sync Ready";
-                await findExistingDatabaseOnCloud();
+                await findExistingDatabaseOnCloud(false);
             };
-            tokenClient.requestAccessToken({ prompt: 'consent' });
+            tokenClient.requestAccessToken({ prompt: 'none' });
         }
 
-        async function findExistingDatabaseOnCloud() {
+        async function findExistingDatabaseOnCloud(isSilentMode = false) {
             try {
                 const searchUrl = `https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}'+and+trashed=false&fields=files(id,name)`;
                 const resp = await fetch(searchUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
@@ -892,8 +944,53 @@
                 if (data.files && data.files.length > 0) {
                     gdriveFileId = data.files[0].id;
                     document.getElementById('cloudStatusLabel').innerText = "☁ Linked to Cloud Backup";
+                    await performAutomatedCloudDeltaSyncCheck();
+                } else if (isSilentMode) {
+                    document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Offline";
                 }
-            } catch(e) { console.error("Cloud lookup fault:", e); }
+            } catch(e) { 
+                console.error("Cloud lookup fault:", e); 
+                document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Offline";
+            }
+        }
+
+        // DUAL VECTOR DELTA ENFORCEMENT ENGINE (CONFLICT CROSSROADS ROUTER)
+        async function performAutomatedCloudDeltaSyncCheck() {
+            if (!activeAccessToken || !gdriveFileId) return;
+            try {
+                const downloadUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
+                const response = await fetch(downloadUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
+                if (!response.ok) return;
+                
+                const cloudData = await response.json();
+                const cloudMeta = cloudData.meta || { lastUpdated: 0 };
+                const localMeta = meta || { lastUpdated: 0 };
+
+                if (cloudMeta.lastUpdated !== localMeta.lastUpdated) {
+                    const cloudDateStr = cloudMeta.lastUpdated ? new Date(cloudMeta.lastUpdated).toLocaleString() : "Unknown";
+                    const localDateStr = localMeta.lastUpdated ? new Date(localMeta.lastUpdated).toLocaleString() : "Unknown";
+                    
+                    const decision = await presentThreeWaySyncConflictCrossroads(cloudDateStr, localDateStr);
+                    
+                    if (decision === 'reload') {
+                        expenses = cloudData.expenses || [];
+                        templates = cloudData.templates || [];
+                        meta = cloudData.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
+                        expenses.forEach(item => { if (!item.originMonth) item.originMonth = item.month; });
+                        localStorage.setItem('rne_local_backup_cache', JSON.stringify(cloudData));
+                        executeAutomatedMonthRolloverAudit();
+                        document.getElementById('cloudStatusLabel').innerText = "✅ Synchronized from Cloud";
+                    } else if (decision === 'backup') {
+                        await uploadToGoogleDrive();
+                    } else {
+                        document.getElementById('cloudStatusLabel').innerText = "⚠️ Running Disconnected Local";
+                    }
+                } else {
+                    document.getElementById('cloudStatusLabel').innerText = "✅ Cloud Synced & Up To Date";
+                }
+            } catch(e) {
+                console.error("Delta evaluation error:", e);
+            }
         }
 
         async function uploadToGoogleDrive() {
@@ -915,7 +1012,6 @@
                         gdriveFileId = metadata.id;
                     }
                     document.getElementById('cloudStatusLabel').innerText = "✅ Backup Completed Successfully";
-                    alert("Database securely updated on cloud systems.");
                 } else { throw new Error("Sync failure"); }
             } catch(e) {
                 document.getElementById('cloudStatusLabel').innerText = "❌ Sync Fault Triggered";
@@ -937,7 +1033,8 @@
                     templates = parsed.templates || [];
                     meta = parsed.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
                     expenses.forEach(item => { if (!item.originMonth) item.originMonth = item.month; });
-                    save();
+                    localStorage.setItem('rne_local_backup_cache', JSON.stringify(parsed));
+                    executeAutomatedMonthRolloverAudit();
                     document.getElementById('cloudStatusLabel').innerText = "✅ Restore Sync Settled Flush";
                     alert("Local cache matched to cloud master references safely.");
                 } else { throw new Error("Download error"); }
@@ -1005,7 +1102,6 @@
                         itemDiv.className = `expense-item ${e.status}`;
                         
                         const showMoveBack = (e.month !== e.originMonth);
-                        // FIXED: Only render origin label if the actively viewed month filter doesn't match the expense's original month
                         const originMonthLabelHtml = (e.originMonth && e.originMonth !== activeMonthFilter) 
                             ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` 
                             : '';
