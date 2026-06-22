@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v29</title>
+    <title>RNE Tracker - v29.1</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -131,8 +131,12 @@
         .utility-card { background: var(--utility-card-bg); padding: 16px; border-radius: 12px; border: 1px dashed var(--utility); margin-top: 8px; display: none; }
         .utility-title { font-size: 12px; font-weight: bold; color: var(--utility); margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
         .utility-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+        .print-inline-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .print-inline-row div { flex: 1; }
+        .print-inline-row label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px; }
         
         .btn-util { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center; -webkit-appearance: none; }
+        .btn-print-accent { background: var(--primary); color: white; font-weight: bold; border: none; }
         .file-input-wrapper { position: relative; width: 100%; }
         .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
         .btn-fake-file { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; text-align: center; }
@@ -151,6 +155,77 @@
 
         /* Persistent Version Watermark */
         .version-watermark { position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; user-select: none; pointer-events: none; }
+
+        /* Custom Document Headers generated exclusively inside Print-Mode compilation arrays */
+        .print-only-month-header { display: none; font-size: 20px; font-weight: bold; margin: 24px 0 12px 0; border-bottom: 2px solid #333; padding-bottom: 4px; color: #000; }
+
+        /* ========================================================
+           NATIVE CSS PRINT LAYOUT OPTIMIZATION ENGINE
+           ======================================================== */
+        @media print {
+            .top-cloud-bar, 
+            .month-nav-container, 
+            .top-bar, 
+            #formTriggerBtn, 
+            #expenseFormCard, 
+            .utility-toggle-header, 
+            .utility-card, 
+            .version-watermark, 
+            .actions,
+            .choice-overlay,
+            .group-badge,
+            .group-header span:first-child { 
+                display: none !important; 
+            }
+            body { 
+                background: #fff !important; 
+                color: #000 !important; 
+                padding: 0 !important; 
+                font-size: 12pt; 
+            }
+            .print-only-month-header { 
+                display: block !important; 
+            }
+            .print-month-block {
+                page-break-after: always; /* Ensure each selected month begins crisp on a fresh page */
+            }
+            .print-month-block:last-child {
+                page-break-after: avoid;
+            }
+            .group-container { 
+                margin-bottom: 16px !important; 
+                box-shadow: none !important; 
+                border: 1px solid #cbd5e1 !important;
+                page-break-inside: avoid; 
+            }
+            .group-header { 
+                background: #f1f5f9 !important; 
+                border-bottom: 1px solid #cbd5e1 !important; 
+                color: #000 !important;
+                padding: 8px 12px !important;
+            }
+            .group-unpaid-cost {
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+                color: #000 !important;
+            }
+            .expense-item { 
+                box-shadow: none !important; 
+                border: none !important;
+                border-bottom: 1px dashed #e2e8f0 !important;
+                background: #fff !important; 
+                color: #000 !important; 
+                padding: 10px 12px !important;
+                page-break-inside: avoid;
+            }
+            .expense-item:last-child {
+                border-bottom: none !important;
+            }
+            .expense-item.paid { border-left: 4px solid var(--success) !important; opacity: 1 !important; }
+            .expense-item.unpaid { border-left: 4px solid var(--danger) !important; }
+            .name, .cost { color: #000 !important; }
+        }
     </style>
 </head>
 <body>
@@ -213,11 +288,24 @@
     <div class="expense-list" id="listContainer"></div>
 
     <div class="utility-toggle-header" onclick="toggleUtilityDrawer()">
-        <span>Offline Data Options</span>
+        <span>Offline Data & Reports Options</span>
         <span class="utility-arrow" id="utilArrow">▼</span>
     </div>
 
     <div class="utility-card" id="utilityDrawerCard">
+        <div class="utility-title" style="margin-bottom: 12px;">Print Range Report (PDF)</div>
+        <div class="print-inline-row">
+            <div>
+                <label for="printStartMonth">From Month:</label>
+                <select id="printStartMonth"></select>
+            </div>
+            <div>
+                <label for="printEndMonth">To Month:</label>
+                <select id="printEndMonth"></select>
+            </div>
+        </div>
+        <button class="btn-util btn-print-accent" style="margin-bottom: 20px;" onclick="triggerTimelinePrintJob()">📄 Generate Print / PDF Report</button>
+
         <div class="utility-title">Manual Backup (Offline)</div>
         <div class="utility-grid">
             <button class="btn-util" onclick="exportToFile()">📥 Export Data to File</button>
@@ -238,12 +326,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v29</div>
+    <div class="version-watermark">RNE Tracker • v29.1</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 220626_v29
+        // VERSION TRACKER REFERENCE: 220626_v29_1
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -330,20 +418,16 @@
                 const textContainer = document.getElementById('choiceOverlayMessage');
                 const container = document.getElementById('choiceButtonsContainer');
 
-                // Check if files are perfectly matched
                 const isIdentical = (localDateStr === cloudDateStr && localDateStr !== "Never (Empty Empty)");
 
                 if (isIdentical && !forceShowOptions) {
-                    // Sign in event scenario with identical logs -> Inform user with clean OK acknowledge pipeline
                     textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
                         ✨ <span>Your local offline file matches your remote Google Drive cloud copy exactly.</span><br><br>
                         <span style="font-size:12px; color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
                         <span style="font-size:12px; color:var(--primary);">Cloud Backup Last Updated:</span><br><strong>${cloudDateStr}</strong>`;
                     
                     container.className = "vertical-buttons";
-                    container.innerHTML = `
-                        <button class="btn-choice btn-choice-right btn-choice-full" id="btnSyncOk">OK</button>
-                    `;
+                    container.innerHTML = `<button class="btn-choice btn-choice-right btn-choice-full" id="btnSyncOk">OK</button>`;
 
                     const okBtn = document.getElementById('btnSyncOk');
                     const handleOk = () => {
@@ -361,7 +445,6 @@
                     return;
                 }
 
-                // Default standard comparison workflow view displaying interactive option forks
                 textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
                     ${statusHeadline}<br><br>
                     <span style="font-size:12px; color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
@@ -505,13 +588,20 @@
         const currentSystemMonth = monthsRange[0]; 
         const filterSelect = document.getElementById('monthViewFilter');
         const formMonthSelect = document.getElementById('expMonthTarget');
+        const printStartSelect = document.getElementById('printStartMonth');
+        const printEndSelect = document.getElementById('printEndMonth');
 
         monthsRange.forEach((mStr) => {
             const [y, m] = mStr.split('-');
             const label = new Date(y, m - 1, 1).toLocaleDateString('default', { month: 'long', year: 'numeric' });
             filterSelect.options.add(new Option(label, mStr));
             formMonthSelect.options.add(new Option(label, mStr));
+            printStartSelect.options.add(new Option(label, mStr));
+            printEndSelect.options.add(new Option(label, mStr));
         });
+
+        // Default set the end range selector slightly downstream to assist user accessibility
+        printEndSelect.selectedIndex = Math.min(3, monthsRange.length - 1);
 
         window.onload = function() {
             initializeSavedDisplayTheme();
@@ -520,9 +610,122 @@
         };
 
         // ========================================================
+        // HIGH PERFORMANCE PRINT BATCH TIMELINE COMPILED GENERATOR
+        // ========================================================
+        function triggerTimelinePrintJob() {
+            const startVal = printStartSelect.value;
+            const endVal = printEndSelect.value;
+
+            if (startVal > endVal) {
+                return alert("Operational Fault: The 'From Month' selection cannot be positioned chronologically after your chosen 'To Month' timeline boundary target.");
+            }
+
+            const activeCachedView = filterSelect.value;
+            const targetContainer = document.getElementById('listContainer');
+            
+            // Filter all months falling inside selection bounds
+            const activeRangeMonths = monthsRange.filter(m => m >= startVal && m <= endVal);
+            
+            // Flush container and stack months together for document parser compilation
+            targetContainer.innerHTML = '';
+            
+            activeRangeMonths.forEach(monthKey => {
+                const monthBlock = document.createElement('div');
+                monthBlock.className = 'print-month-block';
+
+                const [y, m] = monthKey.split('-');
+                const prettyMonthLabel = new Date(y, m - 1, 1).toLocaleDateString('default', { month: 'long', year: 'numeric' });
+                
+                // Add a hidden print header that CSS un-hides automatically on print execution
+                const printHeader = document.createElement('div');
+                printHeader.className = 'print-only-month-header';
+                printHeader.innerText = `RNE Expense Statement Summary — ${prettyMonthLabel}`;
+                monthBlock.appendChild(printHeader);
+
+                const visibleItems = expenses.filter(e => e.month === monthKey);
+                
+                const itemsGroupedByRecurrence = {};
+                recurrenceGroupsConfig.forEach(g => { itemsGroupedByRecurrence[g.key] = []; });
+                visibleItems.forEach(e => {
+                    const recurKey = e.recur !== undefined ? e.recur : 0;
+                    if (itemsGroupedByRecurrence[recurKey]) itemsGroupedByRecurrence[recurKey].push(e);
+                });
+
+                let dataAddedForMonth = false;
+
+                recurrenceGroupsConfig.forEach(groupDef => {
+                    const list = itemsGroupedByRecurrence[groupDef.key];
+                    if (list.length === 0) return;
+                    dataAddedForMonth = true;
+
+                    list.sort((a, b) => b.cost - a.cost);
+                    const groupContainer = document.createElement('div');
+                    groupContainer.className = 'group-container';
+
+                    let groupUnpaidSum = 0;
+                    list.forEach(item => { if (item.status === 'unpaid') groupUnpaidSum += item.cost; });
+
+                    const groupHeader = document.createElement('div');
+                    groupHeader.className = 'group-header';
+                    
+                    const badgesContainer = document.createElement('div');
+                    badgesContainer.className = 'group-badges-container';
+                    const costBadge = document.createElement('div');
+                    costBadge.className = `group-unpaid-cost ${groupUnpaidSum > 0 ? 'has-unpaid' : 'all-paid'}`;
+                    costBadge.innerText = `€${groupUnpaidSum.toFixed(2)}`;
+                    badgesContainer.appendChild(costBadge);
+
+                    groupHeader.innerHTML = `<div>▼ ${groupDef.label}</div>`;
+                    groupHeader.appendChild(badgesContainer);
+                    groupContainer.appendChild(groupHeader);
+
+                    const groupContent = document.createElement('div');
+                    groupContent.className = 'group-content';
+
+                    list.forEach(e => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = `expense-item ${e.status}`;
+                        const showMoveBack = (e.originMonth && e.month !== e.originMonth);
+                        const originLabelHtml = showMoveBack ? `<span class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</span>` : '';
+                        const editBadgeHtml = e.isEdited ? `<span class="badge-edited">Custom Override</span>` : '';
+
+                        itemDiv.innerHTML = `
+                            <div class="info">
+                                <div class="name-wrapper"><span class="name">${e.name}</span> ${editBadgeHtml}</div>
+                                <div class="cost-row"><span class="cost">€${e.cost.toFixed(2)}</span> ${originLabelHtml}</div>
+                            </div>
+                        `;
+                        groupContent.appendChild(itemDiv);
+                    });
+
+                    groupContainer.appendChild(groupContent);
+                    monthBlock.appendChild(groupContainer);
+                });
+
+                if (!dataAddedForMonth) {
+                    const emptyNotice = document.createElement('div');
+                    emptyNotice.style.padding = '20px';
+                    emptyNotice.style.color = 'var(--text-muted)';
+                    emptyNotice.style.textAlign = 'center';
+                    emptyNotice.innerText = "No expense ledger entries logged for this month block period.";
+                    monthBlock.appendChild(emptyNotice);
+                }
+
+                targetContainer.appendChild(monthBlock);
+            });
+
+            // Execute native device Print / Save to PDF systems pipeline
+            setTimeout(() => {
+                window.print();
+                // Immediately revert the viewport state back to single month layout configuration rules flawlessly
+                filterSelect.value = activeCachedView;
+                render();
+            }, 150);
+        }
+
+        // ========================================================
         // GOOGLE DRIVE CLOUD ACCESS MANAGEMENT UTILITIES
         // ========================================================
-        
         function attemptSilentCloudDiscovery() {
             const cachedToken = localStorage.getItem('rne_gdrive_token');
             if (cachedToken) {
@@ -532,9 +735,7 @@
                 document.getElementById('gdrivePullBtn').style.display = 'inline-flex';
                 document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Connecting...";
                 
-                setTimeout(() => {
-                    findExistingDatabaseOnCloud(true);
-                }, 500);
+                setTimeout(() => { findExistingDatabaseOnCloud(true); }, 500);
             }
         }
 
@@ -553,7 +754,6 @@
             } else {
                 tokenClient.callback = handleTokenResponse;
             }
-            
             tokenClient.requestAccessToken({ prompt: 'select_account' });
         }
 
@@ -563,7 +763,6 @@
                 document.getElementById('cloudStatusLabel').innerText = "❌ Auth Cancelled";
                 return;
             }
-            
             activeAccessToken = response.access_token;
             localStorage.setItem('rne_gdrive_token', activeAccessToken);
             
@@ -571,7 +770,6 @@
             document.getElementById('gdrivePushBtn').style.display = 'inline-flex';
             document.getElementById('gdrivePullBtn').style.display = 'inline-flex';
             document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Sync Ready";
-            
             await findExistingDatabaseOnCloud(false);
         }
 
@@ -581,10 +779,7 @@
                 const searchUrl = `https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}'+and+trashed=false&fields=files(id,name)`;
                 const resp = await fetch(searchUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
                 
-                if (resp.status === 401) {
-                    clearExpiredTokenSession();
-                    return;
-                }
+                if (resp.status === 401) { clearExpiredTokenSession(); return; }
 
                 const data = await resp.json();
                 if (data.files && data.files.length > 0) {
@@ -593,9 +788,7 @@
                     await evaluateCloudDeltaSyncChoices(isSilentMode, false);
                 } else {
                     document.getElementById('cloudStatusLabel').innerText = "✅ New Cloud Storage Ready";
-                    if (!isSilentMode) {
-                        await uploadToGoogleDrive();
-                    }
+                    if (!isSilentMode) await uploadToGoogleDrive();
                 }
             } catch(e) { 
                 console.error("Cloud lookup fault:", e); 
@@ -604,8 +797,7 @@
         }
 
         function clearExpiredTokenSession() {
-            activeAccessToken = null;
-            gdriveFileId = null;
+            activeAccessToken = null; gdriveFileId = null;
             localStorage.removeItem('rne_gdrive_token');
             document.getElementById('gdriveMainActionBtn').style.display = 'inline-flex';
             document.getElementById('gdrivePushBtn').style.display = 'none';
@@ -613,7 +805,6 @@
             document.getElementById('cloudStatusLabel').innerText = "☁ Session Expired";
         }
 
-        // Unified Delta Evaluation Strategy Engine Matrix
         async function evaluateCloudDeltaSyncChoices(isAutomatedSilentStartup = false, forceShowOptions = false) {
             if (!activeAccessToken || !gdriveFileId) return;
             try {
@@ -634,44 +825,28 @@
                 if (cloudTimestamp > localTimestamp) {
                     statusHeadline = "👉 <strong>The Cloud Backup database file is newer than your offline local cache data.</strong>";
                     triggerPromptScreen = !isAutomatedSilentStartup || forceShowOptions;
-                    
-                    if (isAutomatedSilentStartup && !forceShowOptions) {
-                        applyDownloadedCloudPayload(cloudData);
-                        return;
-                    }
+                    if (isAutomatedSilentStartup && !forceShowOptions) { applyDownloadedCloudPayload(cloudData); return; }
                 } else if (localTimestamp > cloudTimestamp) {
                     statusHeadline = "👈 <strong>Your local data records are newer than the file currently backed up on the cloud.</strong>";
                     triggerPromptScreen = !isAutomatedSilentStartup || forceShowOptions;
-
-                    if (isAutomatedSilentStartup && !forceShowOptions) {
-                        // Crucial correction adjustment requirement: Changes no longer auto-push out of silent startup initialization sequence
-                        executeAutomatedMonthRolloverAudit();
-                        return;
-                    }
+                    if (isAutomatedSilentStartup && !forceShowOptions) { executeAutomatedMonthRolloverAudit(); return; }
                 } else {
                     statusHeadline = "✨ <strong>Your local offline file matches your remote Google Drive cloud copy exactly.</strong>";
-                    if (isAutomatedSilentStartup && !forceShowOptions) {
-                        executeAutomatedMonthRolloverAudit();
-                        return;
-                    }
+                    if (isAutomatedSilentStartup && !forceShowOptions) { executeAutomatedMonthRolloverAudit(); return; }
                     triggerPromptScreen = true; 
                 }
 
                 if (triggerPromptScreen) {
                     const chosenDirection = await presentCloudSyncCrossroadsPrompt(statusHeadline, localDateStr, cloudDateStr, forceShowOptions);
                     if (chosenDirection === 'push') {
-                        await uploadToGoogleDrive();
-                        alert("Database backup successful!");
+                        await uploadToGoogleDrive(); alert("Database backup successful!");
                     } else if (chosenDirection === 'pull') {
-                        applyDownloadedCloudPayload(cloudData);
-                        alert("Database restoration successful!");
+                        applyDownloadedCloudPayload(cloudData); alert("Database restoration successful!");
                     } else {
                         executeAutomatedMonthRolloverAudit();
                     }
                 }
-            } catch (e) {
-                console.error("Sync comparison runtime fault:", e);
-            }
+            } catch (e) { console.error("Sync comparison runtime fault:", e); }
         }
 
         function applyDownloadedCloudPayload(cloudData) {
@@ -684,7 +859,6 @@
 
         async function manuallyTriggerCloudBackup() {
             if (!activeAccessToken) return alert("Cloud account is not authenticated.");
-            // Pass true to force manual layout mode selections panel fork options interface bypass layout rules
             await evaluateCloudDeltaSyncChoices(false, true);
         }
 
@@ -703,7 +877,6 @@
                 
                 let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
                 let method = 'POST';
-                
                 const metadata = { name: DEDICATED_FILE_NAME, mimeType: 'application/json' };
                 if (gdriveFileId) {
                     url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`;
@@ -714,12 +887,7 @@
                 formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
                 formData.append('file', blob);
 
-                const resp = await fetch(url, {
-                    method: method,
-                    headers: { 'Authorization': `Bearer ${activeAccessToken}` },
-                    body: formData
-                });
-
+                const resp = await fetch(url, { method: method, headers: { 'Authorization': `Bearer ${activeAccessToken}` }, body: formData });
                 if (resp.ok) {
                     const resData = await resp.json();
                     if (!gdriveFileId && resData.id) gdriveFileId = resData.id;
@@ -741,20 +909,12 @@
                 try {
                     const rootData = JSON.parse(cached);
                     if (Array.isArray(rootData)) {
-                        expenses = rootData;
-                        templates = [];
-                        meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: 0 };
+                        expenses = rootData; templates = []; meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: 0 };
                     } else {
-                        expenses = rootData.expenses || [];
-                        templates = rootData.templates || [];
-                        meta = rootData.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: 0 };
+                        expenses = rootData.expenses || []; templates = rootData.templates || []; meta = rootData.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: 0 };
                     }
-                } catch(e) { 
-                    expenses = []; templates = []; meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: 0 };
-                }
-            } else {
-                meta.lastMonthPopulated = currentSystemMonth; meta.lastUpdated = 0;
-            }
+                } catch(e) { expenses = []; templates = []; meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: 0 }; }
+            } else { meta.lastMonthPopulated = currentSystemMonth; meta.lastUpdated = 0; }
             expenses.forEach(e => { if (!e.originMonth) e.originMonth = e.month; });
             executeAutomatedMonthRolloverAudit();
         }
@@ -787,14 +947,7 @@
                             if (!alreadyExists) {
                                 expenses.push({
                                     id: Date.now() + Math.random().toString(36).substr(2, 5),
-                                    seriesId: tpl.seriesId,
-                                    name: tpl.name,
-                                    cost: tpl.cost,
-                                    month: visibleMonth,
-                                    recur: tpl.recur,
-                                    status: 'unpaid',
-                                    originMonth: visibleMonth,
-                                    isEdited: false
+                                    seriesId: tpl.seriesId, name: tpl.name, cost: tpl.cost, month: visibleMonth, recur: tpl.recur, status: 'unpaid', originMonth: visibleMonth, isEdited: false
                                 });
                                 changesMade = true;
                             }
@@ -803,10 +956,7 @@
                 }
             });
             const maxVisibleMonth = monthsRange[monthsRange.length - 1];
-            if (maxVisibleMonth > meta.lastMonthPopulated) {
-                meta.lastMonthPopulated = maxVisibleMonth;
-                changesMade = true;
-            }
+            if (maxVisibleMonth > meta.lastMonthPopulated) { meta.lastMonthPopulated = maxVisibleMonth; changesMade = true; }
             if (changesMade) { save(); } else { render(); }
         }
 
@@ -852,13 +1002,8 @@
         function toggleUtilityDrawer() {
             const drawer = document.getElementById('utilityDrawerCard');
             const arrow = document.getElementById('utilArrow');
-            if(drawer.style.display === 'block') {
-                drawer.style.display = 'none';
-                arrow.innerText = '▼';
-            } else {
-                drawer.style.display = 'block';
-                arrow.innerText = '▲';
-            }
+            if(drawer.style.display === 'block') { drawer.style.display = 'none'; arrow.innerText = '▼'; } 
+            else { drawer.style.display = 'block'; arrow.innerText = '▲'; }
         }
 
         function toggleGroupCollapse(groupKey) {
@@ -869,10 +1014,7 @@
 
         function stepMonth(direction) {
             let nextIndex = filterSelect.selectedIndex + direction;
-            if(nextIndex >= 0 && nextIndex < filterSelect.options.length) {
-                filterSelect.selectedIndex = nextIndex;
-                render();
-            }
+            if(nextIndex >= 0 && nextIndex < filterSelect.options.length) { filterSelect.selectedIndex = nextIndex; render(); }
         }
 
         function toggleDurationField() {
@@ -886,12 +1028,9 @@
             const packageData = { meta: meta, templates: templates, expenses: expenses };
             localStorage.setItem('rne_local_backup_cache', JSON.stringify(packageData));
             render();
-            // CRITICAL CHANGE ADJUSTMENT NOTE: Automatic dynamic Google Drive backend upload triggers completely removed from save() loop context.
         }
 
-        async function processFormSubmit() {
-            if (editingTargetId) { await executeEditSave(); } else { addExpense(); }
-        }
+        async function processFormSubmit() { if (editingTargetId) { await executeEditSave(); } else { addExpense(); } }
 
         async function executeEditSave() {
             const item = expenses.find(e => e.id === editingTargetId);
@@ -913,24 +1052,16 @@
                         if (e.seriesId === item.seriesId && e.month >= item.month) {
                             if (e.isEdited) {
                                 const userChoice = await presentInteractiveOverrideReview(e.month, e.name, e.cost, newName, newCost);
-                                if (userChoice === 'overwrite') {
-                                    e.name = newName; e.cost = newCost; e.isEdited = nameOrCostChanged;
-                                }
-                            } else {
-                                e.name = newName; e.cost = newCost;
-                            }
+                                if (userChoice === 'overwrite') { e.name = newName; e.cost = newCost; e.isEdited = nameOrCostChanged; }
+                            } else { e.name = newName; e.cost = newCost; }
                         }
                     }
-                } else if (decision === 'left') {
-                    item.name = newName; item.cost = newCost; item.isEdited = nameOrCostChanged;
-                } else { return; }
-            } else {
-                item.name = newName; item.cost = newCost;
-            }
+                } else if (decision === 'left') { item.name = newName; item.cost = newCost; item.isEdited = nameOrCostChanged; } 
+                else { return; }
+            } else { item.name = newName; item.cost = newCost; }
             
-            if (item.month !== newMonth) { item.month = newMonth; }
-            closeFormDisplay();
-            save();
+            if (item.month !== newMonth) item.month = newMonth;
+            closeFormDisplay(); save();
         }
 
         function addExpense() {
@@ -943,10 +1074,7 @@
             if (!name || isNaN(cost)) return alert("Please supply a recognizable reference label and price point.");
 
             if (recur === 0) {
-                expenses.push({
-                    id: Date.now() + Math.random().toString(36).substr(2, 5),
-                    name: name, cost: cost, month: startMonth, recur: 0, status: 'unpaid', originMonth: startMonth, isEdited: false
-                });
+                expenses.push({ id: Date.now() + Math.random().toString(36).substr(2, 5), name: name, cost: cost, month: startMonth, recur: 0, status: 'unpaid', originMonth: startMonth, isEdited: false });
             } else {
                 const generatedSeriesId = 'ser_' + Date.now() + Math.random().toString(36).substr(2, 5);
                 templates.push({ seriesId: generatedSeriesId, name: name, cost: cost, startMonth: startMonth, recur: recur, durationLimit: durationLimit });
@@ -958,17 +1086,12 @@
                         const monthDiff = (visY - startY) * 12 + (visM - startM);
                         if (monthDiff >= 0 && monthDiff % recur === 0) {
                             if (durationLimit && (monthDiff / recur) >= durationLimit) return;
-                            expenses.push({
-                                id: Date.now() + Math.random().toString(36).substr(2, 5),
-                                seriesId: generatedSeriesId,
-                                name: name, cost: cost, month: visibleMonth, recur: recur, status: 'unpaid', originMonth: visibleMonth, isEdited: false
-                            });
+                            expenses.push({ id: Date.now() + Math.random().toString(36).substr(2, 5), seriesId: generatedSeriesId, name: name, cost: cost, month: visibleMonth, recur: recur, status: 'unpaid', originMonth: visibleMonth, isEdited: false });
                         }
                     }
                 });
             }
-            closeFormDisplay();
-            save();
+            closeFormDisplay(); save();
         }
 
         async function deleteExpense(id) {
@@ -988,19 +1111,14 @@
                         const targetTpl = templates.find(t => t.seriesId === item.seriesId);
                         if (targetTpl) {
                             const remainingInstances = expenses.filter(e => e.seriesId === item.seriesId).sort((a,b) => a.month.localeCompare(b.month));
-                            if (remainingInstances.length > 0) {
-                                const maxMonthsInSeries = remainingInstances.length;
-                                targetTpl.durationLimit = maxMonthsInSeries;
-                            }
+                            if (remainingInstances.length > 0) targetTpl.durationLimit = remainingInstances.length;
                         }
                     }
                 } else { return; }
             } else {
-                // FIXED DELETION PROMPT LOOKUP: Replaced the rigid multi-choice panel fork layout with a friendly confirmation prompt.
                 const cleanDeletionConfirmation = await presentCustomChoicePrompt(`Are you sure you want to delete the expense "${item.name}"?`, "Cancel", "Delete", true);
-                if (cleanDeletionConfirmation === 'right') {
-                    expenses = expenses.filter(e => e.id !== id);
-                } else { return; }
+                if (cleanDeletionConfirmation === 'right') expenses = expenses.filter(e => e.id !== id);
+                else return;
             }
             save();
         }
@@ -1030,15 +1148,10 @@
                         nextMonthConflictInstance.name = `${nextMonthConflictInstance.name} + shifted values`;
                         nextMonthConflictInstance.isEdited = true;
                         expenses = expenses.filter(e => e.id !== id);
-                    } else if (chosenOption === 'right') {
-                        item.month = targetMonthStr;
-                    } else { return; }
-                } else {
-                    item.month = targetMonthStr;
-                }
-            } else {
-                item.month = targetMonthStr;
-            }
+                    } else if (chosenOption === 'right') { item.month = targetMonthStr; } 
+                    else { return; }
+                } else { item.month = targetMonthStr; }
+            } else { item.month = targetMonthStr; }
             save();
         }
 
@@ -1050,22 +1163,17 @@
             const targetIndex = monthsRange.indexOf(item.month);
             if (targetIndex <= 0) return;
             
-            const targetMonthStr = monthsRange[targetIndex - 1];
-            item.month = targetMonthStr;
+            item.month = monthsRange[targetIndex - 1];
             save();
         }
 
-        // Offline Data Portability Handling 
         function exportToFile() {
             const packageData = { meta: meta, templates: templates, expenses: expenses };
             const blob = new Blob([JSON.stringify(packageData, null, 2)], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.download = `rne_backup_${Date.now()}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            a.href = url; a.download = `rne_backup_${Date.now()}.txt`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
 
@@ -1078,24 +1186,14 @@
                     const parsed = JSON.parse(e.target.result);
                     if (parsed && (Array.isArray(parsed.expenses) || Array.isArray(parsed))) {
                         if (Array.isArray(parsed)) {
-                            expenses = parsed;
-                            templates = [];
-                            meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
+                            expenses = parsed; templates = []; meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
                         } else {
-                            expenses = parsed.expenses || [];
-                            templates = parsed.templates || [];
-                            meta = parsed.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
+                            expenses = parsed.expenses || []; templates = parsed.templates || []; meta = parsed.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
                         }
                         expenses.forEach(item => { if (!item.originMonth) item.originMonth = item.month; });
-                        alert("Backup data imported successfully!");
-                        save();
-                        toggleUtilityDrawer();
-                    } else {
-                        alert("The target dataset format parsing criteria has failed structural check validations.");
-                    }
-                } catch(err) {
-                    alert("Error parsing schema logs files contents structured profiles.");
-                }
+                        alert("Backup data imported successfully!"); save(); toggleUtilityDrawer();
+                    } else { alert("The target dataset format parsing criteria has failed structural check validations."); }
+                } catch(err) { alert("Error parsing schema logs files contents structured profiles."); }
             };
             reader.readAsText(file);
         }
@@ -1106,18 +1204,15 @@
             container.innerHTML = '';
             
             const visibleItems = expenses.filter(e => e.month === activeTargetViewMonth);
-            
             let totalUnpaidValue = 0;
             visibleItems.forEach(e => { if (e.status === 'unpaid') totalUnpaidValue += e.cost; });
             document.getElementById('totalUnpaid').innerText = `€${totalUnpaidValue.toFixed(2)}`;
 
             const itemsGroupedByRecurrence = {};
             recurrenceGroupsConfig.forEach(g => { itemsGroupedByRecurrence[g.key] = []; });
-
             visibleItems.forEach(e => {
                 const recurKey = e.recur !== undefined ? e.recur : 0;
-                if (!itemsGroupedByRecurrence[recurKey]) itemsGroupedByRecurrence[recurKey] = [];
-                itemsGroupedByRecurrence[recurKey].push(e);
+                if (itemsGroupedByRecurrence[recurKey]) itemsGroupedByRecurrence[recurKey].push(e);
             });
 
             recurrenceGroupsConfig.forEach(groupDef => {
@@ -1125,7 +1220,6 @@
                 if (list.length === 0) return;
 
                 list.sort((a, b) => b.cost - a.cost);
-
                 const groupContainer = document.createElement('div');
                 groupContainer.className = 'group-container';
 
@@ -1137,14 +1231,12 @@
                 groupHeader.onclick = () => toggleGroupCollapse(`${activeTargetViewMonth}_${groupDef.key}`);
 
                 const isCollapsed = collapsedGroups[`${activeTargetViewMonth}_${groupDef.key}`] === true;
-
                 const headerTitle = document.createElement('div');
                 headerTitle.className = 'group-header-title';
                 headerTitle.innerHTML = `<span>${isCollapsed ? '▶' : '▼'}</span> <span>${groupDef.label}</span>`;
 
                 const badgesContainer = document.createElement('div');
                 badgesContainer.className = 'group-badges-container';
-
                 const costBadge = document.createElement('div');
                 costBadge.className = `group-unpaid-cost ${groupUnpaidSum > 0 ? 'has-unpaid' : 'all-paid'}`;
                 costBadge.innerText = `€${groupUnpaidSum.toFixed(2)}`;
@@ -1153,10 +1245,8 @@
                 lengthBadge.className = 'group-badge';
                 lengthBadge.innerText = list.length;
 
-                badgesContainer.appendChild(costBadge);
-                badgesContainer.appendChild(lengthBadge);
-                groupHeader.appendChild(headerTitle);
-                groupHeader.appendChild(badgesContainer);
+                badgesContainer.appendChild(costBadge); badgesContainer.appendChild(lengthBadge);
+                groupHeader.appendChild(headerTitle); groupHeader.appendChild(badgesContainer);
                 groupContainer.appendChild(groupHeader);
 
                 if (!isCollapsed) {
@@ -1166,21 +1256,14 @@
                     list.forEach(e => {
                         const itemDiv = document.createElement('div');
                         itemDiv.className = `expense-item ${e.status}`;
-
                         const showMoveBack = (e.originMonth && e.month !== e.originMonth);
                         const originLabelHtml = showMoveBack ? `<span class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</span>` : '';
                         const editBadgeHtml = e.isEdited ? `<span class="badge-edited">Custom Override</span>` : '';
 
                         itemDiv.innerHTML = `
                             <div class="info">
-                                <div class="name-wrapper">
-                                    <span class="name">${e.name}</span>
-                                    ${editBadgeHtml}
-                                </div>
-                                <div class="cost-row">
-                                    <span class="cost">€${e.cost.toFixed(2)}</span>
-                                    ${originLabelHtml}
-                                </div>
+                                <div class="name-wrapper"><span class="name">${e.name}</span> ${editBadgeHtml}</div>
+                                <div class="cost-row"><span class="cost">€${e.cost.toFixed(2)}</span> ${originLabelHtml}</div>
                             </div>
                             <div class="actions">
                                 ${showMoveBack ? `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);">➔</button>` : ''}
