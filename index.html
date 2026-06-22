@@ -1005,7 +1005,10 @@
                         itemDiv.className = `expense-item ${e.status}`;
                         
                         const showMoveBack = (e.month !== e.originMonth);
-                        const originMonthLabelHtml = e.originMonth ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` : '';
+                        // FIXED: Only render origin label if the actively viewed month filter doesn't match the expense's original month
+                        const originMonthLabelHtml = (e.originMonth && e.originMonth !== activeMonthFilter) 
+                            ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` 
+                            : '';
                         const editBadgeHtml = e.isEdited ? `<span class="badge-edited">Custom</span>` : '';
 
                         itemDiv.innerHTML = `
@@ -1020,7 +1023,8 @@
                                 </div>
                             </div>
                             <div class="actions">
-                                ${showMoveBack ? `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);">➔</button>` : ''}\r\n                                ${e.status === 'unpaid' ? `
+                                ${showMoveBack ? `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);">➔</button>` : ''}
+                                ${e.status === 'unpaid' ? `
                                     <button class="btn-action btn-move" onclick="moveNextMonth('${e.id}')">➔</button>
                                     <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">✏️</button>
                                     <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">✓</button>
