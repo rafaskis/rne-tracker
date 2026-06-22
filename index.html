@@ -580,18 +580,6 @@
             }
         }
 
-        function toggleUtilityDrawer() {
-            const drawer = document.getElementById('utilityDrawerCard');
-            const arrow = document.getElementById('utilArrow');
-            if(drawer.style.display === 'block') {
-                drawer.style.display = 'none';
-                arrow.innerText = '▼';
-            } else {
-                drawer.style.display = 'block';
-                arrow.innerText = '▲';
-            }
-        }
-
         function toggleGroupCollapse(groupKey) {
             collapsedGroups[groupKey] = !collapsedGroups[groupKey];
             localStorage.setItem('household_collapsed_groups', JSON.stringify(collapsedGroups));
@@ -636,6 +624,9 @@
             if (!newName || isNaN(newCost)) return alert("Fill out Name and Cost fields.");
             if (!item.originMonth) item.originMonth = item.month;
 
+            // Flag as edited ONLY if name or cost changed
+            const nameOrCostChanged = (item.name !== newName || item.cost !== newCost);
+
             if (item.seriesId) {
                 const decision = await presentCustomChoicePrompt("Update only this single current entry, or all upcoming instances in the series?");
                 if (decision === 'all') {
@@ -651,11 +642,12 @@
                                 if (userChoice === 'overwrite') {
                                     e.name = newName;
                                     e.cost = newCost;
-                                    e.isEdited = false;
+                                    e.isEdited = nameOrCostChanged; // preserve state based on change
                                 }
                             } else {
                                 e.name = newName;
                                 e.cost = newCost;
+                                if (nameOrCostChanged) e.isEdited = true;
                             }
                         }
                     }
@@ -664,13 +656,14 @@
                     item.recur = 0;
                     item.name = newName;
                     item.cost = newCost;
-                    item.isEdited = true;
+                    item.isEdited = nameOrCostChanged;
                     item.month = newMonth;
                 }
             } else {
                 item.name = newName;
                 item.cost = newCost;
                 item.month = newMonth;
+                item.isEdited = nameOrCostChanged;
             }
             closeFormDisplay();
             save();
@@ -723,7 +716,7 @@
             if (!item.originMonth) item.originMonth = item.month;
             const [y, m] = item.month.split('-').map(Number);
             item.month = `${y + Math.floor(m / 12)}-${(m % 12) + 1 < 10 ? '0' + ((m % 12) + 1) : (m % 12) + 1}`;
-            if(item.seriesId) item.isEdited = true;
+            // Removed item.isEdited trigger from here so simple relocations don't flag the item
             save();
         }
 
@@ -735,7 +728,7 @@
             let prevMonthRaw = (m - 1) - 1;
             let prevMonthStr = (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) < 10 ? '0' + (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) : (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1);
             item.month = `${prevMonthRaw < 0 ? y - 1 : y}-${prevMonthStr}`;
-            if(item.seriesId) item.isEdited = true;
+            // Removed item.isEdited trigger from here so simple relocations don't flag the item
             save();
         }
 
@@ -1013,7 +1006,7 @@
                         const displayOrigin = (e.originMonth && e.originMonth !== e.month);
                         const originLabelHtml = displayOrigin ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` : '';
                         
-                        // Condition updated: Series items can move back if they rolled forward; One-time items can always move back
+                        // Condition: Series items can move back if they rolled forward; One-time items can always move back
                         const showMoveBack = (!e.seriesId || (e.seriesId && e.month !== e.originMonth));
 
                         itemDiv.innerHTML = `
