@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v25</title>
+    <title>RNE Tracker - v26</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -51,205 +51,106 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: var(--bg-color);
-            color: var(--text-main); padding: 16px; padding-bottom: 100px; position: relative; min-height: 100vh; transition: background-color 0.2s, color 0.2s;
-        }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 16px; padding-bottom: 100px; position: relative; min-height: 100vh; transition: background-color 0.2s, color 0.2s; }
         
         /* Discreet, Streamlined Top Cloud Bar Placement */
-        .top-cloud-bar { display: flex;
-            justify-content: space-between; align-items: center; background: var(--cloud-bar-bg); padding: 8px 12px; border-radius: 10px; margin-bottom: 12px; border: 1px dashed var(--cloud-bar-border); font-size: 13px;
-        }
-        .cloud-status-text { font-weight: 600; color: var(--cloud-bar-text); display: flex; align-items: center; gap: 4px;
-        }
-        .btn-cloud-discreet { width: auto; padding: 6px 12px; font-size: 12px; font-weight: bold;
-            border-radius: 6px; border: none; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 4px;
-        }
-        .btn-cloud-signin { background: var(--gdrive-color); box-shadow: 0 1px 2px rgba(15, 157, 88, 0.2);
-        }
-        .btn-cloud-push { background: #4285f4;
-        }
-        .btn-cloud-pull { background: #16a34a;
-        }
-        .discreet-actions-grid { display: flex; gap: 6px; align-items: center;
-        }
+        .top-cloud-bar { display: flex; justify-content: space-between; align-items: center; background: var(--cloud-bar-bg); padding: 8px 12px; border-radius: 10px; margin-bottom: 12px; border: 1px dashed var(--cloud-bar-border); font-size: 13px; }
+        .cloud-status-text { font-weight: 600; color: var(--cloud-bar-text); display: flex; align-items: center; gap: 4px; }
+        .btn-cloud-discreet { width: auto; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-cloud-signin { background: var(--gdrive-color); box-shadow: 0 1px 2px rgba(15, 157, 88, 0.2); }
+        .btn-cloud-push { background: #4285f4; }
+        .btn-cloud-pull { background: #16a34a; }
+        .discreet-actions-grid { display: flex; gap: 6px; align-items: center; }
 
         /* Unified Layout Control Component for Theme Toggling */
-        .btn-theme-toggle { background: var(--card-bg);
-            border: 1px solid var(--border); color: var(--text-main); font-size: 12px; font-weight: bold; padding: 6px 12px; border-radius: 6px; cursor: pointer; height: auto;
-            width: auto; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-theme-toggle { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); font-size: 12px; font-weight: bold; padding: 6px 12px; border-radius: 6px; cursor: pointer; height: auto; width: auto; display: inline-flex; align-items: center; justify-content: center; }
 
         /* Top Navigation Hierarchy */
-        .month-nav-container { display: flex;
-            align-items: center; gap: 8px; margin-bottom: 12px; }
-        .btn-nav-arrow { width: 48px; height: 48px;
-            background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            color: var(--primary); }
-        .month-select-wrapper { flex-grow: 1;
-        }
-
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 8px;
-        }
-        .header-card { background: var(--card-bg); padding: 16px; border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-grow: 1;
-        }
-        .unpaid-badge { font-size: 24px; font-weight: bold; color: var(--danger); margin-top: 4px;
-        }
+        .month-nav-container { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .btn-nav-arrow { width: 48px; height: 48px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary); }
+        .month-select-wrapper { flex-grow: 1; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 8px; }
+        .header-card { background: var(--card-bg); padding: 16px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-grow: 1; }
+        .unpaid-badge { font-size: 24px; font-weight: bold; color: var(--danger); margin-top: 4px; }
         
-        select, input, button { width: 100%;
-            padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background: var(--card-bg); color: var(--text-main); -webkit-appearance: none;
-        }
-        select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M0 3l5 5 5-5z' fill='%23666'/></svg>");
-            background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+        select, input, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background: var(--card-bg); color: var(--text-main); -webkit-appearance: none; }
+        select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M0 3l5 5 5-5z' fill='%23666'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
         
         /* Collapsible Action Entry Form */
-        .btn-trigger-form { background: var(--primary);
-            color: white; font-weight: bold; border: none; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); cursor: pointer;
-        }
-        .form-card { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border);
-            margin-bottom: 16px; display: none; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr;
-            gap: 8px; margin-bottom: 8px; }
-        .form-card input[type="text"] { grid-column: span 2;
-        }
-        .btn-primary { background: var(--primary); color: white; font-weight: bold; border: none; margin-top: 8px;
-            cursor: pointer; }
-        .btn-cancel-form { background: transparent; color: var(--text-muted); border: none; margin-top: 4px;
-            font-size: 14px; text-decoration: underline; cursor: pointer; }
+        .btn-trigger-form { background: var(--primary); color: white; font-weight: bold; border: none; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); cursor: pointer; }
+        .form-card { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px; display: none; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+        .form-card input[type="text"] { grid-column: span 2; }
+        .btn-primary { background: var(--primary); color: white; font-weight: bold; border: none; margin-top: 8px; cursor: pointer; }
+        .btn-cancel-form { background: transparent; color: var(--text-muted); border: none; margin-top: 4px; font-size: 14px; text-decoration: underline; cursor: pointer; }
         
         /* Dynamic Inline Edit Mode Styling */
-        .edit-banner { background: var(--edit-color);
-            color: white; padding: 8px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 12px; text-align: center; grid-column: span 2;
-        }
+        .edit-banner { background: var(--edit-color); color: white; padding: 8px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 12px; text-align: center; grid-column: span 2; }
 
         /* Categorized Group Framework Elements */
-        .group-container { margin-bottom: 14px;
-            border-radius: 12px; overflow: hidden; background: transparent; }
-        .group-header { background: var(--group-header-bg);
-            padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; color: var(--text-main); cursor: pointer; user-select: none;
-            border: 1px solid var(--border); border-radius: 10px; gap: 8px; }
-        .group-header-title { display: flex;
-            align-items: center; gap: 6px; min-width: 0; }
-        .group-header-title span:last-child { white-space: nowrap;
-            overflow: hidden; text-overflow: ellipsis; }
-        .group-badges-container { display: flex; align-items: center; gap: 6px;
-            flex-shrink: 0; }
-        .group-unpaid-cost { font-size: 13px; font-weight: 700; padding: 2px 8px;
-            border-radius: 6px; }
-        .group-unpaid-cost.has-unpaid { color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5;
-        }
-        [data-theme="dark"] .group-unpaid-cost.has-unpaid { color: #fca5a5; background: #7f1d1d; border: 1px solid #991b1b;
-        }
-        .group-unpaid-cost.all-paid { color: #16a34a; background: #dcfce7; border: 1px solid #86efac;
-        }
-        [data-theme="dark"] .group-unpaid-cost.all-paid { color: #86efac; background: #14532d; border: 1px solid #166534;
-        }
-        .group-badge { background: #64748b; color: white; font-size: 11px; padding: 3px 7px;
-            border-radius: 10px; font-weight: 600; }
-        .group-content { display: flex; flex-direction: column; gap: 10px;
-            margin-top: 8px; padding: 2px; }
+        .group-container { margin-bottom: 14px; border-radius: 12px; overflow: hidden; background: transparent; }
+        .group-header { background: var(--group-header-bg); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; color: var(--text-main); cursor: pointer; user-select: none; border: 1px solid var(--border); border-radius: 10px; gap: 8px; }
+        .group-header-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
+        .group-header-title span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .group-badges-container { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .group-unpaid-cost { font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+        .group-unpaid-cost.has-unpaid { color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; }
+        [data-theme="dark"] .group-unpaid-cost.has-unpaid { color: #fca5a5; background: #7f1d1d; border: 1px solid #991b1b; }
+        .group-unpaid-cost.all-paid { color: #16a34a; background: #dcfce7; border: 1px solid #86efac; }
+        [data-theme="dark"] .group-unpaid-cost.all-paid { color: #86efac; background: #14532d; border: 1px solid #166534; }
+        .group-badge { background: #64748b; color: white; font-size: 11px; padding: 3px 7px; border-radius: 10px; font-weight: 600; }
+        .group-content { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; padding: 2px; }
 
         /* Item Display Grid */
-        .expense-item { background: var(--card-bg);
-            padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-        }
-        .expense-item.paid { opacity: 0.6; border-left: 5px solid var(--success);
-        }
-        .expense-item.unpaid { border-left: 5px solid var(--danger);
-        }
+        .expense-item { background: var(--card-bg); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .expense-item.paid { opacity: 0.6; border-left: 5px solid var(--success); }
+        .expense-item.unpaid { border-left: 5px solid var(--danger); }
         
-        .info { display: flex;
-            flex-direction: column; gap: 4px; width: 100%; }
-        .name-wrapper { display: flex; align-items: center;
-            gap: 6px; flex-wrap: wrap; }
-        .name { font-weight: 600; font-size: 17px; color: var(--text-main);
-            line-height: 1.4; word-break: break-word; white-space: normal; }
-        .badge-edited { background: #bae6fd; color: #0369a1;
-            font-size: 11px; font-weight: bold; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        [data-theme="dark"] .badge-edited { background: #0c4a6e; color: #7dd3fc;
-        }
+        .info { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+        .name-wrapper { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .name { font-weight: 600; font-size: 17px; color: var(--text-main); line-height: 1.4; word-break: break-word; white-space: normal; }
+        .badge-edited { background: #bae6fd; color: #0369a1; font-size: 11px; font-weight: bold; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        [data-theme="dark"] .badge-edited { background: #0c4a6e; color: #7dd3fc; }
         
-        .cost-row { display: flex;
-            flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; margin-top: 2px;
-        }
-        .cost { font-weight: 700; font-size: 18px; color: var(--cost-text);
-        }
-        .origin-label { font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg-color);
-            padding: 2px 6px; border-radius: 4px; border: 1px dashed var(--border); margin-top: 1px;
-        }
+        .cost-row { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; margin-top: 2px; }
+        .cost { font-weight: 700; font-size: 18px; color: var(--cost-text); }
+        .origin-label { font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg-color); padding: 2px 6px; border-radius: 4px; border: 1px dashed var(--border); margin-top: 1px; }
         
         /* Buttons Row Layout */
-        .actions { display: flex;
-            gap: 8px; justify-content: flex-end; width: 100%; border-top: 1px solid var(--border); padding-top: 10px;
-        }
-        .btn-action { width: 44px; height: 44px; padding: 0; display: flex; align-items: center;
-            justify-content: center; font-weight: bold; border-radius: 8px; border: 1px solid var(--border); background: var(--btn-action-bg); cursor: pointer; font-size: 16px;
-        }
-        .btn-pay { color: var(--success);
-        }
-        .btn-move { color: #f59e0b;
-        }
-        .btn-back { color: #6366f1;
-        }
-        .btn-edit { color: var(--edit-color);
-        }
-        .btn-delete { color: var(--danger);
-        }
+        .actions { display: flex; gap: 8px; justify-content: flex-end; width: 100%; border-top: 1px solid var(--border); padding-top: 10px; }
+        .btn-action { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 8px; border: 1px solid var(--border); background: var(--btn-action-bg); cursor: pointer; font-size: 16px; }
+        .btn-pay { color: var(--success); }
+        .btn-move { color: #f59e0b; }
+        .btn-back { color: #6366f1; }
+        .btn-edit { color: var(--edit-color); }
+        .btn-delete { color: var(--danger); }
 
         /* Collapsible Bottom Utility Interface Drawer */
-        .utility-toggle-header { display: flex;
-            align-items: center; justify-content: center; gap: 6px; margin-top: 32px; color: var(--utility); font-size: 14px; font-weight: 600; cursor: pointer; user-select: none; padding: 8px;
-        }
-        .utility-arrow { font-size: 11px; transition: transform 0.2s ease;
-        }
-        .utility-card { background: var(--utility-card-bg); padding: 16px; border-radius: 12px; border: 1px dashed var(--utility);
-            margin-top: 8px; display: none; }
-        .utility-card { background: var(--utility-card-bg); padding: 16px; border-radius: 12px; border: 1px dashed var(--utility);
-            margin-top: 8px; display: none; }
-        .utility-title { font-size: 12px; font-weight: bold; color: var(--utility);
-            margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
-        .utility-grid { display: grid; grid-template-columns: 1fr;
-            gap: 8px; }
+        .utility-toggle-header { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 32px; color: var(--utility); font-size: 14px; font-weight: 600; cursor: pointer; user-select: none; padding: 8px; }
+        .utility-arrow { font-size: 11px; transition: transform 0.2s ease; }
+        .utility-card { background: var(--utility-card-bg); padding: 16px; border-radius: 12px; border: 1px dashed var(--utility); margin-top: 8px; display: none; }
+        .utility-title { font-size: 12px; font-weight: bold; color: var(--utility); margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
+        .utility-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
         
-        .btn-util { background: var(--card-bg);
-            color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center;
-            -webkit-appearance: none; }
-        .file-input-wrapper { position: relative; width: 100%;
-        }
-        .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0;
-            width: 100%; height: 100%; cursor: pointer; }
-        .btn-fake-file { background: var(--card-bg); color: var(--text-main);
-            border: 1px solid var(--border); font-size: 16px; font-weight: normal; text-align: center;
-        }
+        .btn-util { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center; -webkit-appearance: none; }
+        .file-input-wrapper { position: relative; width: 100%; }
+        .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+        .btn-fake-file { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; text-align: center; }
 
         /* Modern Choice Dialog Engine Overlay Template */
-        .choice-overlay { display: none;
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; padding: 24px; align-items: center; justify-content: center;
-        }
-        .choice-card { background: var(--card-bg); border-radius: 16px; padding: 24px; width: 100%; max-width: 400px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); border: 1px solid var(--border);
-        }
-        .choice-message { font-size: 16px; font-weight: 500; color: var(--text-main); line-height: 1.5; margin-bottom: 24px;
-            text-align: center; }
-        .choice-buttons-row { display: flex; justify-content: space-between; align-items: center; gap: 16px;
-        }
-        .btn-choice { width: calc(50% - 8px); padding: 14px; font-size: 16px; font-weight: 700;
-            border-radius: 10px; cursor: pointer; border: none; text-align: center; }
-        .btn-choice-left { background: #e2e8f0;
-            color: #334155; border: 1px solid #cbd5e1; }
-        .btn-choice-right { background: var(--primary); color: white;
-        }
-        .btn-choice-danger { background: var(--danger); color: white;
-        }
-        .btn-choice-full { width: 100%; margin-bottom: 8px;
-        }
-        .vertical-buttons { flex-direction: column; gap: 4px; width: 100%; display: flex;
-        }
+        .choice-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; padding: 24px; align-items: center; justify-content: center; }
+        .choice-card { background: var(--card-bg); border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); border: 1px solid var(--border); }
+        .choice-message { font-size: 16px; font-weight: 500; color: var(--text-main); line-height: 1.5; margin-bottom: 24px; text-align: center; }
+        .choice-buttons-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+        .btn-choice { width: calc(50% - 8px); padding: 14px; font-size: 16px; font-weight: 700; border-radius: 10px; cursor: pointer; border: none; text-align: center; }
+        .btn-choice-left { background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; }
+        .btn-choice-right { background: var(--primary); color: white; }
+        .btn-choice-danger { background: var(--danger); color: white; }
+        .btn-choice-full { width: 100%; margin-bottom: 8px; }
+        .vertical-buttons { flex-direction: column; gap: 4px; width: 100%; display: flex; }
 
         /* Persistent Version Watermark */
-        .version-watermark { position: absolute;
-            bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; user-select: none; pointer-events: none;
-        }
+        .version-watermark { position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; user-select: none; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -295,8 +196,14 @@
                 <option value="6">Every 6 Months</option>
                 <option value="12">Yearly</option>
             </select>
+            <select id="expDuration" style="display:none;">
+                <option value="999">Indefinitely (Full Year)</option>
+                <option value="2">For 2 Cycles</option>
+                <option value="3">For 3 Cycles</option>
+                <option value="4">For 4 Cycles</option>
+                <option value="6">For 6 Cycles</option>
+            </select>
         </div>
-    
         <button class="btn-primary" id="formSubmitBtn" onclick="processFormSubmit()">Save Expense Entry</button>
         <div style="text-align: center;">
             <button class="btn-cancel-form" onclick="closeFormDisplay()">Minimize Form</button>
@@ -331,12 +238,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v25</div>
+    <div class="version-watermark">RNE Tracker • v26</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260626_v25
+        // VERSION TRACKER REFERENCE: 210626_v26
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -354,6 +261,7 @@
         let tokenClient = null;
         let activeAccessToken = null;
         let gdriveFileId = null;
+
         const recurrenceGroupsConfig = [
             { key: 0, label: "One-Time Only" },
             { key: 1, label: "Monthly" },
@@ -392,6 +300,7 @@
                 textContainer.innerText = questionMessage;
                 leftBtn.innerText = leftLabel;
                 rightBtn.innerText = rightLabel;
+
                 if (isDestructive) {
                     rightBtn.className = "btn-choice btn-choice-danger";
                 } else {
@@ -410,49 +319,6 @@
 
                 leftBtn.addEventListener('click', handleLeftSelection);
                 rightBtn.addEventListener('click', handleRightSelection);
-                overlay.style.display = 'flex';
-            });
-        }
-
-        // Specialized Custom Multi-Choice Crossroads for Automated Conflict Matrix Resolutions
-        function presentThreeWaySyncConflictCrossroads(cloudDateStr, localDateStr) {
-            return new Promise((resolve) => {
-                const overlay = document.getElementById('customChoiceOverlay');
-                const textContainer = document.getElementById('choiceOverlayMessage');
-                const container = document.getElementById('choiceButtonsContainer');
-
-                textContainer.innerHTML = `<strong>Cloud Sync Delta Alignment Mismatch Found</strong><br><br>
-                    <span style="font-size:13px; color:var(--text-muted);">Cloud Version:</span> ${cloudDateStr}<br>
-                    <span style="font-size:13px; color:var(--text-muted);">Local Version:</span> ${localDateStr}<br><br>
-                    How would you like to reconcile data maps across tracking engines?`;
-                container.className = "vertical-buttons";
-                container.innerHTML = `
-                    <button class="btn-choice btn-choice-right btn-choice-full" id="syncReloadBtn">Download Cloud (Overwrite Local)</button>
-                    <button class="btn-choice btn-choice-left btn-choice-full" style="background: #4285f4; color:white; border:none;" id="syncBackupBtn">Upload Local (Overwrite Cloud)</button>
-                    <button class="btn-choice btn-choice-left btn-choice-full" style="background: #64748b; color:white; border:none;" id="syncStayBtn">Stay Local Only (Postpone Sync)</button>
-                `;
-                const reloadBtn = document.getElementById('syncReloadBtn');
-                const backupBtn = document.getElementById('syncBackupBtn');
-                const stayBtn = document.getElementById('syncStayBtn');
-
-                const handleReload = () => { cleanup(); resolve('reload'); };
-                const handleBackup = () => { cleanup(); resolve('backup'); };
-                const handleStay = () => { cleanup(); resolve('stay'); };
-                const cleanup = () => {
-                    reloadBtn.removeEventListener('click', handleReload);
-                    backupBtn.removeEventListener('click', handleBackup);
-                    stayBtn.removeEventListener('click', handleStay);
-                    overlay.style.display = 'none';
-                    container.className = "choice-buttons-row";
-                    container.innerHTML = `
-                        <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
-                        <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
-                    `;
-                };
-
-                reloadBtn.addEventListener('click', handleReload);
-                backupBtn.addEventListener('click', handleBackup);
-                stayBtn.addEventListener('click', handleStay);
                 overlay.style.display = 'flex';
             });
         }
@@ -570,19 +436,200 @@
 
         window.onload = function() {
             initializeSavedDisplayTheme();
-            if (typeof google !== 'undefined' && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID_HERE') {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: GOOGLE_CLIENT_ID, scope: GOOGLE_DRIVE_SCOPE, callback: '', 
-                });
-            }
             loadLocalExpensesAndAudit();
             attemptSilentCloudDiscovery();
         };
 
+        // ========================================================
+        // GOOGLE DRIVE CLOUD ACCESS MANAGEMENT UTILITIES
+        // ========================================================
+        
+        function attemptSilentCloudDiscovery() {
+            const cachedToken = localStorage.getItem('rne_gdrive_token');
+            if (cachedToken) {
+                activeAccessToken = cachedToken;
+                document.getElementById('gdriveMainActionBtn').style.display = 'none';
+                document.getElementById('gdrivePushBtn').style.display = 'inline-flex';
+                document.getElementById('gdrivePullBtn').style.display = 'inline-flex';
+                document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Connecting...";
+                
+                setTimeout(() => {
+                    findExistingDatabaseOnCloud(true);
+                }, 500);
+            }
+        }
+
+        function initiateGoogleDriveSyncFlow() {
+            if (!tokenClient) {
+                if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                    tokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: GOOGLE_CLIENT_ID,
+                        scope: GOOGLE_DRIVE_SCOPE,
+                        callback: handleTokenResponse
+                    });
+                } else {
+                    alert("Google Identity Services script is still loading. Please wait a moment and try again.");
+                    return;
+                }
+            } else {
+                tokenClient.callback = handleTokenResponse;
+            }
+            
+            tokenClient.requestAccessToken({ prompt: 'select_account' });
+        }
+
+        async function handleTokenResponse(response) {
+            if (response.error) {
+                console.error("GIS Auth Error:", response.error);
+                document.getElementById('cloudStatusLabel').innerText = "❌ Auth Cancelled";
+                return;
+            }
+            
+            activeAccessToken = response.access_token;
+            localStorage.setItem('rne_gdrive_token', activeAccessToken);
+            
+            document.getElementById('gdriveMainActionBtn').style.display = 'none';
+            document.getElementById('gdrivePushBtn').style.display = 'inline-flex';
+            document.getElementById('gdrivePullBtn').style.display = 'inline-flex';
+            document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Sync Ready";
+            
+            await findExistingDatabaseOnCloud(false);
+        }
+
+        async function findExistingDatabaseOnCloud(isSilentMode = false) {
+            if (!activeAccessToken) return;
+            try {
+                const searchUrl = `https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}'+and+trashed=false&fields=files(id,name)`;
+                const resp = await fetch(searchUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
+                
+                if (resp.status === 401) {
+                    clearExpiredTokenSession();
+                    return;
+                }
+
+                const data = await resp.json();
+                if (data.files && data.files.length > 0) {
+                    gdriveFileId = data.files[0].id;
+                    document.getElementById('cloudStatusLabel').innerText = "☁ Linked to Cloud Backup";
+                    await performAutomatedCloudDeltaSyncCheck();
+                } else {
+                    document.getElementById('cloudStatusLabel').innerText = "✅ New Cloud Storage Ready";
+                    if (!isSilentMode) {
+                        await uploadToGoogleDrive();
+                    }
+                }
+            } catch(e) { 
+                console.error("Cloud lookup fault:", e); 
+                document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Offline";
+            }
+        }
+
+        function clearExpiredTokenSession() {
+            activeAccessToken = null;
+            gdriveFileId = null;
+            localStorage.removeItem('rne_gdrive_token');
+            document.getElementById('gdriveMainActionBtn').style.display = 'inline-flex';
+            document.getElementById('gdrivePushBtn').style.display = 'none';
+            document.getElementById('gdrivePullBtn').style.display = 'none';
+            document.getElementById('cloudStatusLabel').innerText = "☁ Session Expired";
+        }
+
+        async function performAutomatedCloudDeltaSyncCheck() {
+            if (!activeAccessToken || !gdriveFileId) return;
+            try {
+                const fetchUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
+                const resp = await fetch(fetchUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
+                if (resp.status === 200) {
+                    const cloudData = await resp.json();
+                    const cloudTimestamp = (cloudData.meta && cloudData.meta.lastUpdated) ? cloudData.meta.lastUpdated : 0;
+                    const localTimestamp = meta.lastUpdated || 0;
+
+                    if (cloudTimestamp > localTimestamp) {
+                        expenses = cloudData.expenses || [];
+                        templates = cloudData.templates || [];
+                        meta = cloudData.meta || meta;
+                        localStorage.setItem('rne_local_backup_cache', JSON.stringify(cloudData));
+                        executeAutomatedMonthRolloverAudit();
+                    } else if (localTimestamp > cloudTimestamp) {
+                        await uploadToGoogleDrive();
+                    }
+                }
+            } catch (e) {
+                console.error("Delta synchronization check fault:", e);
+            }
+        }
+
+        async function uploadToGoogleDrive() {
+            if (!activeAccessToken) return;
+            document.getElementById('cloudStatusLabel').innerText = "⏳ Saving to Cloud...";
+            try {
+                const packageData = { meta: meta, templates: templates, expenses: expenses };
+                const blob = new Blob([JSON.stringify(packageData)], { type: 'application/json' });
+                
+                let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+                let method = 'POST';
+                
+                const metadata = { name: DEDICATED_FILE_NAME, mimeType: 'application/json' };
+                if (gdriveFileId) {
+                    url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`;
+                    method = 'PATCH';
+                }
+
+                const formData = new FormData();
+                formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                formData.append('file', blob);
+
+                const resp = await fetch(url, {
+                    method: method,
+                    headers: { 'Authorization': `Bearer ${activeAccessToken}` },
+                    body: formData
+                });
+
+                if (resp.ok) {
+                    const resData = await resp.json();
+                    if (!gdriveFileId && resData.id) gdriveFileId = resData.id;
+                    document.getElementById('cloudStatusLabel').innerText = "☁ Linked to Cloud Backup";
+                } else {
+                    document.getElementById('cloudStatusLabel').innerText = "❌ Backup Error";
+                }
+            } catch(e) {
+                console.error("Cloud push operation failure:", e);
+                document.getElementById('cloudStatusLabel').innerText = "❌ Sync Failure";
+            }
+        }
+
+        async function manuallyTriggerCloudRestore() {
+            if (!activeAccessToken || !gdriveFileId) return alert("Cloud account is not authenticated.");
+            const confirmation = confirm("Are you sure you want to download your cloud database file? This action replaces your existing local offline records.");
+            if (!confirmation) return;
+
+            document.getElementById('cloudStatusLabel').innerText = "⏳ Downloading Setup...";
+            try {
+                const fetchUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
+                const resp = await fetch(fetchUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
+                if (resp.status === 200) {
+                    const cloudData = await resp.json();
+                    expenses = cloudData.expenses || [];
+                    templates = cloudData.templates || [];
+                    meta = cloudData.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
+                    
+                    localStorage.setItem('rne_local_backup_cache', JSON.stringify(cloudData));
+                    document.getElementById('cloudStatusLabel').innerText = "☁ Linked to Cloud Backup";
+                    executeAutomatedMonthRolloverAudit();
+                    alert("Database restoration successful!");
+                } else {
+                    alert("Failed to pull remote backup resource file from server.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("An unexpected transport layer fault prevented restoration processing.");
+            }
+        }
+
         function loadLocalExpensesAndAudit() {
             const cached = localStorage.getItem('rne_local_backup_cache');
-            if (cached) { 
-                try { 
+            if (cached) {
+                try {
                     const rootData = JSON.parse(cached);
                     if (Array.isArray(rootData)) {
                         expenses = rootData;
@@ -594,20 +641,19 @@
                         meta = rootData.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: 0 };
                     }
                 } catch(e) { 
-                    expenses = []; templates = [];
-                    meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: 0 };
+                    expenses = []; templates = []; meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: 0 };
                 }
-            } else { 
+            } else {
                 meta.lastMonthPopulated = currentSystemMonth; meta.lastUpdated = 0;
-            } 
+            }
             expenses.forEach(e => { if (!e.originMonth) e.originMonth = e.month; });
             executeAutomatedMonthRolloverAudit();
         }
 
-        // MASTER GENERATION POPULATION ENGINE WITH AUTO EXTENSION
         function executeAutomatedMonthRolloverAudit() {
             let changesMade = false;
             const lastAuditedMonth = localStorage.getItem('rne_last_processed_month') || currentSystemMonth;
+            
             if (currentSystemMonth > lastAuditedMonth) {
                 expenses.forEach(item => {
                     if (item.month === lastAuditedMonth && item.status === 'unpaid') {
@@ -682,6 +728,7 @@
             document.getElementById('expMonthTarget').value = item.month;
             document.getElementById('expRecur').value = item.recur || '0';
             document.getElementById('expRecur').disabled = true;
+            document.getElementById('expDuration').style.display = 'none';
             document.getElementById('expenseFormCard').style.display = 'block';
             document.getElementById('formTriggerBtn').style.display = 'none';
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -719,21 +766,22 @@
             }
         }
 
-        function toggleDurationField() {}
+        function toggleDurationField() {
+            if (editingTargetId) return;
+            const recurVal = parseInt(document.getElementById('expRecur').value);
+            document.getElementById('expDuration').style.display = (recurVal > 0) ? 'block' : 'none';
+        }
 
         function save() {
             meta.lastUpdated = Date.now();
             const packageData = { meta: meta, templates: templates, expenses: expenses };
             localStorage.setItem('rne_local_backup_cache', JSON.stringify(packageData));
             render();
+            uploadToGoogleDrive();
         }
 
         async function processFormSubmit() {
-            if (editingTargetId) {
-                await executeEditSave();
-            } else {
-                addExpense();
-            }
+            if (editingTargetId) { await executeEditSave(); } else { addExpense(); }
         }
 
         async function executeEditSave() {
@@ -742,6 +790,7 @@
             const newName = document.getElementById('expName').value.trim();
             const newCost = parseFloat(document.getElementById('expCost').value);
             const newMonth = document.getElementById('expMonthTarget').value;
+            
             if (!newName || isNaN(newCost)) return alert("Fill out Name and Cost fields.");
             if (!item.originMonth) item.originMonth = item.month;
             const nameOrCostChanged = (item.name !== newName || item.cost !== newCost);
@@ -749,95 +798,98 @@
             if (item.seriesId) {
                 const decision = await presentCustomChoicePrompt("Update only this single current entry, or all upcoming instances in the series?", "Current", "All");
                 if (decision === 'right') {
-                    const tpl = templates.find(t => t.seriesId === item.seriesId);
-                    if (tpl) {
-                        tpl.name = newName;
-                        tpl.cost = newCost;
-                    }
-                    expenses.forEach(e => {
+                    const targetTpl = templates.find(t => t.seriesId === item.seriesId);
+                    if (targetTpl) { targetTpl.name = newName; targetTpl.cost = newCost; }
+                    for (let e of expenses) {
                         if (e.seriesId === item.seriesId && e.month >= item.month) {
-                            if (!e.isEdited || nameOrCostChanged) {
-                                e.name = newName;
-                                e.cost = newCost;
-                                e.isEdited = false;
+                            if (e.isEdited) {
+                                const userChoice = await presentInteractiveOverrideReview(e.month, e.name, e.cost, newName, newCost);
+                                if (userChoice === 'overwrite') {
+                                    e.name = newName; e.cost = newCost; e.isEdited = nameOrCostChanged;
+                                }
+                            } else {
+                                e.name = newName; e.cost = newCost;
                             }
                         }
-                    });
+                    }
                 } else if (decision === 'left') {
-                    item.name = newName;
-                    item.cost = newCost;
-                    item.isEdited = true;
-                }
+                    item.name = newName; item.cost = newCost; item.isEdited = nameOrCostChanged;
+                } else { return; }
             } else {
-                item.name = newName;
-                item.cost = newCost;
+                item.name = newName; item.cost = newCost;
             }
             
-            if (item.month !== newMonth) {
-                item.month = newMonth;
-            }
-            save();
+            if (item.month !== newMonth) { item.month = newMonth; }
             closeFormDisplay();
+            save();
         }
 
         function addExpense() {
             const name = document.getElementById('expName').value.trim();
             const cost = parseFloat(document.getElementById('expCost').value);
-            const month = document.getElementById('expMonthTarget').value;
+            const startMonth = document.getElementById('expMonthTarget').value;
             const recur = parseInt(document.getElementById('expRecur').value);
-            if (!name || isNaN(cost)) return alert("Please supply name and valid numeric costs.");
-            
-            if (recur > 0) {
-                const seriesId = 'series_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-                const durationLimit = null; 
-                templates.push({ seriesId, name, cost, startMonth: month, recur, durationLimit });
+            const durationLimit = parseInt(document.getElementById('expDuration').value);
+
+            if (!name || isNaN(cost)) return alert("Please supply a recognizable reference label and price point.");
+
+            if (recur === 0) {
+                expenses.push({
+                    id: Date.now() + Math.random().toString(36).substr(2, 5),
+                    name: name, cost: cost, month: startMonth, recur: 0, status: 'unpaid', originMonth: startMonth, isEdited: false
+                });
+            } else {
+                const generatedSeriesId = 'ser_' + Date.now() + Math.random().toString(36).substr(2, 5);
+                templates.push({ seriesId: generatedSeriesId, name: name, cost: cost, startMonth: startMonth, recur: recur, durationLimit: durationLimit });
                 
                 monthsRange.forEach(visibleMonth => {
-                    if (visibleMonth >= month) {
-                        const [startY, startM] = month.split('-').map(Number);
+                    if (visibleMonth >= startMonth) {
+                        const [startY, startM] = startMonth.split('-').map(Number);
                         const [visY, visM] = visibleMonth.split('-').map(Number);
                         const monthDiff = (visY - startY) * 12 + (visM - startM);
                         if (monthDiff >= 0 && monthDiff % recur === 0) {
+                            if (durationLimit && (monthDiff / recur) >= durationLimit) return;
                             expenses.push({
                                 id: Date.now() + Math.random().toString(36).substr(2, 5),
-                                seriesId, name, cost, month: visibleMonth, recur,
-                                status: 'unpaid', originMonth: visibleMonth, isEdited: false
+                                seriesId: generatedSeriesId,
+                                name: name, cost: cost, month: visibleMonth, recur: recur, status: 'unpaid', originMonth: visibleMonth, isEdited: false
                             });
                         }
                     }
                 });
-            } else {
-                expenses.push({
-                    id: 'single_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-                    name, cost, month, recur: 0, status: 'unpaid', originMonth: month, isEdited: false
-                });
             }
-            save();
             closeFormDisplay();
+            save();
         }
 
         async function deleteExpense(id) {
             const item = expenses.find(e => e.id === id);
             if (!item) return;
+
             if (item.seriesId) {
-                const action = await presentThreeWayDeleteCrossroads();
-                if (action === 'current') {
+                const decision = await presentThreeWayDeleteCrossroads();
+                if (decision === 'current') {
                     expenses = expenses.filter(e => e.id !== id);
-                } else if (action === 'forward') {
+                } else if (decision === 'forward') {
                     expenses = expenses.filter(e => !(e.seriesId === item.seriesId && e.month >= item.month));
-                    const remainingInstances = expenses.some(e => e.seriesId === item.seriesId);
-                    if (!remainingInstances) {
+                    const downstreamInstancesExist = expenses.some(e => e.seriesId === item.seriesId);
+                    if (!downstreamInstancesExist) {
                         templates = templates.filter(t => t.seriesId !== item.seriesId);
+                    } else {
+                        const targetTpl = templates.find(t => t.seriesId === item.seriesId);
+                        if (targetTpl) {
+                            const remainingInstances = expenses.filter(e => e.seriesId === item.seriesId).sort((a,b) => a.month.localeCompare(b.month));
+                            if (remainingInstances.length > 0) {
+                                const maxMonthsInSeries = remainingInstances.length;
+                                targetTpl.durationLimit = maxMonthsInSeries;
+                            }
+                        }
                     }
-                } else {
-                    return;
-                }
+                } else { return; }
             } else {
-                if (confirm(`Delete non-recurring single item "${item.name}"?`)) {
+                if (confirm(`Remove custom layout index item point for "${item.name}"?`)) {
                     expenses = expenses.filter(e => e.id !== id);
-                } else {
-                    return;
-                }
+                } else { return; }
             }
             save();
         }
@@ -849,263 +901,163 @@
             save();
         }
 
-        function moveNextMonth(id) {
+        async function moveNextMonth(id) {
             const item = expenses.find(e => e.id === id);
             if (!item) return;
-            const currentIndex = monthsRange.indexOf(item.month);
-            if (currentIndex !== -1 && currentIndex + 1 < monthsRange.length) {
-                item.month = monthsRange[currentIndex + 1];
-                save();
+            const targetIndex = monthsRange.indexOf(item.month);
+            if (targetIndex === -1 || targetIndex === monthsRange.length - 1) return alert("Cannot advance items past the system boundary index timeline limits.");
+            
+            const targetMonthStr = monthsRange[targetIndex + 1];
+            if (!item.originMonth) item.originMonth = item.month;
+            
+            if (item.seriesId) {
+                const nextMonthConflictInstance = expenses.find(e => e.seriesId === item.seriesId && e.month === targetMonthStr);
+                if (nextMonthConflictInstance) {
+                    const chosenOption = await presentCustomChoicePrompt(`A recurring instance for this item already exists in the next month. Choose how to handle this shift:`, "Merge values", "Keep both separate");
+                    if (chosenOption === 'left') {
+                        nextMonthConflictInstance.cost += item.cost;
+                        nextMonthConflictInstance.name = `${nextMonthConflictInstance.name} + shifted values`;
+                        nextMonthConflictInstance.isEdited = true;
+                        expenses = expenses.filter(e => e.id !== id);
+                    } else if (chosenOption === 'right') {
+                        item.month = targetMonthStr;
+                    } else { return; }
+                } else {
+                    item.month = targetMonthStr;
+                }
             } else {
-                alert("Cannot shift past operational view buffers.");
+                item.month = targetMonthStr;
             }
+            save();
         }
 
         function movePreviousMonth(id) {
             const item = expenses.find(e => e.id === id);
             if (!item) return;
-            const currentIndex = monthsRange.indexOf(item.month);
-            if (currentIndex > 0) {
-                item.month = monthsRange[currentIndex - 1];
-                save();
-            } else {
-                alert("Cannot step backwards past viewing floor metrics.");
-            }
+            if (!item.originMonth || item.month === item.originMonth) return;
+            
+            const targetIndex = monthsRange.indexOf(item.month);
+            if (targetIndex <= 0) return;
+            
+            const targetMonthStr = monthsRange[targetIndex - 1];
+            item.month = targetMonthStr;
+            save();
         }
 
         function exportToFile() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
-                meta: meta, templates: templates, expenses: expenses
-            }));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `rne_backup_${new Date().toISOString().slice(0,10)}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
+            const packageData = { meta: meta, templates: templates, expenses: expenses };
+            const blob = new Blob([JSON.stringify(packageData, null, 2)], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `rne_backup_${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         function importFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const parsed = JSON.parse(e.target.result);
-                    if (parsed.expenses || parsed.templates) {
-                        expenses = parsed.expenses || [];
-                        templates = parsed.templates || [];
-                        meta = parsed.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
-                    } else if (Array.isArray(parsed)) {
-                        expenses = parsed;
-                        templates = [];
-                        meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
-                    }
-                    expenses.forEach(item => { if (!item.originMonth) item.originMonth = item.month; });
-                    save();
-                    alert("Import sync completed cleanly.");
-                } catch(err) {
-                    alert("Invalid dataset layout format uploaded.");
-                }
-            };
-            reader.readAsText(event.target.files[0]);
-        }
-
-        // GOOGLE DRIVE CLOUD ACCESS MANAGEMENT IMPLEMENTATION VIA EXPLICIT REST SCOPES
-        function attemptSilentCloudDiscovery() {
-            const cachedToken = localStorage.getItem('rne_gdrive_token');
-            if (cachedToken) {
-                activeAccessToken = cachedToken;
-                document.getElementById('gdriveMainActionBtn').style.display = 'none';
-                document.getElementById('gdrivePushBtn').style.display = 'inline-flex';
-                document.getElementById('gdrivePullBtn').style.display = 'inline-flex';
-                document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Connecting...";
-                findExistingDatabaseOnCloud(true);
-            }
-        }
-
-        function initiateGoogleDriveSyncFlow() {
-            tokenClient.callback = async (response) => {
-                if (response.error) return;
-                activeAccessToken = response.access_token;
-                localStorage.setItem('rne_gdrive_token', activeAccessToken);
-                document.getElementById('gdriveMainActionBtn').style.display = 'none';
-                document.getElementById('gdrivePushBtn').style.display = 'inline-flex';
-                document.getElementById('gdrivePullBtn').style.display = 'inline-flex';
-                document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Sync Ready";
-                await findExistingDatabaseOnCloud(false);
-            };
-            tokenClient.requestAccessToken({ prompt: 'none' });
-        }
-
-        async function findExistingDatabaseOnCloud(isSilentMode = false) {
-            try {
-                const searchUrl = `https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}'+and+trashed=false&fields=files(id,name)`;
-                const resp = await fetch(searchUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
-                const data = await resp.json();
-                if (data.files && data.files.length > 0) {
-                    gdriveFileId = data.files[0].id;
-                    document.getElementById('cloudStatusLabel').innerText = "☁ Linked to Cloud Backup";
-                    await performAutomatedCloudDeltaSyncCheck();
-                } else if (isSilentMode) {
-                    document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Offline";
-                }
-            } catch(e) { 
-                console.error("Cloud lookup fault:", e); 
-                document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Offline";
-            }
-        }
-
-        // DUAL VECTOR DELTA ENFORCEMENT ENGINE (CONFLICT CROSSROADS ROUTER)
-        async function performAutomatedCloudDeltaSyncCheck() {
-            if (!activeAccessToken || !gdriveFileId) return;
-            try {
-                const downloadUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
-                const response = await fetch(downloadUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
-                if (!response.ok) return;
-                
-                const cloudData = await response.json();
-                const cloudMeta = cloudData.meta || { lastUpdated: 0 };
-                const localMeta = meta || { lastUpdated: 0 };
-
-                if (cloudMeta.lastUpdated !== localMeta.lastUpdated) {
-                    const cloudDateStr = cloudMeta.lastUpdated ? new Date(cloudMeta.lastUpdated).toLocaleString() : "Unknown";
-                    const localDateStr = localMeta.lastUpdated ? new Date(localMeta.lastUpdated).toLocaleString() : "Unknown";
-                    
-                    const decision = await presentThreeWaySyncConflictCrossroads(cloudDateStr, localDateStr);
-                    
-                    if (decision === 'reload') {
-                        expenses = cloudData.expenses || [];
-                        templates = cloudData.templates || [];
-                        meta = cloudData.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
+                    if (parsed && (Array.isArray(parsed.expenses) || Array.isArray(parsed))) {
+                        if (Array.isArray(parsed)) {
+                            expenses = parsed;
+                            templates = [];
+                            meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
+                        } else {
+                            expenses = parsed.expenses || [];
+                            templates = parsed.templates || [];
+                            meta = parsed.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
+                        }
                         expenses.forEach(item => { if (!item.originMonth) item.originMonth = item.month; });
-                        localStorage.setItem('rne_local_backup_cache', JSON.stringify(cloudData));
-                        executeAutomatedMonthRolloverAudit();
-                        document.getElementById('cloudStatusLabel').innerText = "✅ Synchronized from Cloud";
-                    } else if (decision === 'backup') {
-                        await uploadToGoogleDrive();
+                        alert("Backup data imported successfully!");
+                        save();
+                        toggleUtilityDrawer();
                     } else {
-                        document.getElementById('cloudStatusLabel').innerText = "⚠️ Running Disconnected Local";
+                        alert("The target dataset format parsing criteria has failed structural check validations.");
                     }
-                } else {
-                    document.getElementById('cloudStatusLabel').innerText = "✅ Cloud Synced & Up To Date";
+                } catch(err) {
+                    alert("Error parsing schema logs files contents structured profiles.");
                 }
-            } catch(e) {
-                console.error("Delta evaluation error:", e);
-            }
-        }
-
-        async function uploadToGoogleDrive() {
-            if (!activeAccessToken) return alert("Authorize Cloud Session access parameters first.");
-            document.getElementById('cloudStatusLabel').innerText = "⏳ Synchronizing Backup...";
-            const dataBlob = new Blob([JSON.stringify({ meta, templates, expenses })], { type: 'application/json' });
-            
-            try {
-                let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=media';
-                let method = 'POST';
-                if (gdriveFileId) {
-                    url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=media`;
-                    method = 'PATCH';
-                }
-                const response = await fetch(url, { method, headers: { 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': 'application/json' }, body: dataBlob });
-                if (response.ok) {
-                    if (method === 'POST') {
-                        const metadata = await response.json();
-                        gdriveFileId = metadata.id;
-                    }
-                    document.getElementById('cloudStatusLabel').innerText = "✅ Backup Completed Successfully";
-                } else { throw new Error("Sync failure"); }
-            } catch(e) {
-                document.getElementById('cloudStatusLabel').innerText = "❌ Sync Fault Triggered";
-                alert("Could not complete cloud export pipelines safely.");
-            }
-        }
-
-        async function manuallyTriggerCloudRestore() {
-            if (!activeAccessToken || !gdriveFileId) return alert("No active cloud instance found to query storage vectors from.");
-            if (!confirm("Overwrite localized application engine frames with database from cloud?")) return;
-            document.getElementById('cloudStatusLabel').innerText = "📥 Downloading Matrix Frames...";
-            
-            try {
-                const downloadUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
-                const response = await fetch(downloadUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
-                if (response.ok) {
-                    const parsed = await response.json();
-                    expenses = parsed.expenses || [];
-                    templates = parsed.templates || [];
-                    meta = parsed.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
-                    expenses.forEach(item => { if (!item.originMonth) item.originMonth = item.month; });
-                    localStorage.setItem('rne_local_backup_cache', JSON.stringify(parsed));
-                    executeAutomatedMonthRolloverAudit();
-                    document.getElementById('cloudStatusLabel').innerText = "✅ Restore Sync Settled Flush";
-                    alert("Local cache matched to cloud master references safely.");
-                } else { throw new Error("Download error"); }
-            } catch(e) {
-                document.getElementById('cloudStatusLabel').innerText = "❌ Restore Pipes Blocked";
-                alert("Failed mapping parameters over cloud retrieval pipelines.");
-            }
+            };
+            reader.readAsText(file);
         }
 
         function render() {
+            const activeTargetViewMonth = filterSelect.value;
             const container = document.getElementById('listContainer');
             container.innerHTML = '';
-            const activeMonthFilter = filterSelect.value;
-            const monthExpenses = expenses.filter(e => e.month === activeMonthFilter);
             
-            let currentMonthTotalUnpaid = 0;
-            monthExpenses.forEach(e => { if (e.status === 'unpaid') currentMonthTotalUnpaid += e.cost; });
-            document.getElementById('totalUnpaid').innerText = `€${currentMonthTotalUnpaid.toFixed(2)}`;
+            const visibleItems = expenses.filter(e => e.month === activeTargetViewMonth);
+            
+            let totalUnpaidValue = 0;
+            visibleItems.forEach(e => { if (e.status === 'unpaid') totalUnpaidValue += e.cost; });
+            document.getElementById('totalUnpaid').innerText = `€${totalUnpaidValue.toFixed(2)}`;
 
-            const categorizedMap = {};
-            recurrenceGroupsConfig.forEach(g => categorizedMap[g.key] = []);
-            
-            monthExpenses.forEach(e => {
-                const key = e.recur !== undefined ? e.recur : 0;
-                if (!categorizedMap[key]) categorizedMap[key] = [];
-                categorizedMap[key].push(e);
+            const itemsGroupedByRecurrence = {};
+            recurrenceGroupsConfig.forEach(g => { itemsGroupedByRecurrence[g.key] = []; });
+
+            visibleItems.forEach(e => {
+                const recurKey = e.recur !== undefined ? e.recur : 0;
+                if (!itemsGroupedByRecurrence[recurKey]) itemsGroupedByRecurrence[recurKey] = [];
+                itemsGroupedByRecurrence[recurKey].push(e);
             });
 
-            recurrenceGroupsConfig.forEach(groupMeta => {
-                const groupItems = categorizedMap[groupMeta.key] || [];
-                if (groupItems.length === 0) return;
-                
-                groupItems.sort((a, b) => b.cost - a.cost);
+            recurrenceGroupsConfig.forEach(groupDef => {
+                const list = itemsGroupedByRecurrence[groupDef.key];
+                if (list.length === 0) return;
+
+                list.sort((a, b) => b.cost - a.cost);
+
                 const groupContainer = document.createElement('div');
                 groupContainer.className = 'group-container';
-                
+
                 let groupUnpaidSum = 0;
-                groupItems.forEach(item => { if (item.status === 'unpaid') groupUnpaidSum += item.cost; });
-                
-                const isCollapsed = !!collapsedGroups[groupMeta.key];
-                const badgeStatusClass = (groupUnpaidSum > 0) ? 'has-unpaid' : 'all-paid';
-                const badgeTextLabel = (groupUnpaidSum > 0) ? `€${groupUnpaidSum.toFixed(2)}` : 'ALL PAID';
+                list.forEach(item => { if (item.status === 'unpaid') groupUnpaidSum += item.cost; });
 
                 const groupHeader = document.createElement('div');
                 groupHeader.className = 'group-header';
-                groupHeader.onclick = () => toggleGroupCollapse(groupMeta.key);
-                groupHeader.innerHTML = `
-                    <div class="group-header-title">
-                        <span>${isCollapsed ? '▶' : '▼'}</span>
-                        <span>${groupMeta.label}</span>
-                    </div>
-                    <div class="group-badges-container">
-                        <span class="group-unpaid-cost ${badgeStatusClass}">${badgeTextLabel}</span>
-                        <span class="group-badge">${groupItems.length}</span>
-                    </div>
-                `;
+                groupHeader.onclick = () => toggleGroupCollapse(`${activeTargetViewMonth}_${groupDef.key}`);
+
+                const isCollapsed = collapsedGroups[`${activeTargetViewMonth}_${groupDef.key}`] === true;
+
+                const headerTitle = document.createElement('div');
+                headerTitle.className = 'group-header-title';
+                headerTitle.innerHTML = `<span>${isCollapsed ? '▶' : '▼'}</span> <span>${groupDef.label}</span>`;
+
+                const badgesContainer = document.createElement('div');
+                badgesContainer.className = 'group-badges-container';
+
+                const costBadge = document.createElement('div');
+                costBadge.className = `group-unpaid-cost ${groupUnpaidSum > 0 ? 'has-unpaid' : 'all-paid'}`;
+                costBadge.innerText = `€${groupUnpaidSum.toFixed(2)}`;
+
+                const lengthBadge = document.createElement('span');
+                lengthBadge.className = 'group-badge';
+                lengthBadge.innerText = list.length;
+
+                badgesContainer.appendChild(costBadge);
+                badgesContainer.appendChild(lengthBadge);
+                groupHeader.appendChild(headerTitle);
+                groupHeader.appendChild(badgesContainer);
                 groupContainer.appendChild(groupHeader);
 
                 if (!isCollapsed) {
                     const groupContent = document.createElement('div');
                     groupContent.className = 'group-content';
-                    
-                    groupItems.forEach(e => {
+
+                    list.forEach(e => {
                         const itemDiv = document.createElement('div');
                         itemDiv.className = `expense-item ${e.status}`;
-                        
-                        const showMoveBack = (e.month !== e.originMonth);
-                        const originMonthLabelHtml = (e.originMonth && e.originMonth !== activeMonthFilter) 
-                            ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` 
-                            : '';
-                        const editBadgeHtml = e.isEdited ? `<span class="badge-edited">Custom</span>` : '';
+
+                        const showMoveBack = (e.originMonth && e.month !== e.originMonth);
+                        const originLabelHtml = showMoveBack ? `<span class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</span>` : '';
+                        const editBadgeHtml = e.isEdited ? `<span class="badge-edited">Custom Override</span>` : '';
 
                         itemDiv.innerHTML = `
                             <div class="info">
@@ -1115,7 +1067,7 @@
                                 </div>
                                 <div class="cost-row">
                                     <span class="cost">€${e.cost.toFixed(2)}</span>
-                                    ${originMonthLabelHtml}
+                                    ${originLabelHtml}
                                 </div>
                             </div>
                             <div class="actions">
