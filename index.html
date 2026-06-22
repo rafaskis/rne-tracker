@@ -574,6 +574,9 @@
             editingTargetId = null;
         }
 
+        // ==========================================
+        // UI DRAWER INTERACTION HANDLERS
+        // ==========================================
         function toggleUtilityDrawer() {
             const drawer = document.getElementById('utilityDrawerCard');
             const arrow = document.getElementById('utilArrow');
@@ -901,7 +904,6 @@
 
             printWindow.focus();
             
-            // Allow the window to paint content completely without forcing a quick kill step
             setTimeout(() => {
                 printWindow.print();
             }, 300);
@@ -1004,14 +1006,14 @@
                         `;
                         groupContent.appendChild(itemDiv);
                     });
-                    groupContainer.appendChild(groupContent);
+                    groupContent.appendChild(itemDiv);
                 }
                 container.appendChild(groupContainer);
             });
         }
 
         // ==========================================
-        // LOCAL BACKUP EXPORT ENGINE
+        // LOCAL DATA FILE STORAGE LOGIC
         // ==========================================
         function exportToFile() {
             const dataStr = localStorage.getItem('rne_local_backup_cache');
@@ -1095,9 +1097,22 @@
             try {
                 let downloadUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
                 let response = await fetch(downloadUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
-                let cloudPayload = await response.json();
                 
-                const cloudMeta = cloudPayload.meta || { lastUpdated: 0 };
+                let cloudPayload;
+                const responseText = await response.text();
+                try {
+                    cloudPayload = JSON.parse(responseText);
+                } catch(parseErr) {
+                    cloudPayload = responseText;
+                }
+
+                if (typeof cloudPayload === 'string') {
+                    try {
+                        cloudPayload = JSON.parse(cloudPayload);
+                    } catch(e) {}
+                }
+                
+                const cloudMeta = (cloudPayload && cloudPayload.meta) ? cloudPayload.meta : { lastUpdated: 0 };
                 if (cloudMeta.lastUpdated > meta.lastUpdated) {
                     const optionDecision = await presentCustomChoicePrompt("A newer data sync version was detected on your cloud account. Pull cloud data or overwrite it with your current local data?", "Pull Cloud Data", "Overwrite Cloud");
                     if (optionDecision === 'left') {
@@ -1141,23 +1156,55 @@
                 updateDiscreetCloudUiIndicators("☁ Cloud Synchronized", "", "connected");
             } catch (e) {
                 updateDiscreetCloudUiIndicators("☁ Sync Failure", "", "connected");
+                alert("Backup push failed. Please check your cloud network response parameters.");
             }
         }
 
         async function manuallyTriggerCloudRestore() {
-            if (!gdriveFileId) return alert("No active cloud path is mapped yet.");
+            if (!gdriveFileId) {
+                updateDiscreetCloudUiIndicators("☁ Sync Ready", "", "connected");
+                return alert("No active cloud save path is mapped yet. Click Backup first to create the cloud container.");
+            }
+            
             updateDiscreetCloudUiIndicators("⏳ Restoring Content...", "", "connected");
+            
             try {
                 let downloadUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
                 let response = await fetch(downloadUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
-                let pulledBackup = await response.json();
                 
+                if (!response.ok) {
+                    throw new Error(`Server returned HTTP status ${response.status}`);
+                }
+
+                let pulledBackup;
+                const responseText = await response.text();
+                
+                try {
+                    pulledBackup = JSON.parse(responseText);
+                } catch(e) {
+                    pulledBackup = responseText;
+                }
+
+                if (typeof pulledBackup === 'string') {
+                    try {
+                        pulledBackup = JSON.parse(pulledBackup);
+                    } catch(e) {
+                        throw new Error("Cloud data is not a valid JSON structure format.");
+                    }
+                }
+                
+                if (!pulledBackup || (!pulledBackup.expenses && !Array.isArray(pulledBackup))) {
+                    throw new Error("Retrieved database schema properties are malformed.");
+                }
+
                 localStorage.setItem('rne_local_backup_cache', JSON.stringify(pulledBackup));
                 loadLocalExpensesAndAudit();
                 updateDiscreetCloudUiIndicators("☁ Cloud Synchronized", "", "connected");
                 alert("Data state restored seamlessly from cloud servers.");
             } catch (e) {
+                console.error("Cloud pull failure details:", e);
                 updateDiscreetCloudUiIndicators("☁ Sync Failure", "", "connected");
+                alert(`Restore Interrupted: ${e.message}`);
             }
         }
     </script>
