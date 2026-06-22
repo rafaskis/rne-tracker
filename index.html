@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v21</title>
+    <title>RNE Tracker - v23</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -77,7 +77,7 @@
         select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M0 3l5 5 5-5z' fill='%23666'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
         
         /* Collapsible Action Entry Form */
-        .btn-trigger-form { background: var(--primary); color: white; font-weight: bold; border: none; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); cursor: pointer; }
+        .btn-trigger-form { background: var(--primary); color: white; font-weight: bold; border: none; margin-bottom: 16px; box-shadow: 0 2px 4 rgba(37, 99, 235, 0.2); cursor: pointer; }
         .form-card { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px; display: none; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
         .form-card input[type="text"] { grid-column: span 2; }
@@ -196,12 +196,8 @@
                 <option value="6">Every 6 Months</option>
                 <option value="12">Yearly</option>
             </select>
-            <select id="expDuration" style="display:none;">
-                <option value="999">Indefinitely (Full Year)</option>
-                <option value="2">For 2 Cycles</option>
-                <option value="3">For 3 Cycles</option>
-                <option value="4">For 4 Cycles</option>
-                <option value="6">For 6 Cycles</option>
+            <select id="expEndMonthBoundary" style="display:none;">
+                <option value="">Until End Month (Optional)</option>
             </select>
         </div>
         <button class="btn-primary" id="formSubmitBtn" onclick="processFormSubmit()">Save Expense Entry</button>
@@ -238,12 +234,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v21</div>
+    <div class="version-watermark">RNE Tracker • v23</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 210626_v21
+        // VERSION TRACKER REFERENCE: 230626_v23
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -313,7 +309,6 @@
                     leftBtn.removeEventListener('click', handleLeftSelection);
                     rightBtn.removeEventListener('click', handleRightSelection);
                     overlay.style.display = 'none';
-                    // Reset labels back to defaults
                     leftBtn.innerText = "Current";
                     rightBtn.innerText = "All";
                 };
@@ -353,7 +348,6 @@
                     overwriteBtn.removeEventListener('click', handleOverwrite);
                     keepBtn.removeEventListener('click', handleKeep);
                     overlay.style.display = 'none';
-                    // Restore original buttons structure
                     container.className = "choice-buttons-row";
                     container.innerHTML = `
                         <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
@@ -416,10 +410,11 @@
             return `Originated: ${labelStr}`;
         }
 
-        function getMonthList() {
+        function getExtendedMonthList() {
             const list = [];
             const d = new Date();
-            for (let i = 0; i <= 12; i++) {
+            // Generate a generous 48-month boundary range for planning long fixed loans (e.g. up to 4 years out)
+            for (let i = 0; i <= 48; i++) {
                 let targetMonth = d.getMonth() + i;
                 let targetYear = d.getFullYear() + Math.floor(targetMonth / 12);
                 let m = (targetMonth % 12) + 1;
@@ -428,16 +423,18 @@
             return list;
         }
 
-        const monthsRange = getMonthList();
+        const monthsRange = getExtendedMonthList();
         const currentSystemMonth = monthsRange[0]; 
         const filterSelect = document.getElementById('monthViewFilter');
         const formMonthSelect = document.getElementById('expMonthTarget');
+        const formEndMonthSelect = document.getElementById('expEndMonthBoundary');
 
         monthsRange.forEach((mStr) => {
             const [y, m] = mStr.split('-');
             const label = new Date(y, m - 1, 1).toLocaleDateString('default', { month: 'long', year: 'numeric' });
             filterSelect.options.add(new Option(label, mStr));
             formMonthSelect.options.add(new Option(label, mStr));
+            formEndMonthSelect.options.add(new Option(label, mStr));
         });
 
         window.onload = function() {
@@ -499,13 +496,14 @@
             monthsRange.forEach(visibleMonth => {
                 if (visibleMonth > meta.lastMonthPopulated) {
                     templates.forEach(tpl => {
+                        // Check if item has passed its structural end date boundary
+                        if (tpl.endMonthBoundary && visibleMonth > tpl.endMonthBoundary) return;
+
                         const [startY, startM] = tpl.startMonth.split('-').map(Number);
                         const [visY, visM] = visibleMonth.split('-').map(Number);
                         const monthDiff = (visY - startY) * 12 + (visM - startM);
 
                         if (monthDiff >= 0 && monthDiff % tpl.recur === 0) {
-                            if (tpl.durationLimit && (monthDiff / tpl.recur) >= tpl.durationLimit) return;
-
                             const alreadyExists = expenses.some(e => e.seriesId === tpl.seriesId && e.month === visibleMonth);
                             if (!alreadyExists) {
                                 expenses.push({
@@ -545,6 +543,7 @@
             document.getElementById('expCost').value = '';
             document.getElementById('expRecur').value = '0';
             document.getElementById('expMonthTarget').value = filterSelect.value;
+            document.getElementById('expEndMonthBoundary').value = '';
             toggleDurationField();
             document.getElementById('expenseFormCard').style.display = 'block';
             document.getElementById('formTriggerBtn').style.display = 'none';
@@ -562,7 +561,17 @@
             document.getElementById('expMonthTarget').value = item.month;
             document.getElementById('expRecur').value = item.recur || '0';
             document.getElementById('expRecur').disabled = true;
-            document.getElementById('expDuration').style.display = 'none';
+            
+            // Locate the template blueprint to pull up its end month date safely
+            const tpl = templates.find(t => t.seriesId === item.seriesId);
+            if (tpl && tpl.endMonthBoundary) {
+                document.getElementById('expEndMonthBoundary').value = tpl.endMonthBoundary;
+                document.getElementById('expEndMonthBoundary').style.display = 'block';
+            } else {
+                document.getElementById('expEndMonthBoundary').value = '';
+                document.getElementById('expEndMonthBoundary').style.display = 'none';
+            }
+            
             document.getElementById('expenseFormCard').style.display = 'block';
             document.getElementById('formTriggerBtn').style.display = 'none';
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -603,11 +612,11 @@
         function toggleDurationField() {
             if (editingTargetId) return;
             const recurVal = parseInt(document.getElementById('expRecur').value);
-            document.getElementById('expDuration').style.display = (recurVal > 0) ? 'block' : 'none';
+            document.getElementById('expEndMonthBoundary').style.display = (recurVal > 0) ? 'block' : 'none';
         }
 
         function save() {
-            meta.lastUpdated = Date.now(); // Stamp the local modifications log instantly
+            meta.lastUpdated = Date.now();
             const packageData = { meta: meta, templates: templates, expenses: expenses };
             localStorage.setItem('rne_local_backup_cache', JSON.stringify(packageData));
             render();
@@ -627,6 +636,7 @@
             const newName = document.getElementById('expName').value.trim();
             const newCost = parseFloat(document.getElementById('expCost').value);
             const newMonth = document.getElementById('expMonthTarget').value;
+            const newEndBoundary = document.getElementById('expEndMonthBoundary').value;
 
             if (!newName || isNaN(newCost)) return alert("Fill out Name and Cost fields.");
             if (!item.originMonth) item.originMonth = item.month;
@@ -635,12 +645,19 @@
 
             if (item.seriesId) {
                 const decision = await presentCustomChoicePrompt("Update only this single current entry, or all upcoming instances in the series?", "Current", "All");
-                if (decision === 'right') { // 'right' corresponds to "All"
+                if (decision === 'right') { 
                     const targetTpl = templates.find(t => t.seriesId === item.seriesId);
                     if (targetTpl) {
                         targetTpl.name = newName;
                         targetTpl.cost = newCost;
+                        targetTpl.endMonthBoundary = newEndBoundary || null;
                     }
+                    
+                    // Slice out any items that now fall strictly past the newly adjusted end date boundary line
+                    if (newEndBoundary) {
+                        expenses = expenses.filter(e => !(e.seriesId === item.seriesId && e.month > newEndBoundary));
+                    }
+
                     for (let e of expenses) {
                         if (e.seriesId === item.seriesId && e.month >= item.month) {
                             if (e.isEdited) {
@@ -657,7 +674,7 @@
                             }
                         }
                     }
-                } else { // 'left' corresponds to "Current"
+                } else { 
                     item.seriesId = null;
                     item.recur = 0;
                     item.name = newName;
@@ -680,28 +697,41 @@
             const cost = parseFloat(document.getElementById('expCost').value);
             const startMonth = document.getElementById('expMonthTarget').value;
             const recur = parseInt(document.getElementById('expRecur').value);
-            const durationLimit = parseInt(document.getElementById('expDuration').value);
+            const endMonthBoundary = document.getElementById('expEndMonthBoundary').value;
 
             if (!name || isNaN(cost)) return alert("Fill out Name and Cost.");
+            
+            // Validate that the expiration month does not paradoxically fall before the start date
+            if (recur > 0 && endMonthBoundary && endMonthBoundary < startMonth) {
+                return alert("End Month selection cannot occur before the Starting Month target.");
+            }
+
             const seriesId = recur > 0 ? 'series_' + Date.now() : null;
 
             if (recur > 0) {
-                templates.push({ seriesId: seriesId, name: name, cost: cost, startMonth: startMonth, recur: recur, durationLimit: durationLimit === 999 ? null : durationLimit });
+                templates.push({ 
+                    seriesId: seriesId, 
+                    name: name, 
+                    cost: cost, 
+                    startMonth: startMonth, 
+                    recur: recur, 
+                    endMonthBoundary: endMonthBoundary || null 
+                });
             }
             const [startYear, startMonthNum] = startMonth.split('-').map(Number);
-            let cycleCount = 0;
 
-            for (let i = 0; i <= 12; i++) {
+            for (let i = 0; i <= 48; i++) {
                 if (recur > 0 && i % recur !== 0) continue;
                 if (recur === 0 && i > 0) break;
-                if (durationLimit !== 999 && cycleCount >= durationLimit) break;
 
                 let calcMonthRaw = (startMonthNum - 1) + i;
                 let targetKey = `${startYear + Math.floor(calcMonthRaw / 12)}-${((calcMonthRaw % 12) + 1) < 10 ? '0' + ((calcMonthRaw % 12) + 1) : ((calcMonthRaw % 12) + 1)}`;
+                
+                // Direct cutoff evaluation boundary check
+                if (recur > 0 && endMonthBoundary && targetKey > endMonthBoundary) break;
                 if (!monthsRange.includes(targetKey) && recur > 0) continue;
 
                 expenses.push({ id: Date.now() + Math.random().toString(36).substr(2, 5), seriesId: seriesId, name: name, cost: cost, month: targetKey, recur: recur, status: 'unpaid', originMonth: targetKey, isEdited: false });
-                cycleCount++;
             }
             meta.lastMonthPopulated = monthsRange[monthsRange.length - 1];
             closeFormDisplay();
@@ -753,14 +783,10 @@
                         let prevMonthStr = (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) < 10 ? '0' + (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1) : (prevMonthRaw < 0 ? 12 : prevMonthRaw + 1);
                         let targetEndBoundaryMonth = `${prevMonthRaw < 0 ? y - 1 : y}-${prevMonthStr}`;
                         
-                        const [startY, startM] = targetTpl.startMonth.split('-').map(Number);
-                        const [endY, endM] = targetEndBoundaryMonth.split('-').map(Number);
-                        const totalMonthsPassed = (endY - startY) * 12 + (endM - startM);
-                        
-                        if (totalMonthsPassed < 0) {
+                        if (targetEndBoundaryMonth < targetTpl.startMonth) {
                             templates = templates.filter(t => t.seriesId !== item.seriesId);
                         } else {
-                            targetTpl.durationLimit = Math.floor(totalMonthsPassed / targetTpl.recur) + 1;
+                            targetTpl.endMonthBoundary = targetEndBoundaryMonth;
                         }
                     }
                 } else {
@@ -865,7 +891,6 @@
                 if (result.files && result.files.length > 0) {
                     gdriveFileId = result.files[0].id;
                     
-                    // 1. Fetch cloud content to extract its meta timestamp
                     const fileUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
                     const fileResponse = await fetch(fileUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
                     const cloudData = await fileResponse.json();
@@ -873,39 +898,34 @@
                     const cloudTime = (cloudData.meta && cloudData.meta.lastUpdated) ? cloudData.meta.lastUpdated : 0;
                     const localTime = meta.lastUpdated || 0;
                     
-                    // 2. Perform the directional intelligent timestamp review checks
                     if (localTime > cloudTime) {
-                        // Local changes were made offline and are newer
                         const userDecision = await presentCustomChoicePrompt(
                             "You have made changes on this device since your last cloud backup. Would you like to backup your new data to Google Drive now, or keep working offline?",
                             "Keep Offline",
                             "Backup Now"
                         );
-                        if (userDecision === 'right') { // User selected 'Backup Now'
+                        if (userDecision === 'right') { 
                             await uploadToGoogleDrive();
                         } else {
                             updateCloudStatusBarUI("☁ Cloud Connected (Using Offline Data)", true);
                         }
                     } else if (cloudTime > localTime) {
-                        // Cloud changes were completed on another device and are newer
                         const userDecision = await presentCustomChoicePrompt(
                             "We found a more recent backup on Google Drive. Would you like to restore it to this device now, or keep your current local data?",
                             "Keep Local",
                             "Restore Now"
                         );
-                        if (userDecision === 'right') { // User selected 'Restore Now'
+                        if (userDecision === 'right') { 
                             applyCloudDataToLocal(cloudData);
                             updateCloudStatusBarUI("✓ Cloud Data Restored", true);
                         } else {
                             updateCloudStatusBarUI("☁ Cloud Connected (Using Local Data)", true);
                         }
                     } else {
-                        // Both storage metrics are already in clean sync parity
                         applyCloudDataToLocal(cloudData);
                         updateCloudStatusBarUI("☁ Cloud Synchronized", true);
                     }
                 } else {
-                    // Entirely blank remote environment footprint -> execute original initialization push
                     updateCloudStatusBarUI("📤 Creating initial cloud file...", true);
                     await uploadToGoogleDrive();
                 }
@@ -914,7 +934,6 @@
             }
         }
 
-        // Shared utility helper to safely map down fields parsed back from remote fetches
         function applyCloudDataToLocal(cloudData) {
             expenses = cloudData.expenses || [];
             templates = cloudData.templates || [];
@@ -938,7 +957,7 @@
                 let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id';
                 let method = 'POST';
                 if (gdriveFileId) {
-                    url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart&fields=id`;
+                    url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart&fields=id';`;
                     method = 'PATCH';
                 }
                 const response = await fetch(url, { method: method, headers: { 'Authorization': `Bearer ${activeAccessToken}` }, body: form });
