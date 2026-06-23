@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v30.2</title>
+    <title>RNE Tracker - v30.3</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -234,12 +234,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v30.2</div>
+    <div class="version-watermark">RNE Tracker • v30.3</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 220626_v30.2
+        // VERSION TRACKER REFERENCE: 230626_v30.3
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -252,10 +252,10 @@
 
         let editingTargetId = null;
         let collapsedGroups = JSON.parse(localStorage.getItem('household_collapsed_groups')) || {};
-        
         let tokenClient = null;
         let activeAccessToken = null;
         let gdriveFileId = null;
+
         const recurrenceGroupsConfig = [
             { key: 0, label: "One-Time Only" },
             { key: 1, label: "Monthly" },
@@ -319,8 +319,7 @@
                 const overlay = document.getElementById('customChoiceOverlay');
                 const textContainer = document.getElementById('choiceOverlayMessage');
                 const container = document.getElementById('choiceButtonsContainer');
-
-                const isIdentical = (localDateStr === cloudDateStr && localDateStr !== "Never (Empty Empty)");
+                const isIdentical = (localDateStr === cloudDateStr && localDateStr !== "Never (Empty Cache)");
 
                 if (isIdentical && !forceShowOptions) {
                     textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
@@ -480,6 +479,7 @@
             }
             return list;
         }
+
         const monthsRange = getMonthList();
         const currentSystemMonth = monthsRange[0];
         const filterSelect = document.getElementById('monthViewFilter');
@@ -513,7 +513,11 @@
         function initiateGoogleDriveSyncFlow() {
             if (!tokenClient) {
                 if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
-                    tokenClient = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: GOOGLE_DRIVE_SCOPE, callback: handleTokenResponse });
+                    tokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: GOOGLE_CLIENT_ID,
+                        scope: GOOGLE_DRIVE_SCOPE,
+                        callback: handleTokenResponse
+                    });
                 } else {
                     alert("Google Identity Services script is still loading. Please wait a moment and try again.");
                     return;
@@ -536,6 +540,8 @@
             document.getElementById('gdrivePushBtn').style.display = 'inline-flex';
             document.getElementById('gdrivePullBtn').style.display = 'inline-flex';
             document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Sync Ready";
+            
+            // FIX: Force comparison prompt right after manual sign in
             await findExistingDatabaseOnCloud(false);
         }
 
@@ -544,15 +550,22 @@
             try {
                 const searchUrl = `https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}'+and+trashed=false&fields=files(id,name)`;
                 const resp = await fetch(searchUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
-                if (resp.status === 401) { clearExpiredTokenSession(); return; }
+                if (resp.status === 401) {
+                    clearExpiredTokenSession();
+                    return;
+                }
                 const data = await resp.json();
                 if (data.files && data.files.length > 0) {
                     gdriveFileId = data.files[0].id;
                     document.getElementById('cloudStatusLabel').innerText = "☁ Linked to Cloud Backup";
-                    await evaluateCloudDeltaSyncChoices(isSilentMode, false);
+                    
+                    // If signing in via button click (isSilentMode == false), forceShowOptions is true
+                    await evaluateCloudDeltaSyncChoices(isSilentMode, !isSilentMode);
                 } else {
                     document.getElementById('cloudStatusLabel').innerText = "✅ New Cloud Storage Ready";
-                    if (!isSilentMode) { await uploadToGoogleDrive(); }
+                    if (!isSilentMode) {
+                        await uploadToGoogleDrive();
+                    }
                 }
             } catch(e) {
                 console.error("Cloud lookup fault:", e);
@@ -579,9 +592,8 @@
                 const cloudData = await resp.json();
                 const cloudTimestamp = (cloudData.meta && cloudData.meta.lastUpdated) ? cloudData.meta.lastUpdated : 0;
                 const localTimestamp = meta.lastUpdated || 0;
-
                 const localFormatTime = localTimestamp ? new Date(localTimestamp).toLocaleString() : "Never (Empty Cache)";
-                const cloudFormatTime = cloudTimestamp ? new Date(cloudTimestamp).toLocaleString() : "Never (Empty Empty)";
+                const cloudFormatTime = cloudTimestamp ? new Date(cloudTimestamp).toLocaleString() : "Never (Empty Cloud)";
 
                 if (isAutomatedSilentStartup && !forceShowOptions) {
                     if (cloudTimestamp > localTimestamp) {
@@ -589,6 +601,27 @@
                         document.getElementById('cloudStatusLabel').innerText = "☁ Automated Restore Synced";
                     } else {
                         document.getElementById('cloudStatusLabel').innerText = "☁ Cache Matches Cloud";
+                    }
+                    return;
+                }
+
+                // FIX: Force option choices block instantly when requested manually or post-login
+                if (forceShowOptions) {
+                    let syncMessageHeadline = "";
+                    if (cloudTimestamp > localTimestamp) {
+                        syncMessageHeadline = `⚠️ <span style="color:var(--danger); font-weight:bold;">Cloud file is NEWER than local file.</span>`;
+                    } else if (localTimestamp > cloudTimestamp) {
+                        syncMessageHeadline = `⚠️ <span style="color:var(--primary); font-weight:bold;">Local file is NEWER than cloud backup.</span>`;
+                    } else {
+                        syncMessageHeadline = `✨ <span style="color:var(--success);">Local and Cloud storage versions match perfectly.</span>`;
+                    }
+                    
+                    const userChoiceDecision = await presentCloudSyncCrossroadsPrompt(syncMessageHeadline, localFormatTime, cloudFormatTime, true);
+                    if (userChoiceDecision === 'push') {
+                        await uploadToGoogleDrive();
+                    } else if (userChoiceDecision === 'pull') {
+                        applyCloudImportStructuresPayload(cloudData);
+                        document.getElementById('cloudStatusLabel').innerText = "☁ Manual Restore Synced";
                     }
                     return;
                 }
@@ -602,198 +635,210 @@
                     syncMessageHeadline = `✨ <span style="color:var(--success);">Local and Cloud storage versions match perfectly.</span>`;
                 }
 
-                const userChoiceDecision = await presentCloudSyncCrossroadsPrompt(syncMessageHeadline, localFormatTime, cloudFormatTime, forceShowOptions);
+                const userChoiceDecision = await presentCloudSyncCrossroadsPrompt(syncMessageHeadline, localFormatTime, cloudFormatTime, false);
                 if (userChoiceDecision === 'push') {
                     await uploadToGoogleDrive();
                 } else if (userChoiceDecision === 'pull') {
                     applyCloudImportStructuresPayload(cloudData);
-                    document.getElementById('cloudStatusLabel').innerText = "📥 Restore Action Complete";
+                    document.getElementById('cloudStatusLabel').innerText = "☁ Manual Restore Synced";
                 }
             } catch(e) {
-                console.error("Sync Crossroads Fault Error Log:", e);
+                console.error("Synchronization loop calculation exception:", e);
             }
+        }
+
+        // FIX: Manual controls now correctly invoke evaluation framework forcing choices overlay
+        async function manuallyTriggerCloudBackup() {
+            if (!activeAccessToken) { alert("Connect to Google account."); return; }
+            await findExistingDatabaseOnCloud(false);
+        }
+
+        async function manuallyTriggerCloudRestore() {
+            if (!activeAccessToken) { alert("Connect to Google account."); return; }
+            await findExistingDatabaseOnCloud(false);
+        }
+
+        function applyCloudImportStructuresPayload(cloudObj) {
+            expenses = cloudObj.expenses || [];
+            templates = cloudObj.templates || [];
+            meta = cloudObj.meta || { lastMonthPopulated: "", lastUpdated: Date.now() };
+            saveToLocalStorage();
+            render();
         }
 
         async function uploadToGoogleDrive() {
             if (!activeAccessToken) return;
-            document.getElementById('cloudStatusLabel').innerText = "☁ Backing up...";
-            const payloadStringContent = compileInternalStructuresToJSONString();
-            
+            document.getElementById('cloudStatusLabel').innerText = "☁ Syncing up...";
+            meta.lastUpdated = Date.now();
+            saveToLocalStorage();
+
+            const fileContentObj = { meta, templates, expenses };
+            const blob = new Blob([JSON.stringify(fileContentObj, null, 2)], { type: 'application/json' });
+
             try {
-                let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-                let method = 'POST';
                 if (gdriveFileId) {
-                    url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`;
-                    method = 'PATCH';
-                }
-
-                const metadata = { name: DEDICATED_FILE_NAME, mimeType: 'application/json' };
-                const boundary = 'foo_bar_baz_boundary';
-                const delimiter = `\r\n--${boundary}\r\n`;
-                const closeDelimiter = `\r\n--${boundary}--`;
-
-                const multipartRequestBody =
-                    delimiter +
-                    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-                    JSON.stringify(metadata) +
-                    delimiter +
-                    'Content-Type: application/json\r\n\r\n' +
-                    payloadStringContent +
-                    closeDelimiter;
-
-                const response = await fetch(url, {
-                    method: method,
-                    headers: { 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': `multipart/related; boundary=${boundary}` },
-                    body: multipartRequestBody
-                });
-
-                if (response.status === 200 || response.status === 201) {
-                    const data = await response.json();
-                    if (!gdriveFileId && data.id) gdriveFileId = data.id;
-                    document.getElementById('cloudStatusLabel').innerText = "☁ Backup Saved Successfully";
+                    const updateUrl = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=media`;
+                    const resp = await fetch(updateUrl, {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': 'application/json' },
+                        body: blob
+                    });
+                    if (resp.status === 200) {
+                        document.getElementById('cloudStatusLabel').innerText = "☁ Backup Saved Successfully";
+                    } else {
+                        document.getElementById('cloudStatusLabel').innerText = "❌ Patch Upload Failed";
+                    }
                 } else {
-                    document.getElementById('cloudStatusLabel').innerText = "❌ Backup Sync Error";
+                    const metadata = { name: DEDICATED_FILE_NAME, mimeType: 'application/json' };
+                    const form = new FormData();
+                    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                    form.append('file', blob);
+
+                    const insertUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id';
+                    const resp = await fetch(insertUrl, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${activeAccessToken}` },
+                        body: form
+                    });
+                    if (resp.status === 200) {
+                        const data = await resp.json();
+                        gdriveFileId = data.id;
+                        document.getElementById('cloudStatusLabel').innerText = "☁ Initial Backup Complete";
+                    } else {
+                        document.getElementById('cloudStatusLabel').innerText = "❌ Creation Upload Failed";
+                    }
                 }
-            } catch (err) {
-                console.error("Multipart cloud upload exception:", err);
-                document.getElementById('cloudStatusLabel').innerText = "❌ Backup Network Error";
+            } catch(e) {
+                console.error("Network cloud write fault:", e);
+                document.getElementById('cloudStatusLabel').innerText = "❌ Connection Failed";
             }
         }
 
-        async function manuallyTriggerCloudBackup() {
-            if (!activeAccessToken) { alert("Please click Sign In to connect Google Drive storage first."); return; }
-            await uploadToGoogleDrive();
+        function generateUniqueId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
         }
 
-        async function manuallyTriggerCloudRestore() {
-            if (!activeAccessToken) { alert("Please click Sign In to connect Google Drive storage first."); return; }
-            await findExistingDatabaseOnCloud(false);
-        }
-
-        function applyCloudImportStructuresPayload(parsedDatabaseObj) {
-            expenses = parsedDatabaseObj.expenses || [];
-            templates = parsedDatabaseObj.templates || [];
-            meta = parsedDatabaseObj.meta || { lastMonthPopulated: "", lastUpdated: Date.now() };
-            saveLocalStateToCacheStore();
-            executeAutomatedMonthRolloverAudit();
-            render();
-        }
-
-        function parseMonthStringValueToNumeric(monthKeyString) {
-            const [y, m] = monthKeyString.split('-').map(Number);
-            return y * 12 + (m - 1);
-        }
-
-        // v30.2 Custom Date Target Boundaries Checker Engine
-        function checkIsMonthWithinBoundaries(currentMonthKey, origMonthKey, recurrenceKey, endLimitDate) {
-            const currentVal = parseMonthStringValueToNumeric(currentMonthKey);
-            const origVal = parseMonthStringValueToNumeric(origMonthKey);
+        function loadLocalExpensesAndAudit() {
+            expenses = JSON.parse(localStorage.getItem('household_expenses')) || [];
+            templates = JSON.parse(localStorage.getItem('household_templates')) || [];
+            meta = JSON.parse(localStorage.getItem('household_meta')) || { lastMonthPopulated: "", lastUpdated: 0 };
             
-            if (currentVal < origVal) return false;
-            
-            if (endLimitDate) {
-                const limitVal = parseMonthStringValueToNumeric(endLimitDate);
-                if (currentVal > limitVal) return false;
+            if (!meta.lastMonthPopulated || meta.lastMonthPopulated < currentSystemMonth) {
+                runRecurrenceEngineAutoPopulation(currentSystemMonth);
             } else {
-                const maxVal = parseMonthStringValueToNumeric("2099-12");
-                if (currentVal > maxVal) return false;
+                render();
             }
-
-            if (recurrenceKey === 1) return true;
-            return ((currentVal - origVal) % recurrenceKey) === 0;
         }
 
-        function executeAutomatedMonthRolloverAudit() {
-            if (templates.length === 0) return;
-            
-            monthsRange.forEach((mStr) => {
-                templates.forEach((tpl) => {
-                    const isEligible = checkIsMonthWithinBoundaries(mStr, tpl.startMonth, tpl.recur, tpl.endLimitDate);
-                    if (!isEligible) return;
+        function saveToLocalStorage() {
+            localStorage.setItem('household_expenses', JSON.stringify(expenses));
+            localStorage.setItem('household_templates', JSON.stringify(templates));
+            localStorage.setItem('household_meta', JSON.stringify(meta));
+        }
 
-                    const matchExists = expenses.some(e => e.seriesId === tpl.seriesId && e.month === mStr);
-                    if (!matchExists) {
+        function runRecurrenceEngineAutoPopulation(targetAnchorMonthStr) {
+            templates.forEach(t => {
+                let currentMonthPointer = targetAnchorMonthStr;
+                const currentMonthIndex = monthsRange.indexOf(currentMonthPointer);
+
+                if (currentMonthIndex !== -1) {
+                    const alreadyExists = expenses.some(e => e.seriesId === t.seriesId && e.month === currentMonthPointer);
+                    if (!alreadyExists && checkExpirationFormatBoundsSatisfied(t, currentMonthPointer)) {
                         expenses.push({
-                            id: 'exp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                            seriesId: tpl.seriesId,
-                            name: tpl.name,
-                            cost: tpl.cost,
-                            month: mStr,
-                            recur: tpl.recur,
-                            status: 'unpaid',
+                            id: generateUniqueId(),
+                            seriesId: t.seriesId,
+                            name: t.name,
+                            cost: t.cost,
+                            month: currentMonthPointer,
+                            recur: t.recur,
+                            status: "unpaid",
+                            originMonth: currentMonthPointer,
                             isEdited: false
                         });
                     }
-                });
+                }
             });
 
-            meta.lastMonthPopulated = currentSystemMonth;
-            saveLocalStateToCacheStore();
+            meta.lastMonthPopulated = targetAnchorMonthStr;
+            meta.lastUpdated = Date.now();
+            saveToLocalStorage();
+            render();
+            if (activeAccessToken) { uploadToGoogleDrive(); }
         }
 
-        // v30.2 Cleaned Toggle Conditions Layers
+        function checkExpirationFormatBoundsSatisfied(templateObj, evaluatingMonthStr) {
+            if (!templateObj.endType || templateObj.endType === 'inf') return true;
+            if (templateObj.endType === 'custom' && templateObj.endCustomUntil) {
+                const [expM, expY] = templateObj.endCustomUntil.split('/').map(Number);
+                const [curY, curM] = evaluatingMonthStr.split('-').map(Number);
+                if (curY < expY) return true;
+                if (curY === expY && curM <= expM) return true;
+            }
+            return false;
+        }
+
         function toggleDurationField() {
-            if (editingTargetId) return;
-            const recurVal = parseInt(document.getElementById('expRecur').value);
-            const endTypeSelect = document.getElementById('expEndType');
-            const customInput = document.getElementById('expCustomUntil');
-            
-            if (recurVal > 0) {
-                endTypeSelect.style.display = 'block';
-                toggleEndTypeField();
+            const val = parseInt(document.getElementById('expRecur').value);
+            const containerType = document.getElementById('expEndType');
+            if (val > 0) {
+                containerType.style.display = 'block';
             } else {
-                endTypeSelect.style.display = 'none';
-                customInput.style.display = 'none';
+                containerType.style.display = 'none';
+                document.getElementById('expCustomUntil').style.display = 'none';
+                containerType.value = 'inf';
             }
         }
 
         function toggleEndTypeField() {
-            const endType = document.getElementById('expEndType').value;
+            const val = document.getElementById('expEndType').value;
             const customInput = document.getElementById('expCustomUntil');
-            customInput.style.display = (endType === 'custom') ? 'block' : 'none';
+            if (val === 'custom') {
+                customInput.style.display = 'block';
+            } else {
+                customInput.style.display = 'none';
+                customInput.value = '';
+            }
         }
 
         function openCreateMode() {
             editingTargetId = null;
             document.getElementById('editBannerElement').style.display = 'none';
-            document.getElementById('expenseFormCard').style.display = 'block';
-            document.getElementById('formTriggerBtn').style.display = 'none';
-            
             document.getElementById('expName').value = '';
             document.getElementById('expCost').value = '';
-            document.getElementById('expMonthTarget').value = currentSystemMonth;
-            document.getElementById('expMonthTarget').disabled = false;
             document.getElementById('expRecur').value = '0';
-            document.getElementById('expRecur').disabled = false;
-            
-            document.getElementById('expEndType').value = 'inf';
-            document.getElementById('expCustomUntil').value = '';
-            document.getElementById('expEndType').style.display = 'none';
-            document.getElementById('expCustomUntil').style.display = 'none';
-            
-            document.getElementById('formSubmitBtn').innerText = 'Save Expense Entry';
+            document.getElementById('expMonthTarget').value = document.getElementById('monthViewFilter').value;
+            document.getElementById('expMonthTarget').disabled = false;
+            toggleDurationField();
+            document.getElementById('expenseFormCard').style.display = 'block';
+            document.getElementById('formTriggerBtn').style.display = 'none';
         }
 
         function openEditMode(id) {
-            const item = expenses.find(e => e.id === id);
-            if (!item) return;
-
+            const e = expenses.find(item => item.id === id);
+            if (!e) return;
             editingTargetId = id;
+
             document.getElementById('editBannerElement').style.display = 'block';
+            document.getElementById('expName').value = e.name;
+            document.getElementById('expCost').value = e.cost;
+            document.getElementById('expRecur').value = e.recur || '0';
+            document.getElementById('expMonthTarget').value = e.month;
+            document.getElementById('expMonthTarget').disabled = true;
+
+            const t = templates.find(tpl => tpl.seriesId === e.seriesId);
+            if (t && e.recur > 0) {
+                document.getElementById('expEndType').value = t.endType || 'inf';
+                document.getElementById('expCustomUntil').value = t.endCustomUntil || '';
+            } else {
+                document.getElementById('expEndType').value = 'inf';
+                document.getElementById('expCustomUntil').value = '';
+            }
+
+            toggleDurationField();
+            toggleEndTypeField();
+
             document.getElementById('expenseFormCard').style.display = 'block';
             document.getElementById('formTriggerBtn').style.display = 'none';
-
-            document.getElementById('expName').value = item.name;
-            document.getElementById('expCost').value = item.cost;
-            document.getElementById('expMonthTarget').value = item.month;
-            document.getElementById('expMonthTarget').disabled = true;
-            document.getElementById('expRecur').value = item.recur || 0;
-            document.getElementById('expRecur').disabled = true;
-            
-            document.getElementById('expEndType').style.display = 'none';
-            document.getElementById('expCustomUntil').style.display = 'none';
-
-            document.getElementById('formSubmitBtn').innerText = 'Apply Adjustments';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -803,118 +848,102 @@
             editingTargetId = null;
         }
 
-        // v30.2 Target Dates Format String Parser Engine Validations
-        function parseAndValidateCustomMonthYear(inputStr) {
-            const cleanStr = inputStr.trim();
-            if (!/^\d{2}\/\d{4}$/.test(cleanStr)) return null;
-            
-            const [mm, yyyy] = cleanStr.split('/').map(Number);
-            if (mm < 1 || mm > 12) return null;
-            if (yyyy < 2000 || yyyy > 2099) return null;
-            
-            return `${yyyy}-${mm < 10 ? '0' + mm : mm}`;
-        }
-
         async function processFormSubmit() {
             const name = document.getElementById('expName').value.trim();
-            const costRaw = document.getElementById('expCost').value;
-            const cost = parseFloat(costRaw);
-            const targetMonth = document.getElementById('expMonthTarget').value;
+            const cost = parseFloat(document.getElementById('expCost').value);
+            const monthTarget = document.getElementById('expMonthTarget').value;
             const recur = parseInt(document.getElementById('expRecur').value);
+            const endType = document.getElementById('expEndType').value;
+            const endCustomUntil = document.getElementById('expCustomUntil').value.trim();
 
-            if (!name || isNaN(cost) || cost < 0) {
-                alert("Please supply a valid name and cost matrix configuration.");
-                return;
+            if (!name || isNaN(cost)) { alert("Enter proper name and numerical cost parameters."); return; }
+
+            if (recur > 0 && endType === 'custom') {
+                const formatReg = /^(0[1-9]|1[0-2])\/\d{4}$/;
+                if (!formatReg.test(endCustomUntil)) { alert("Provide a valid end date using the format MM/YYYY."); return; }
             }
 
-            // Create Operation Sequence
-            if (!editingTargetId) {
-                let endLimitDate = null;
-                if (recur > 0) {
-                    const endType = document.getElementById('expEndType').value;
-                    if (endType === 'custom') {
-                        const customVal = document.getElementById('expCustomUntil').value;
-                        endLimitDate = parseAndValidateCustomMonthYear(customVal);
-                        if (!endLimitDate) {
-                            alert("Please enter a valid format value MM/YYYY (e.g. 12/2027) up to 12/2099.");
-                            return;
+            if (editingTargetId !== null) {
+                const e = expenses.find(item => item.id === editingTargetId);
+                if (!e) return;
+
+                if (e.recur === 0 && recur === 0) {
+                    if (e.name !== name || e.cost !== cost) {
+                        e.isEdited = true;
+                    }
+                    e.name = name;
+                    e.cost = cost;
+                } else if (e.recur > 0) {
+                    const choice = await presentCustomChoicePrompt("Modify current instance or propagate alterations forward across the entire master sequence?", "Current Month Only", "All Upcoming Instances");
+                    if (choice === 'left') {
+                        if (e.name !== name || e.cost !== cost) { e.isEdited = true; }
+                        e.name = name; e.cost = cost;
+                    } else if (choice === 'right') {
+                        let t = templates.find(tpl => tpl.seriesId === e.seriesId);
+                        if (!t) {
+                            t = { seriesId: e.seriesId, name: e.name, cost: e.cost, recur: e.recur };
+                            templates.push(t);
                         }
-                        if (parseMonthStringValueToNumeric(endLimitDate) < parseMonthStringValueToNumeric(targetMonth)) {
-                            alert("End Date cannot precede the initial tracking month target.");
-                            return;
+                        t.name = name; t.cost = cost; t.recur = recur; t.endType = endType; t.endCustomUntil = endCustomUntil;
+
+                        const activeIndex = monthsRange.indexOf(e.month);
+                        for (let i = activeIndex; i < monthsRange.length; i++) {
+                            const mStr = monthsRange[i];
+                            if (!checkExpirationFormatBoundsSatisfied(t, mStr)) {
+                                expenses = expenses.filter(item => !(item.seriesId === e.seriesId && item.month === mStr));
+                                continue;
+                            }
+                            let currentInstance = expenses.find(item => item.seriesId === e.seriesId && item.month === mStr);
+                            if (currentInstance) {
+                                if (currentInstance.isEdited) {
+                                    const ovrChoice = await presentInteractiveOverrideReview(mStr, currentInstance.name, currentInstance.cost, name, cost);
+                                    if (ovrChoice === 'overwrite') {
+                                        currentInstance.name = name; currentInstance.cost = cost; currentInstance.isEdited = false;
+                                    }
+                                } else {
+                                    currentInstance.name = name; currentInstance.cost = cost;
+                                }
+                                currentInstance.recur = recur;
+                            } else {
+                                expenses.push({
+                                    id: generateUniqueId(), seriesId: e.seriesId, name: name, cost: cost,
+                                    month: mStr, recur: recur, status: "unpaid", originMonth: mStr, isEdited: false
+                                });
+                            }
                         }
                     }
                 }
-
+            } else {
+                const generatedSeriesId = recur > 0 ? "series_" + generateUniqueId() : null;
                 if (recur === 0) {
                     expenses.push({
-                        id: 'exp_' + Date.now(),
-                        name: name,
-                        cost: cost,
-                        month: targetMonth,
-                        recur: 0,
-                        status: 'unpaid',
-                        isEdited: false
+                        id: generateUniqueId(), seriesId: null, name: name, cost: cost,
+                        month: monthTarget, recur: 0, status: "unpaid", originMonth: monthTarget, isEdited: false
                     });
                 } else {
-                    const generatedSeriesId = 'ser_' + Date.now();
-                    templates.push({
-                        seriesId: generatedSeriesId,
-                        name: name,
-                        cost: cost,
-                        startMonth: targetMonth,
-                        recur: recur,
-                        endLimitDate: endLimitDate
-                    });
+                    const masterTemplate = { seriesId: generatedSeriesId, name, cost, recur, endType, endCustomUntil };
+                    templates.push(masterTemplate);
 
-                    monthsRange.forEach((mStr) => {
-                        if (checkIsMonthWithinBoundaries(mStr, targetMonth, recur, endLimitDate)) {
-                            expenses.push({
-                                id: 'exp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                                seriesId: generatedSeriesId,
-                                name: name,
-                                cost: cost,
-                                month: mStr,
-                                recur: recur,
-                                status: 'unpaid',
-                                isEdited: false
-                            });
-                        }
-                    });
-                }
-            } 
-            // Edit Operation Sequence
-            else {
-                const item = expenses.find(e => e.id === editingTargetId);
-                if (!item) return;
-
-                if (!item.seriesId) {
-                    item.name = name;
-                    item.cost = cost;
-                    item.isEdited = true;
-                } else {
-                    const optionForkSelection = await presentCustomChoicePrompt("Modify parameters for this month only, or update the master series across the entire timeline grid?", "Current Month Only", "All Across Series");
-                    
-                    if (optionForkSelection === 'left') {
-                        item.name = name;
-                        item.cost = cost;
-                        item.isEdited = true;
-                    } else if (optionForkSelection === 'right') {
-                        const targetTpl = templates.find(t => t.seriesId === item.seriesId);
-                        if (targetTpl) {
-                            targetTpl.name = name;
-                            targetTpl.cost = cost;
-                        }
-
-                        for (const e of expenses) {
-                            if (e.seriesId === item.seriesId) {
-                                if (e.isEdited) {
-                                    const replaceOverrideAction = await presentInteractiveOverrideReview(e.month, e.name, e.cost, name, cost);
-                                    if (replaceOverrideAction === 'keep') continue;
+                    const startingFormIndex = monthsRange.indexOf(monthTarget);
+                    if (startingFormIndex !== -1) {
+                        for (let i = startingFormIndex; i < monthsRange.length; i++) {
+                            const targetIterationMonthStr = monthsRange[i];
+                            const monthStepOffset = i - startingFormIndex;
+                            if (monthStepOffset % recur === 0) {
+                                if (checkExpirationFormatBoundsSatisfied(masterTemplate, targetIterationMonthStr)) {
+                                    expenses.push({
+                                        id: generateUniqueId(),
+                                        seriesId: generatedSeriesId,
+                                        name: name,
+                                        cost: cost,
+                                        month: targetIterationMonthStr,
+                                        recur: recur,
+                                        status: "unpaid",
+                                        // FIX: Sets its unique iteration target month instead of forcing form start date
+                                        originMonth: targetIterationMonthStr, 
+                                        isEdited: false
+                                    });
                                 }
-                                e.name = name;
-                                e.cost = cost;
-                                e.isEdited = false;
                             }
                         }
                     }
@@ -922,102 +951,89 @@
             }
 
             meta.lastUpdated = Date.now();
-            saveLocalStateToCacheStore();
-            closeFormDisplay();
+            saveToLocalStorage();
             render();
+            closeFormDisplay();
+            if (activeAccessToken) { uploadToGoogleDrive(); }
         }
 
         async function deleteExpense(id) {
-            const item = expenses.find(e => e.id === id);
-            if (!item) return;
+            const e = expenses.find(item => item.id === id);
+            if (!e) return;
 
-            if (!item.seriesId) {
-                if (confirm(`Remove custom independent single expense entry "${item.name}" permanently?`)) {
-                    expenses = expenses.filter(e => e.id !== id);
-                } else { return; }
+            if (!e.seriesId || e.recur === 0) {
+                const choice = await presentCustomChoicePrompt("Are you sure you want to delete this one-time expense entry?", "Cancel", "Delete Entry", true);
+                if (choice === 'right') {
+                    expenses = expenses.filter(item => item.id !== id);
+                }
             } else {
-                const executionRouteSelection = await presentThreeWayDeleteCrossroads();
-                if (executionRouteSelection === 'cancel') return;
-
-                if (executionRouteSelection === 'current') {
-                    expenses = expenses.filter(e => e.id !== id);
-                } else if (executionRouteSelection === 'forward') {
-                    const itemMonthValue = parseMonthStringValueToNumeric(item.month);
-                    expenses = expenses.filter(e => !(e.seriesId === item.seriesId && parseMonthStringValueToNumeric(e.month) >= itemMonthValue));
-                    
-                    const downstreamInstancesExist = expenses.some(e => e.seriesId === item.seriesId);
-                    if (!downstreamInstancesExist) {
-                        templates = templates.filter(t => t.seriesId !== item.seriesId);
-                    } else {
-                        // v30.2 Scale Limit Boundaries Forward Recalculation Engine Layer
-                        const targetTpl = templates.find(t => t.seriesId === item.seriesId);
-                        if (targetTpl) {
-                            const remainingInstances = expenses.filter(e => e.seriesId === item.seriesId).sort((a,b) => a.month.localeCompare(b.month));
-                            if (remainingInstances.length > 0) {
-                                targetTpl.endLimitDate = remainingInstances[remainingInstances.length - 1].month;
-                            }
-                        }
+                const choice = await presentThreeWayDeleteCrossroads();
+                if (choice === 'current') {
+                    expenses = expenses.filter(item => item.id !== id);
+                } else if (choice === 'forward') {
+                    const startIdx = monthsRange.indexOf(e.month);
+                    if (startIdx !== -1) {
+                        const targetMonthsForward = monthsRange.slice(startIdx);
+                        expenses = expenses.filter(item => !(item.seriesId === e.seriesId && targetMonthsForward.includes(item.month)));
                     }
+                    templates = templates.filter(tpl => tpl.seriesId !== e.seriesId);
+                } else {
+                    return;
                 }
             }
 
             meta.lastUpdated = Date.now();
-            saveLocalStateToCacheStore();
+            saveToLocalStorage();
             render();
+            if (activeAccessToken) { uploadToGoogleDrive(); }
         }
 
         function togglePaid(id) {
-            const item = expenses.find(e => e.id === id);
-            if (!item) return;
-            item.status = (item.status === 'paid') ? 'unpaid' : 'paid';
+            const e = expenses.find(item => item.id === id);
+            if (!e) return;
+            e.status = (e.status === 'paid') ? 'unpaid' : 'paid';
             meta.lastUpdated = Date.now();
-            saveLocalStateToCacheStore();
+            saveToLocalStorage();
             render();
+            if (activeAccessToken) { uploadToGoogleDrive(); }
         }
 
         function moveNextMonth(id) {
-            const item = expenses.find(e => e.id === id);
-            if (!item) return;
-
-            const currentIdx = monthsRange.indexOf(item.month);
-            if (currentIdx === -1 || currentIdx === monthsRange.length - 1) {
-                alert("Target month threshold boundaries exceeded.");
-                return;
+            const e = expenses.find(item => item.id === id);
+            if (!e) return;
+            const currentIdx = monthsRange.indexOf(e.month);
+            if (currentIdx !== -1 && currentIdx + 1 < monthsRange.length) {
+                e.month = monthsRange[currentIdx + 1];
+                meta.lastUpdated = Date.now();
+                saveToLocalStorage();
+                render();
+                if (activeAccessToken) { uploadToGoogleDrive(); }
+            } else {
+                alert("Cannot shift further down past constraints boundary range.");
             }
-
-            const nextMonthStr = monthsRange[currentIdx + 1];
-            item.month = nextMonthStr;
-            item.isEdited = true;
-
-            meta.lastUpdated = Date.now();
-            saveLocalStateToCacheStore();
-            render();
         }
 
         function movePreviousMonth(id) {
-            const item = expenses.find(e => e.id === id);
-            if (!item) return;
-
-            const currentIdx = monthsRange.indexOf(item.month);
-            if (currentIdx <= 0) {
-                alert("Target historical timeline tracking boundaries reached.");
-                return;
+            const e = expenses.find(item => item.id === id);
+            if (!e) return;
+            const currentIdx = monthsRange.indexOf(e.month);
+            if (currentIdx > 0) {
+                e.month = monthsRange[currentIdx - 1];
+                meta.lastUpdated = Date.now();
+                saveToLocalStorage();
+                render();
+                if (activeAccessToken) { uploadToGoogleDrive(); }
+            } else {
+                alert("Cannot move behind the initial index limits.");
             }
-
-            const prevMonthStr = monthsRange[currentIdx - 1];
-            item.month = prevMonthStr;
-            item.isEdited = true;
-
-            meta.lastUpdated = Date.now();
-            saveLocalStateToCacheStore();
-            render();
         }
 
-        function stepMonth(delta) {
-            const filter = document.getElementById('monthViewFilter');
-            let nextIdx = filter.selectedIndex + delta;
-            if (nextIdx >= 0 && nextIdx < filter.options.length) {
-                filter.selectedIndex = nextIdx;
+        function stepMonth(direction) {
+            const activeSel = document.getElementById('monthViewFilter');
+            let currentIdx = activeSel.selectedIndex;
+            let targetIdx = currentIdx + direction;
+            if (targetIdx >= 0 && targetIdx < activeSel.options.length) {
+                activeSel.selectedIndex = targetIdx;
                 render();
             }
         }
@@ -1029,47 +1045,25 @@
         }
 
         function toggleUtilityDrawer() {
-            const drawer = document.getElementById('utilityDrawerCard');
+            const el = document.getElementById('utilityDrawerCard');
             const arrow = document.getElementById('utilArrow');
-            if (drawer.style.display === 'block') {
-                drawer.style.display = 'none';
-                arrow.style.transform = 'rotate(0deg)';
+            if (el.style.display === 'block') {
+                el.style.display = 'none';
+                arrow.innerText = '▼';
             } else {
-                drawer.style.display = 'block';
-                arrow.style.transform = 'rotate(180deg)';
+                el.style.display = 'block';
+                arrow.innerText = '▲';
             }
         }
 
-        function loadLocalExpensesAndAudit() {
-            const rawExpenses = localStorage.getItem('household_expenses');
-            const rawTemplates = localStorage.getItem('household_templates');
-            const rawMeta = localStorage.getItem('household_meta');
-
-            expenses = rawExpenses ? JSON.parse(rawExpenses) : [];
-            templates = rawTemplates ? JSON.parse(rawTemplates) : [];
-            meta = rawMeta ? JSON.parse(rawMeta) : { lastMonthPopulated: "", lastUpdated: Date.now() };
-
-            executeAutomatedMonthRolloverAudit();
-            render();
-        }
-
-        function saveLocalStateToCacheStore() {
-            localStorage.setItem('household_expenses', JSON.stringify(expenses));
-            localStorage.setItem('household_templates', JSON.stringify(templates));
-            localStorage.setItem('household_meta', JSON.stringify(meta));
-        }
-
-        function compileInternalStructuresToJSONString() {
-            return JSON.stringify({ expenses: expenses, templates: templates, meta: meta }, null, 2);
-        }
-
         function exportToFile() {
-            const jsonString = compileInternalStructuresToJSONString();
-            const blob = new Blob([jsonString], { type: "application/json" });
+            const dataObj = { meta, templates, expenses };
+            const str = JSON.stringify(dataObj, null, 2);
+            const blob = new Blob([str], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `rne_tracker_backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.download = `rne_backup_${Date.now()}.txt`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -1079,107 +1073,113 @@
         function importFromFile(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const parsed = JSON.parse(e.target.result);
-                    if (parsed.expenses && parsed.templates) {
-                        applyCloudImportStructuresPayload(parsed);
-                        alert("Data backup imports synchronized successfully.");
-                    } else {
-                        alert("Malformed data arrays format. Configuration cannot load.");
-                    }
+                    const cloudObj = JSON.parse(e.target.result);
+                    applyCloudImportStructuresPayload(cloudObj);
+                    alert("Import executed cleanly!");
                 } catch(err) {
-                    alert("Failure parsing backup target string parameters syntax.");
+                    alert("Failed parsing text content. Check data structure layout accuracy.");
                 }
             };
             reader.readAsText(file);
         }
 
         function render() {
-            const activeFilterMonth = document.getElementById('monthViewFilter').value;
+            const activeMonth = document.getElementById('monthViewFilter').value;
             const container = document.getElementById('listContainer');
             container.innerHTML = '';
 
-            const activeMonthExpenses = expenses.filter(e => e.month === activeFilterMonth);
-            
-            let totalUnpaidSum = 0;
-            activeMonthExpenses.forEach(e => { if (e.status === 'unpaid') totalUnpaidSum += e.cost; });
-            document.getElementById('totalUnpaid').innerText = `€${totalUnpaidSum.toFixed(2)}`;
+            const currentMonthItems = expenses.filter(item => item.month === activeMonth);
 
-            const categorizedMap = {};
-            recurrenceGroupsConfig.forEach(g => categorizedMap[g.key] = []);
-            
-            activeMonthExpenses.forEach(e => {
-                const groupKey = e.recur || 0;
-                if (categorizedMap[groupKey]) categorizedMap[groupKey].push(e);
+            let calculatedUnpaidTotal = 0;
+            currentMonthItems.forEach(item => {
+                if (item.status === 'unpaid') calculatedUnpaidTotal += item.cost;
+            });
+            document.getElementById('totalUnpaid').innerText = `€${calculatedUnpaidTotal.toFixed(2)}`;
+
+            const groupsDataMap = {};
+            recurrenceGroupsConfig.forEach(g => {
+                groupsDataMap[g.key] = { label: g.label, items: [] };
             });
 
-            recurrenceGroupsConfig.forEach(group => {
-                const groupItems = categorizedMap[group.key];
-                if (groupItems.length === 0) return;
+            currentMonthItems.forEach(item => {
+                const k = (item.recur !== undefined) ? item.recur : 0;
+                if (groupsDataMap[k]) {
+                    groupsDataMap[k].items.push(item);
+                } else {
+                    groupsDataMap[0].items.push(item);
+                }
+            });
 
-                groupItems.sort((a, b) => a.name.localeCompare(b.name));
+            recurrenceGroupsConfig.forEach(g => {
+                const groupObj = groupsDataMap[g.key];
+                if (groupObj.items.length === 0) return;
 
-                let groupUnpaidTotal = 0;
-                let groupUnpaidCount = 0;
-                groupItems.forEach(e => {
-                    if (e.status === 'unpaid') {
-                        groupUnpaidTotal += e.cost;
-                        groupUnpaidCount++;
-                    }
+                let groupUnpaidCostSum = 0;
+                groupObj.items.forEach(item => {
+                    if (item.status === 'unpaid') groupUnpaidCostSum += item.cost;
                 });
 
                 const groupContainer = document.createElement('div');
-                groupContainer.className = 'group-container';
+                groupContainer.className = "group-container";
 
-                const groupHeader = document.createElement('div');
-                groupHeader.className = 'group-header';
+                const headerDiv = document.createElement('div');
+                headerDiv.className = "group-header";
                 
-                const isCollapsed = collapsedGroups[group.key] || false;
-                
-                let badgeClass = groupUnpaidCount > 0 ? "group-unpaid-cost has-unpaid" : "group-unpaid-cost all-paid";
-                let badgeLabel = groupUnpaidCount > 0 ? `€${groupUnpaidTotal.toFixed(2)}` : "✓ Paid";
+                const groupIsCollapsed = collapsedGroups[g.key] === true;
 
-                groupHeader.innerHTML = `
-                    <div class="group-header-title">
-                        <span style="transform: ${isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'}; transition: transform 0.1s;">▼</span>
-                        <span>${group.label}</span>
-                    </div>
-                    <div class="group-badges-container">
-                        <span class="${badgeClass}">${badgeLabel}</span>
-                        <span class="group-badge">${groupItems.length}</span>
-                    </div>
-                `;
-                groupHeader.onclick = () => toggleGroupCollapse(group.key);
-                groupContainer.appendChild(groupHeader);
+                headerDiv.onclick = () => toggleGroupCollapse(g.key);
 
-                if (!isCollapsed) {
+                const titleSpanWrapper = document.createElement('div');
+                titleSpanWrapper.className = "group-header-title";
+                titleSpanWrapper.innerHTML = `<span>${groupIsCollapsed ? '▶' : '▼'}</span> <span>${groupObj.label}</span>`;
+                headerDiv.appendChild(titleSpanWrapper);
+
+                const badgesWrapper = document.createElement('div');
+                badgesWrapper.className = "group-badges-container";
+
+                const costBadge = document.createElement('div');
+                if (groupUnpaidCostSum > 0) {
+                    costBadge.className = "group-unpaid-cost has-unpaid";
+                    costBadge.innerText = `€${groupUnpaidCostSum.toFixed(2)}`;
+                } else {
+                    costBadge.className = "group-unpaid-cost all-paid";
+                    costBadge.innerText = `Paid`;
+                }
+                badgesWrapper.appendChild(costBadge);
+
+                const countBadge = document.createElement('div');
+                countBadge.className = "group-badge";
+                countBadge.innerText = groupObj.items.length;
+                badgesWrapper.appendChild(countBadge);
+
+                headerDiv.appendChild(badgesWrapper);
+                groupContainer.appendChild(headerDiv);
+
+                if (!groupIsCollapsed) {
                     const groupContent = document.createElement('div');
-                    groupContent.className = 'group-content';
+                    groupContent.className = "group-content";
 
-                    groupItems.forEach(e => {
+                    groupObj.items.forEach(e => {
                         const itemDiv = document.createElement('div');
                         itemDiv.className = `expense-item ${e.status}`;
 
-                        const editBadgeHtml = e.isEdited ? `<span class="badge-edited">EDITED</span>` : '';
-                        
-                        let originLabelHtml = '';
-                        if (e.seriesId) {
-                            const associatedTpl = templates.find(t => t.seriesId === e.seriesId);
-                            if (associatedTpl && associatedTpl.startMonth) {
-                                originLabelHtml = `<div class="origin-label">${formatPrettyOriginLabel(associatedTpl.startMonth)}</div>`;
-                            }
-                        }
+                        // FIX: Separate boolean logic values entirely to prevent interference matching strings
+                        const showEditedBadge = e.isEdited === true;
+                        const showOriginLabel = e.originMonth && e.month !== e.originMonth;
 
-                        const showMoveBack = (monthsRange.indexOf(e.month) > 0);
+                        const editedBadgeHtml = showEditedBadge ? `<span class="badge-edited">EDITED</span>` : '';
+                        const originLabelHtml = showOriginLabel ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` : '';
+
+                        const showMoveBack = (e.month !== activeMonth || (e.originMonth && e.month !== e.originMonth));
 
                         itemDiv.innerHTML = `
                             <div class="info">
                                 <div class="name-wrapper">
                                     <span class="name">${e.name}</span>
-                                    ${editBadgeHtml}
+                                    ${editedBadgeHtml}
                                 </div>
                                 <div class="cost-row">
                                     <span class="cost">€${e.cost.toFixed(2)}</span>
@@ -1187,16 +1187,16 @@
                                 </div>
                             </div>
                             <div class="actions">
-                                ${showMoveBack ? `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);">\u2794</button>` : ''}
+                                ${showMoveBack ? `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);">➔</button>` : ''}
                                 ${e.status === 'unpaid' ? `
-                                    <button class="btn-action btn-move" onclick="moveNextMonth('${e.id}')">\u2794</button>
-                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">\u270f\ufe0f</button>
-                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">\u2713</button>
+                                    <button class="btn-action btn-move" onclick="moveNextMonth('${e.id}')">➔</button>
+                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
+                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">✓</button>
                                 ` : `
-                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">\u270f\ufe0f</button>
-                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">\u21b2</button>
+                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
+                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">↩</button>
                                 `}
-                                <button class="btn-action btn-delete" onclick="deleteExpense('${e.id}')">\u2715</button>
+                                <button class="btn-action btn-delete" onclick="deleteExpense('${e.id}')">✕</button>
                             </div>
                         `;
                         groupContent.appendChild(itemDiv);
