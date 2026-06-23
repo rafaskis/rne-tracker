@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v30.6</title>
+    <title>RNE Tracker - v30.8</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -234,12 +234,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v30.6</div>
+    <div class="version-watermark">RNE Tracker • v30.8</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 230626_v30.6
+        // VERSION TRACKER REFERENCE: 230626_v30.8
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -319,32 +319,6 @@
                 const overlay = document.getElementById('customChoiceOverlay');
                 const textContainer = document.getElementById('choiceOverlayMessage');
                 const container = document.getElementById('choiceButtonsContainer');
-                const isIdentical = (localDateStr === cloudDateStr && localDateStr !== "Never (Empty Cache)");
-
-                if (isIdentical && !forceShowOptions) {
-                    textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
-                        ✨ <span>Your local offline file matches your remote Google Drive cloud copy exactly.</span><br><br>
-                        <span style="font-size:12px; color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
-                        <span style="font-size:12px; color:var(--primary);">Cloud Backup Last Updated:</span><br><strong>${cloudDateStr}</strong>`;
-                    
-                    container.className = "vertical-buttons";
-                    container.innerHTML = `<button class="btn-choice btn-choice-right btn-choice-full" id="btnSyncOk">OK</button>`;
-
-                    const okBtn = document.getElementById('btnSyncOk');
-                    const handleOk = () => {
-                        overlay.style.display = 'none';
-                        container.className = "choice-buttons-row";
-                        container.innerHTML = `
-                            <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
-                            <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
-                        `;
-                        okBtn.removeEventListener('click', handleOk);
-                        resolve('ignore');
-                    };
-                    okBtn.addEventListener('click', handleOk);
-                    overlay.style.display = 'flex';
-                    return;
-                }
 
                 textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
                     ${statusHeadline}<br><br>
@@ -523,7 +497,8 @@
                 document.getElementById('gdrivePushBtn').style.display = 'inline-flex';
                 document.getElementById('gdrivePullBtn').style.display = 'inline-flex';
                 document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Connecting...";
-                setTimeout(() => { findExistingDatabaseOnCloud(true); }, 500);
+                // v30.8 Change: Forced to run full validation crossroads comparison prompt on startup reconnect
+                setTimeout(() => { findExistingDatabaseOnCloud(); }, 500);
             }
         }
 
@@ -558,10 +533,10 @@
             document.getElementById('gdrivePullBtn').style.display = 'inline-flex';
             document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Sync Ready";
             
-            await findExistingDatabaseOnCloud(false);
+            await findExistingDatabaseOnCloud();
         }
 
-        async function findExistingDatabaseOnCloud(isSilentMode = false) {
+        async function findExistingDatabaseOnCloud() {
             if (!activeAccessToken) return;
             try {
                 const searchUrl = `https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}'+and+trashed=false&fields=files(id,name)`;
@@ -574,13 +549,11 @@
                 if (data.files && data.files.length > 0) {
                     gdriveFileId = data.files[0].id;
                     document.getElementById('cloudStatusLabel').innerText = "☁ Linked to Cloud Backup";
-                    
-                    await evaluateCloudDeltaSyncChoices(isSilentMode, !isSilentMode);
+                    // v30.8 Change: Never run silently or evaluate choices invisibly. Always trigger the visual prompt engine.
+                    await evaluateCloudDeltaSyncChoices();
                 } else {
                     document.getElementById('cloudStatusLabel').innerText = "✅ New Cloud Storage Ready";
-                    if (!isSilentMode) {
-                        await uploadToGoogleDrive();
-                    }
+                    await uploadToGoogleDrive();
                 }
             } catch(e) {
                 console.error("Cloud lookup fault:", e);
@@ -598,7 +571,7 @@
             document.getElementById('cloudStatusLabel').innerText = "☁ Session Expired";
         }
 
-        async function evaluateCloudDeltaSyncChoices(isAutomatedSilentStartup = false, forceShowOptions = false) {
+        async function evaluateCloudDeltaSyncChoices() {
             if (!activeAccessToken || !gdriveFileId) return;
             try {
                 const fetchUrl = `https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`;
@@ -610,36 +583,6 @@
                 const localFormatTime = localTimestamp ? new Date(localTimestamp).toLocaleString() : "Never (Empty Cache)";
                 const cloudFormatTime = cloudTimestamp ? new Date(cloudTimestamp).toLocaleString() : "Never (Empty Cloud)";
 
-                if (isAutomatedSilentStartup && !forceShowOptions) {
-                    if (cloudTimestamp > localTimestamp) {
-                        applyCloudImportStructuresPayload(cloudData);
-                        document.getElementById('cloudStatusLabel').innerText = "☁ Automated Restore Synced";
-                    } else {
-                        document.getElementById('cloudStatusLabel').innerText = "☁ Cache Matches Cloud";
-                    }
-                    return;
-                }
-
-                if (forceShowOptions) {
-                    let syncMessageHeadline = "";
-                    if (cloudTimestamp > localTimestamp) {
-                        syncMessageHeadline = `⚠️ <span style="color:var(--danger); font-weight:bold;">Cloud file is NEWER than local file.</span>`;
-                    } else if (localTimestamp > cloudTimestamp) {
-                        syncMessageHeadline = `⚠️ <span style="color:var(--primary); font-weight:bold;">Local file is NEWER than cloud backup.</span>`;
-                    } else {
-                        syncMessageHeadline = `✨ <span style="color:var(--success);">Local and Cloud storage versions match perfectly.</span>`;
-                    }
-                    
-                    const userChoiceDecision = await presentCloudSyncCrossroadsPrompt(syncMessageHeadline, localFormatTime, cloudFormatTime, true);
-                    if (userChoiceDecision === 'push') {
-                        await uploadToGoogleDrive();
-                    } else if (userChoiceDecision === 'pull') {
-                        applyCloudImportStructuresPayload(cloudData);
-                        document.getElementById('cloudStatusLabel').innerText = "☁ Manual Restore Synced";
-                    }
-                    return;
-                }
-
                 let syncMessageHeadline = "";
                 if (cloudTimestamp > localTimestamp) {
                     syncMessageHeadline = `⚠️ <span style="color:var(--danger); font-weight:bold;">Cloud file is NEWER than local file.</span>`;
@@ -649,7 +592,8 @@
                     syncMessageHeadline = `✨ <span style="color:var(--success);">Local and Cloud storage versions match perfectly.</span>`;
                 }
 
-                const userChoiceDecision = await presentCloudSyncCrossroadsPrompt(syncMessageHeadline, localFormatTime, cloudFormatTime, false);
+                // v30.8 Change: The option selection prompt is now strict. Users must intentionally tap Backup, Restore, or Do Nothing.
+                const userChoiceDecision = await presentCloudSyncCrossroadsPrompt(syncMessageHeadline, localFormatTime, cloudFormatTime, true);
                 if (userChoiceDecision === 'push') {
                     await uploadToGoogleDrive();
                 } else if (userChoiceDecision === 'pull') {
@@ -663,12 +607,46 @@
 
         async function manuallyTriggerCloudBackup() {
             if (!activeAccessToken) { alert("Connect to Google account."); return; }
-            await uploadToGoogleDrive();
+            document.getElementById('cloudStatusLabel').innerText = "☁ Safety Check...";
+            
+            try {
+                const searchUrl = `https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}'+and+trashed=false&fields=files(id,name)`;
+                const resp = await fetch(searchUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
+                if (resp.status === 401) { clearExpiredTokenSession(); return; }
+                const data = await resp.json();
+                
+                if (data.files && data.files.length > 0) {
+                    gdriveFileId = data.files[0].id;
+                    // v30.8 Change: Always force the comparative confirmation prompt execution
+                    await evaluateCloudDeltaSyncChoices();
+                } else {
+                    await uploadToGoogleDrive();
+                }
+            } catch (e) {
+                console.error("Manual backup validation check fault:", e);
+                alert("Could not complete backup validation. Check network connectivity.");
+                document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Offline";
+            }
         }
 
         async function manuallyTriggerCloudRestore() {
             if (!activeAccessToken) { alert("Connect to Google account."); return; }
-            await findExistingDatabaseOnCloud(false);
+            // v30.8 Change: Restore now strictly enforces looking up the file and throwing the visual confirmation prompt matrix
+            try {
+                const searchUrl = `https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}'+and+trashed=false&fields=files(id,name)`;
+                const resp = await fetch(searchUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
+                if (resp.status === 401) { clearExpiredTokenSession(); return; }
+                const data = await resp.json();
+                
+                if (data.files && data.files.length > 0) {
+                    gdriveFileId = data.files[0].id;
+                    await evaluateCloudDeltaSyncChoices();
+                } else {
+                    alert("No cloud backup database was found on your Drive workspace.");
+                }
+            } catch (e) {
+                console.error("Manual restore check exception:", e);
+            }
         }
 
         function applyCloudImportStructuresPayload(cloudObj) {
