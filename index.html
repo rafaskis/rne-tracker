@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v30.4</title>
+    <title>RNE Tracker - v30.5</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -234,12 +234,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v30.4</div>
+    <div class="version-watermark">RNE Tracker • v30.5</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 230626_v30.4
+        // VERSION TRACKER REFERENCE: 230626_v30.5
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -468,14 +468,23 @@
             return `Originated: ${labelStr}`;
         }
 
-        // Helper label tracker engine to crawl configurations array
+        // Updated Label Engine supporting standard endCustomUntil or legacy template durationLimit variables
         function formatPrettyUntilLabel(seriesId) {
             if (!seriesId) return '';
             const t = templates.find(tpl => tpl.seriesId === seriesId);
             if (!t) return '';
+            
+            // 1. Check for legacy tracking variable durationLimit ("YYYY-MM")
+            if (t.durationLimit && t.durationLimit.includes('-')) {
+                const [year, month] = t.durationLimit.split('-');
+                return `Until: ${month}/${year}`;
+            }
+            
+            // 2. Check for current form variable structure ("MM/YYYY")
             if (t.endType === 'custom' && t.endCustomUntil) {
                 return `Until: ${t.endCustomUntil}`;
             }
+            
             return 'Until: Indefinitely';
         }
 
@@ -774,6 +783,11 @@
         }
 
         function checkExpirationFormatBoundsSatisfied(templateObj, evaluatingMonthStr) {
+            // Check legacy durationLimit variable boundary conditions
+            if (templateObj.durationLimit && templateObj.durationLimit.includes('-')) {
+                return evaluatingMonthStr <= templateObj.durationLimit;
+            }
+            
             if (!templateObj.endType || templateObj.endType === 'inf') return true;
             if (templateObj.endType === 'custom' && templateObj.endCustomUntil) {
                 const [expM, expY] = templateObj.endCustomUntil.split('/').map(Number);
@@ -834,8 +848,14 @@
 
             const t = templates.find(tpl => tpl.seriesId === e.seriesId);
             if (t && e.recur > 0) {
-                document.getElementById('expEndType').value = t.endType || 'inf';
-                document.getElementById('expCustomUntil').value = t.endCustomUntil || '';
+                if (t.durationLimit && t.durationLimit.includes('-')) {
+                    const [y, m] = t.durationLimit.split('-');
+                    document.getElementById('expEndType').value = 'custom';
+                    document.getElementById('expCustomUntil').value = `${m}/${y}`;
+                } else {
+                    document.getElementById('expEndType').value = t.endType || 'inf';
+                    document.getElementById('expCustomUntil').value = t.endCustomUntil || '';
+                }
             } else {
                 document.getElementById('expEndType').value = 'inf';
                 document.getElementById('expCustomUntil').value = '';
@@ -892,6 +912,7 @@
                             templates.push(t);
                         }
                         t.name = name; t.cost = cost; t.recur = recur; t.endType = endType; t.endCustomUntil = endCustomUntil;
+                        delete t.durationLimit; // Upgrade configuration schema state gracefully
 
                         const activeIndex = monthsRange.indexOf(e.month);
                         for (let i = activeIndex; i < monthsRange.length; i++) {
@@ -1178,7 +1199,7 @@
                         const editedBadgeHtml = showEditedBadge ? `<span class="badge-edited">EDITED</span>` : '';
                         const originLabelHtml = showOriginLabel ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` : '';
                         
-                        // FIX: Generate the dynamic "Until: x" metadata label structure if item is a series template instance
+                        // Dynamic "Until: x" metadata label structure with legacy support
                         const untilLabelHtml = e.seriesId ? `<div class="origin-label" style="margin-bottom: 2px; border-style: dotted;">${formatPrettyUntilLabel(e.seriesId)}</div>` : '';
 
                         const showMoveBack = (e.month !== activeMonth || (e.originMonth && e.month !== e.originMonth));
