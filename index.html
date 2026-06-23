@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v30.3</title>
+    <title>RNE Tracker - v30.4</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -234,12 +234,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v30.3</div>
+    <div class="version-watermark">RNE Tracker • v30.4</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 230626_v30.3
+        // VERSION TRACKER REFERENCE: 230626_v30.4
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -468,6 +468,17 @@
             return `Originated: ${labelStr}`;
         }
 
+        // Helper label tracker engine to crawl configurations array
+        function formatPrettyUntilLabel(seriesId) {
+            if (!seriesId) return '';
+            const t = templates.find(tpl => tpl.seriesId === seriesId);
+            if (!t) return '';
+            if (t.endType === 'custom' && t.endCustomUntil) {
+                return `Until: ${t.endCustomUntil}`;
+            }
+            return 'Until: Indefinitely';
+        }
+
         function getMonthList() {
             const list = [];
             const d = new Date();
@@ -541,7 +552,6 @@
             document.getElementById('gdrivePullBtn').style.display = 'inline-flex';
             document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Sync Ready";
             
-            // FIX: Force comparison prompt right after manual sign in
             await findExistingDatabaseOnCloud(false);
         }
 
@@ -559,7 +569,6 @@
                     gdriveFileId = data.files[0].id;
                     document.getElementById('cloudStatusLabel').innerText = "☁ Linked to Cloud Backup";
                     
-                    // If signing in via button click (isSilentMode == false), forceShowOptions is true
                     await evaluateCloudDeltaSyncChoices(isSilentMode, !isSilentMode);
                 } else {
                     document.getElementById('cloudStatusLabel').innerText = "✅ New Cloud Storage Ready";
@@ -605,7 +614,6 @@
                     return;
                 }
 
-                // FIX: Force option choices block instantly when requested manually or post-login
                 if (forceShowOptions) {
                     let syncMessageHeadline = "";
                     if (cloudTimestamp > localTimestamp) {
@@ -647,7 +655,6 @@
             }
         }
 
-        // FIX: Manual controls now correctly invoke evaluation framework forcing choices overlay
         async function manuallyTriggerCloudBackup() {
             if (!activeAccessToken) { alert("Connect to Google account."); return; }
             await findExistingDatabaseOnCloud(false);
@@ -939,8 +946,7 @@
                                         month: targetIterationMonthStr,
                                         recur: recur,
                                         status: "unpaid",
-                                        // FIX: Sets its unique iteration target month instead of forcing form start date
-                                        originMonth: targetIterationMonthStr, 
+                                        originMonth: targetIterationMonthStr,
                                         isEdited: false
                                     });
                                 }
@@ -1166,12 +1172,14 @@
                         const itemDiv = document.createElement('div');
                         itemDiv.className = `expense-item ${e.status}`;
 
-                        // FIX: Separate boolean logic values entirely to prevent interference matching strings
                         const showEditedBadge = e.isEdited === true;
                         const showOriginLabel = e.originMonth && e.month !== e.originMonth;
 
                         const editedBadgeHtml = showEditedBadge ? `<span class="badge-edited">EDITED</span>` : '';
                         const originLabelHtml = showOriginLabel ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` : '';
+                        
+                        // FIX: Generate the dynamic "Until: x" metadata label structure if item is a series template instance
+                        const untilLabelHtml = e.seriesId ? `<div class="origin-label" style="margin-bottom: 2px; border-style: dotted;">${formatPrettyUntilLabel(e.seriesId)}</div>` : '';
 
                         const showMoveBack = (e.month !== activeMonth || (e.originMonth && e.month !== e.originMonth));
 
@@ -1183,6 +1191,7 @@
                                 </div>
                                 <div class="cost-row">
                                     <span class="cost">€${e.cost.toFixed(2)}</span>
+                                    ${untilLabelHtml}
                                     ${originLabelHtml}
                                 </div>
                             </div>
