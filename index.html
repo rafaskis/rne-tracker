@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v30.8</title>
+    <title>RNE Tracker - v30.9</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -234,12 +234,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v30.8</div>
+    <div class="version-watermark">RNE Tracker • v30.9</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 230626_v30.8
+        // VERSION TRACKER REFERENCE: 230626_v30.9
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -456,7 +456,8 @@
                 return `Until: ${t.endCustomUntil}`;
             }
             
-            return 'Until: Indefinitely';
+            // v30.9 Change: Suppress the label entirely if it's set to indefinitely
+            return '';
         }
 
         function getMonthList() {
@@ -497,7 +498,6 @@
                 document.getElementById('gdrivePushBtn').style.display = 'inline-flex';
                 document.getElementById('gdrivePullBtn').style.display = 'inline-flex';
                 document.getElementById('cloudStatusLabel').innerText = "☁ Cloud Connecting...";
-                // v30.8 Change: Forced to run full validation crossroads comparison prompt on startup reconnect
                 setTimeout(() => { findExistingDatabaseOnCloud(); }, 500);
             }
         }
@@ -549,7 +549,6 @@
                 if (data.files && data.files.length > 0) {
                     gdriveFileId = data.files[0].id;
                     document.getElementById('cloudStatusLabel').innerText = "☁ Linked to Cloud Backup";
-                    // v30.8 Change: Never run silently or evaluate choices invisibly. Always trigger the visual prompt engine.
                     await evaluateCloudDeltaSyncChoices();
                 } else {
                     document.getElementById('cloudStatusLabel').innerText = "✅ New Cloud Storage Ready";
@@ -592,7 +591,6 @@
                     syncMessageHeadline = `✨ <span style="color:var(--success);">Local and Cloud storage versions match perfectly.</span>`;
                 }
 
-                // v30.8 Change: The option selection prompt is now strict. Users must intentionally tap Backup, Restore, or Do Nothing.
                 const userChoiceDecision = await presentCloudSyncCrossroadsPrompt(syncMessageHeadline, localFormatTime, cloudFormatTime, true);
                 if (userChoiceDecision === 'push') {
                     await uploadToGoogleDrive();
@@ -617,7 +615,6 @@
                 
                 if (data.files && data.files.length > 0) {
                     gdriveFileId = data.files[0].id;
-                    // v30.8 Change: Always force the comparative confirmation prompt execution
                     await evaluateCloudDeltaSyncChoices();
                 } else {
                     await uploadToGoogleDrive();
@@ -631,7 +628,6 @@
 
         async function manuallyTriggerCloudRestore() {
             if (!activeAccessToken) { alert("Connect to Google account."); return; }
-            // v30.8 Change: Restore now strictly enforces looking up the file and throwing the visual confirmation prompt matrix
             try {
                 const searchUrl = `https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}'+and+trashed=false&fields=files(id,name)`;
                 const resp = await fetch(searchUrl, { headers: { 'Authorization': `Bearer ${activeAccessToken}` } });
@@ -1167,7 +1163,8 @@
                         const editedBadgeHtml = showEditedBadge ? `<span class="badge-edited">EDITED</span>` : '';
                         const originLabelHtml = showOriginLabel ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` : '';
                         
-                        const untilLabelHtml = e.seriesId ? `<div class="origin-label" style="margin-bottom: 2px; border-style: dotted;">${formatPrettyUntilLabel(e.seriesId)}</div>` : '';
+                        const untilLabel = formatPrettyUntilLabel(e.seriesId);
+                        const untilLabelHtml = untilLabel ? `<div class="origin-label" style="margin-bottom: 2px; border-style: dotted;">${untilLabel}</div>` : '';
 
                         const showMoveBack = (e.month !== activeMonth || (e.originMonth && e.month !== e.originMonth));
 
