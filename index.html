@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v30.5</title>
+    <title>RNE Tracker - v30.6</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -234,12 +234,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v30.5</div>
+    <div class="version-watermark">RNE Tracker • v30.6</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 230626_v30.5
+        // VERSION TRACKER REFERENCE: 230626_v30.6
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -468,19 +468,16 @@
             return `Originated: ${labelStr}`;
         }
 
-        // Updated Label Engine supporting standard endCustomUntil or legacy template durationLimit variables
         function formatPrettyUntilLabel(seriesId) {
             if (!seriesId) return '';
             const t = templates.find(tpl => tpl.seriesId === seriesId);
             if (!t) return '';
             
-            // 1. Check for legacy tracking variable durationLimit ("YYYY-MM")
             if (t.durationLimit && t.durationLimit.includes('-')) {
                 const [year, month] = t.durationLimit.split('-');
                 return `Until: ${month}/${year}`;
             }
             
-            // 2. Check for current form variable structure ("MM/YYYY")
             if (t.endType === 'custom' && t.endCustomUntil) {
                 return `Until: ${t.endCustomUntil}`;
             }
@@ -666,7 +663,7 @@
 
         async function manuallyTriggerCloudBackup() {
             if (!activeAccessToken) { alert("Connect to Google account."); return; }
-            await findExistingDatabaseOnCloud(false);
+            await uploadToGoogleDrive();
         }
 
         async function manuallyTriggerCloudRestore() {
@@ -779,11 +776,9 @@
             meta.lastUpdated = Date.now();
             saveToLocalStorage();
             render();
-            if (activeAccessToken) { uploadToGoogleDrive(); }
         }
 
         function checkExpirationFormatBoundsSatisfied(templateObj, evaluatingMonthStr) {
-            // Check legacy durationLimit variable boundary conditions
             if (templateObj.durationLimit && templateObj.durationLimit.includes('-')) {
                 return evaluatingMonthStr <= templateObj.durationLimit;
             }
@@ -912,7 +907,7 @@
                             templates.push(t);
                         }
                         t.name = name; t.cost = cost; t.recur = recur; t.endType = endType; t.endCustomUntil = endCustomUntil;
-                        delete t.durationLimit; // Upgrade configuration schema state gracefully
+                        delete t.durationLimit; 
 
                         const activeIndex = monthsRange.indexOf(e.month);
                         for (let i = activeIndex; i < monthsRange.length; i++) {
@@ -981,7 +976,6 @@
             saveToLocalStorage();
             render();
             closeFormDisplay();
-            if (activeAccessToken) { uploadToGoogleDrive(); }
         }
 
         async function deleteExpense(id) {
@@ -1012,7 +1006,6 @@
             meta.lastUpdated = Date.now();
             saveToLocalStorage();
             render();
-            if (activeAccessToken) { uploadToGoogleDrive(); }
         }
 
         function togglePaid(id) {
@@ -1022,7 +1015,6 @@
             meta.lastUpdated = Date.now();
             saveToLocalStorage();
             render();
-            if (activeAccessToken) { uploadToGoogleDrive(); }
         }
 
         function moveNextMonth(id) {
@@ -1034,7 +1026,6 @@
                 meta.lastUpdated = Date.now();
                 saveToLocalStorage();
                 render();
-                if (activeAccessToken) { uploadToGoogleDrive(); }
             } else {
                 alert("Cannot shift further down past constraints boundary range.");
             }
@@ -1049,7 +1040,6 @@
                 meta.lastUpdated = Date.now();
                 saveToLocalStorage();
                 render();
-                if (activeAccessToken) { uploadToGoogleDrive(); }
             } else {
                 alert("Cannot move behind the initial index limits.");
             }
@@ -1199,7 +1189,6 @@
                         const editedBadgeHtml = showEditedBadge ? `<span class="badge-edited">EDITED</span>` : '';
                         const originLabelHtml = showOriginLabel ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` : '';
                         
-                        // Dynamic "Until: x" metadata label structure with legacy support
                         const untilLabelHtml = e.seriesId ? `<div class="origin-label" style="margin-bottom: 2px; border-style: dotted;">${formatPrettyUntilLabel(e.seriesId)}</div>` : '';
 
                         const showMoveBack = (e.month !== activeMonth || (e.originMonth && e.month !== e.originMonth));
