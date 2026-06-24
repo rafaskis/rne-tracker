@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v31.0</title>
+    <title>RNE Tracker - v32.0</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -26,6 +26,9 @@
             --cloud-bar-border: #cbd5e1;
             --btn-action-bg: #f9fafb;
             --utility-card-bg: #eaede4;
+            --banner-bg: #fef3c7;
+            --banner-text: #92400e;
+            --banner-border: #fcd34d;
         }
 
         /* Dark Theme Variables Layer Override */
@@ -47,6 +50,9 @@
             --cloud-bar-border: #4a5568;
             --btn-action-bg: #2d3748;
             --utility-card-bg: #2d3129;
+            --banner-bg: #78350f;
+            --banner-text: #fef3c7;
+            --banner-border: #92400e;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -62,6 +68,14 @@
         .discreet-actions-grid { display: flex; gap: 6px; align-items: center; }
 
         .btn-theme-toggle { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); font-size: 12px; font-weight: bold; padding: 6px 12px; border-radius: 6px; cursor: pointer; height: auto; width: auto; display: inline-flex; align-items: center; justify-content: center; }
+
+        /* Global Arrears Alerts Bar Container */
+        .arrears-alert-banner { display: none; background: var(--banner-bg); border: 1px solid var(--banner-border); color: var(--banner-text); padding: 12px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; flex-direction: column; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .arrears-banner-text { font-weight: 600; text-align: center; line-height: 1.4; }
+        .arrears-banner-actions { display: flex; gap: 8px; }
+        .btn-banner-action { padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; border: none; text-align: center; width: 50%; }
+        .btn-banner-keep { background: var(--primary); color: white; }
+        .btn-banner-discard { background: var(--danger); color: white; }
 
         /* Top Navigation Hierarchy */
         .month-nav-container { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
@@ -164,6 +178,14 @@
         </div>
     </div>
 
+    <div class="arrears-alert-banner" id="globalArrearsBanner">
+        <div class="arrears-banner-text" id="arrearsBannerMessage">⚠️ Warning: You have unhandled unpaid expenses left behind in previous months.</div>
+        <div class="arrears-banner-actions">
+            <button class="btn-banner-action btn-banner-keep" onclick="executeBatchBringArrearsToCurrent()">Bring Forward</button>
+            <button class="btn-banner-action btn-banner-discard" onclick="executeBatchDiscardArrears()">Discard</button>
+        </div>
+    </div>
+
     <div class="month-nav-container">
         <button class="btn-nav-arrow" onclick="stepMonth(-1)" title="Previous Month">◀</button>
         <div class="month-select-wrapper">
@@ -208,7 +230,9 @@
         </div>
     </div>
 
-    <div class="expense-list" id="listContainer"></div>
+    <div class="node-target-wrapper" style="position:relative; width:100%;">
+         <div class="expense-list" id="listContainer"></div>
+    </div>
 
     <div class="utility-toggle-header" onclick="toggleUtilityDrawer()">
         <span>Offline Data Options</span>
@@ -238,12 +262,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v31.0</div>
+    <div class="version-watermark">RNE Tracker • v32.0</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260626_v31.0
+        // VERSION TRACKER REFERENCE: 240626_v32.0
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -688,7 +712,7 @@
             templates = cloudObj.templates || [];
             meta = cloudObj.meta || { lastMonthPopulated: "", lastUpdated: Date.now() };
             saveToLocalStorage();
-            render();
+            evaluateChronologicalDataStatesAndPurge();
         }
 
         async function uploadToGoogleDrive() {
@@ -748,7 +772,16 @@
             templates = JSON.parse(localStorage.getItem('household_templates')) || [];
             meta = JSON.parse(localStorage.getItem('household_meta')) || { lastMonthPopulated: "", lastUpdated: 0 };
             
+            evaluateChronologicalDataStatesAndPurge();
+        }
+
+        function evaluateChronologicalDataStatesAndPurge() {
+            // Step 1: Detect if a month rollover has occurred
             if (!meta.lastMonthPopulated || meta.lastMonthPopulated < currentSystemMonth) {
+                // Instantly purge paid expenses from previous periods
+                expenses = expenses.filter(item => !(item.month < currentSystemMonth && item.status === 'paid'));
+                
+                // Trigger normal template generation pipeline for the fresh month anchor
                 runRecurrenceEngineAutoPopulation(currentSystemMonth);
             } else {
                 render();
@@ -803,6 +836,55 @@
                 if (curY === expY && curM <= expM) return true;
             }
             return false;
+        }
+
+        /* Arrears Management Control Methods */
+        function checkAndRenderArrearsBannerState() {
+            const banner = document.getElementById('globalArrearsBanner');
+            const messageText = document.getElementById('arrearsBannerMessage');
+            
+            // Query for any unhandled outstanding items lingering in previous months
+            const outstandingArrears = expenses.filter(item => item.month < currentSystemMonth && item.status === 'unpaid');
+            
+            if (outstandingArrears.length > 0) {
+                messageText.innerHTML = `⚠️ <strong>Attention Needed:</strong> You have <strong>${outstandingArrears.length}</strong> unpaid expense(s) remaining from previous months.`;
+                banner.style.display = 'flex';
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        function executeBatchBringArrearsToCurrent() {
+            // Process past unpaid items using the moveNextMonth method architecture
+            expenses.forEach(item => {
+                if (item.month < currentSystemMonth && item.status === 'unpaid') {
+                    item.month = currentSystemMonth;
+                }
+            });
+
+            meta.lastUpdated = Date.now();
+            saveToLocalStorage();
+            render();
+            alert("All outstanding expenses have been safely brought into the current tracking cycle.");
+        }
+
+        async function executeBatchDiscardArrears() {
+            const verification = await presentCustomChoicePrompt(
+                "Are you sure you want to completely discard these unpaid past expenses? This will permanently erase them from the tracking ledger.",
+                "Cancel",
+                "Discard Data",
+                true
+            );
+
+            if (verification === 'right') {
+                // Filter out all historical unpaid items from the primary database structure
+                expenses = expenses.filter(item => !(item.month < currentSystemMonth && item.status === 'unpaid'));
+                
+                meta.lastUpdated = Date.now();
+                saveToLocalStorage();
+                render();
+                alert("Historical unpaid expenses have been cleanly dropped.");
+            }
         }
 
         function toggleDurationField() {
@@ -1140,6 +1222,9 @@
         }
 
         function render() {
+            // Evaluate global historical balance conditions before building layout components
+            checkAndRenderArrearsBannerState();
+
             const activeMonth = document.getElementById('monthViewFilter').value;
             const container = document.getElementById('listContainer');
             container.innerHTML = '';
