@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v33.1.3</title>
+    <title>RNE Tracker - v33.1.4</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -106,7 +106,7 @@
         .group-container { margin-bottom: 14px; border-radius: 12px; overflow: hidden; background: transparent; }
         .group-header { background: var(--group-header-bg); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--text-main); cursor: pointer; user-select: none; border: 1px solid var(--border); border-radius: 10px; gap: 8px; }
         .group-header-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
-        .group-header-title span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; text-decoration: underline; }
+        .group-header-title span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .group-badges-container { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .group-unpaid-cost { font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
         .group-unpaid-cost.has-unpaid { color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; }
@@ -216,12 +216,12 @@
             <input type="number" id="expCost" step="0.01" placeholder="Cost (€)">
             <select id="expMonthTarget"></select>
             <select id="expRecur" onchange="toggleDurationField()">
-                <option value="0">📌 One-Time Only</option>
-                <option value="1">🔁 Monthly</option>
-                <option value="2">👥 Every 2 Months</option>
+                <option value="0">📅 One-Time Only</option>
+                <option value="1">📅 Monthly</option>
+                <option value="2">📅 Every 2 Months</option>
                 <option value="3">📅 Quarterly</option>
-                <option value="6">⏳ Every 6 Months</option>
-                <option value="12">🎆 Yearly</option>
+                <option value="6">📅 Every 6 Months</option>
+                <option value="12">📅 Yearly</option>
             </select>
             
             <select id="expEndType" style="display:none;" onchange="toggleEndTypeField()">
@@ -268,12 +268,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v33.1.3</div>
+    <div class="version-watermark">RNE Tracker • v33.1.4</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260624_v33.1.3
+        // VERSION TRACKER REFERENCE: 260624_v33.1.4
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -290,13 +290,14 @@
         let activeAccessToken = null;
         let gdriveFileId = null;
 
+        // Base Configuration remains exactly as version 33.1 to preserve dashboard data binding integrity
         const recurrenceGroupsConfig = [
-            { key: 0, label: "One-Time Only", icon: "📌" },
-            { key: 1, label: "Monthly", icon: "🔁" },
-            { key: 2, label: "Every 2 Months", icon: "👥" },
+            { key: 0, label: "One-Time Only", icon: "📅" },
+            { key: 1, label: "Monthly", icon: "📅" },
+            { key: 2, label: "Every 2 Months", icon: "📅" },
             { key: 3, label: "Quarterly", icon: "📅" },
-            { key: 6, label: "Every 6 Months", icon: "⏳" },
-            { key: 12, label: "Yearly", icon: "🎆" }
+            { key: 6, label: "Every 6 Months", icon: "📅" },
+            { key: 12, label: "Yearly", icon: "📅" }
         ];
 
         function initializeSavedDisplayTheme() {
@@ -1097,7 +1098,7 @@
             }
 
             writeToDisk();
-            if (activeAccessToken) { await uploadToGoogleDrive(); }
+            if (activeAccessToken) { uploadToGoogleDrive(); }
             evaluatePriorUnpaidArrearsPresence();
             render();
         }
@@ -1161,6 +1162,9 @@
             render();
         }
 
+        // ==========================================
+        // COSMETIC ADJUSTMENTS PERFORMED EXCLUSIVELY HERE
+        // ==========================================
         function generateAndCopyReportToClipboard() {
             const activeMonthStr = filterSelect.value || currentSystemMonth;
             const [year, month] = activeMonthStr.split('-');
@@ -1189,20 +1193,35 @@
                 }
             });
 
+            // Make the mm/yyyy and the total unpaid sum bold
             let stringBuffer = `*${prettyMonthStr}*\n\n`;
             stringBuffer += `TOTAL UNPAID: *€${totalUnpaidSum.toFixed(2)}*\n`;
+            // Move the "====" line under the "total unpaid"
             stringBuffer += `====================\n\n`;
+
+            // Isolated cosmetic icon mappings for the clipboard text report execution cycle
+            const reportIconMapping = {
+                0: "📌",  // One-Time Only
+                1: "🔁",  // Monthly
+                2: "👥",  // Every 2 Months
+                3: "📅",  // Quarterly
+                6: "⏳",  // Every 6 Months
+                12: "🎆"  // Yearly
+            };
 
             recurrenceGroupsConfig.forEach(cfg => {
                 const groupData = structuredGroupMap[cfg.key];
                 if (groupData.unpaidItems.length > 0) {
-                    stringBuffer += `*_${cfg.icon} ${cfg.label.toUpperCase()}_*\n`;
+                    const chosenIcon = reportIconMapping[cfg.key] || "📅";
+                    // Make the categories bold and underlined
+                    stringBuffer += `*<u>${chosenIcon} ${cfg.label.toUpperCase()}</u>*\n`;
                     
                     groupData.unpaidItems.forEach(item => {
                         let itemRow = `- ${item.name}: €${item.cost.toFixed(2)}`;
                         
                         const originalTemplateStartMonth = item.seriesId ? templates.find(t => t.seriesId === item.seriesId)?.startMonth : item.monthCode;
                         
+                        // Exclude "originated" label if it equals the month for which the report is created
                         const originLabel = formatPrettyOriginLabel(originalTemplateStartMonth, activeMonthStr);
                         const untilLabel = formatPrettyUntilLabel(item.seriesId);
                         
@@ -1213,12 +1232,14 @@
                         if (contextLabels.length > 0) {
                             itemRow += ` (${contextLabels.join(' | ')})`;
                         }
+                        // "edited" label is excluded by design as we do not append item.isOverride check strings here
                         stringBuffer += `${itemRow}\n`;
                     });
                     stringBuffer += `\n`;
                 }
             });
 
+            // Remove the "_Generated via HMT Apps_" line in the end by leaving it out of the trimmed buffer compilation
             const trimmedResult = stringBuffer.trim();
 
             navigator.clipboard.writeText(trimmedResult).then(() => {
@@ -1286,7 +1307,7 @@
                 groupHeader.innerHTML = `
                     <div class="group-header-title">
                         <span>${isCollapsed ? '▶' : '▼'}</span>
-                        <span>${cfg.icon} ${cfg.label}</span>
+                        <span>${cfg.icon} <strong>${cfg.label}</strong></span>
                     </div>
                     <div class="group-badges-container">
                         <span class="group-unpaid-cost ${badgeStatusClass}">${badgeText}</span>
