@@ -77,10 +77,13 @@
         .btn-banner-keep { background: var(--primary); color: white; }
         .btn-banner-discard { background: var(--danger); color: white; }
 
-        /* Top Navigation Hierarchy */
+        /* Top Navigation Hierarchy with Share Cluster integration */
         .month-nav-container { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
         .btn-nav-arrow { width: 48px; height: 48px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary); }
-        .month-select-wrapper { flex-grow: 1; }
+        .month-select-wrapper { flex-grow: 1; display: flex; align-items: center; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; padding-right: 8px; }
+        .month-select-wrapper select { border: none; flex-grow: 1; }
+        .btn-share-trigger { background: transparent; border: none; color: var(--primary); font-size: 18px; cursor: pointer; padding: 8px; width: auto; height: auto; display: flex; align-items: center; justify-content: center; }
+        
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 8px; }
         .header-card { background: var(--card-bg); padding: 16px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-grow: 1; }
         .unpaid-badge { font-size: 24px; font-weight: bold; color: var(--danger); margin-top: 4px; }
@@ -190,6 +193,7 @@
         <button class="btn-nav-arrow" onclick="stepMonth(-1)" title="Previous Month">◀</button>
         <div class="month-select-wrapper">
             <select id="monthViewFilter" onchange="render()"></select>
+            <button class="btn-share-trigger" onclick="copyMonthReportToClipboard()" title="Copy Month Report to Clipboard">🔗</button>
         </div>
         <button class="btn-nav-arrow" onclick="stepMonth(1)" title="Next Month">▶</button>
     </div>
@@ -496,8 +500,7 @@
         function formatPrettyOriginLabel(monthKeyString) {
             if (!monthKeyString || !monthKeyString.includes('-')) return '';
             const [year, month] = monthKeyString.split('-');
-            const labelStr = new Date(year, month - 1, 1).toLocaleDateString('default', { month: 'short', year: 'numeric' });
-            return `Originated: ${labelStr}`;
+            return `${month}/${year}`;
         }
 
         function formatPrettyUntilLabel(seriesId) {
@@ -507,14 +510,89 @@
             
             if (t.durationLimit && t.durationLimit.includes('-')) {
                 const [year, month] = t.durationLimit.split('-');
-                return `Until: ${month}/${year}`;
+                return `${month}/${year}`;
             }
             
             if (t.endType === 'custom' && t.endCustomUntil) {
-                return `Until: ${t.endCustomUntil}`;
+                return t.endCustomUntil;
             }
             
-            return '';
+            return 'indefinitely';
+        }
+
+        // v33.1 Clipboard Engine Engine Framework Integration Implementation
+        async function copyMonthReportToClipboard() {
+            try {
+                const filterSelect = document.getElementById('monthViewFilter');
+                const rawMonthValue = filterSelect.value;
+                
+                // Convert YYYY-MM into localized MM/YYYY formatting for reporting headers
+                let formattedTitleDate = rawMonthValue;
+                if (rawMonthValue && rawMonthValue.includes('-')) {
+                    const [y, m] = rawMonthValue.split('-');
+                    formattedTitleDate = `${m}/${y}`;
+                }
+
+                const currentMonthItems = expenses.filter(item => item.month === rawMonthValue);
+                if (currentMonthItems.length === 0) {
+                    alert("No expenses found for this month to generate a report summary.");
+                    return;
+                }
+
+                let totalUnpaidSum = 0;
+                const groupsDataMap = {};
+                recurrenceGroupsConfig.forEach(g => {
+                    groupsDataMap[g.key] = { label: g.label, lines: [] };
+                });
+
+                currentMonthItems.forEach(item => {
+                    const cost = parseFloat(item.cost) || 0;
+                    if (item.status === 'unpaid') {
+                        totalUnpaidSum += cost;
+                    }
+
+                    const dot = item.status === 'paid' ? '🟢' : '🔴';
+                    const untilVal = formatPrettyUntilLabel(item.seriesId);
+                    const untilText = (untilVal && untilVal !== 'indefinitely') ? ` (Until: ${untilVal})` : '';
+                    const origText = item.originMonth ? ` [Originated: ${formatPrettyOriginLabel(item.originMonth)}]` : '';
+                    const editedText = item.isEdited ? ' [EDITED]' : '';
+
+                    const lineEntry = `${dot} ${item.name}: €${cost.toFixed(2)}${untilText}${origText}${editedText}`;
+                    
+                    const k = (item.recur !== undefined) ? item.recur : 0;
+                    if (groupsDataMap[k] !== undefined) {
+                        groupsDataMap[k].lines.push(lineEntry);
+                    } else {
+                        groupsDataMap[0].lines.push(lineEntry);
+                    }
+                });
+
+                let reportLines = [
+                    `📋 *RNE Tracker Report: ${formattedTitleDate}*`,
+                    `==================================`,
+                    `📊 *Total Unpaid:* €${totalUnpaidSum.toFixed(2)}`,
+                    ``
+                ];
+
+                recurrenceGroupsConfig.forEach(g => {
+                    const grp = groupsDataMap[g.key];
+                    if (grp && grp.lines.length > 0) {
+                        reportLines.push(`*⚠️ ${grp.label}*`);
+                        reportLines.push(...grp.lines);
+                        reportLines.push(``);
+                    }
+                });
+
+                reportLines.push(`_Generated via HMT Apps_`);
+                const fullTextPayload = reportLines.join('\n');
+
+                await navigator.clipboard.writeText(fullTextPayload);
+                alert(`Month report for ${formattedTitleDate} copied to clipboard!`);
+
+            } catch (err) {
+                console.error("Master sharing compiler fault:", err);
+                alert("Failed copying month breakdown to system clipboard. Verify permission context rules.");
+            }
         }
 
         function getMonthList() {
@@ -531,13 +609,13 @@
 
         const monthsRange = getMonthList();
         const currentSystemMonth = monthsRange[0];
-        const filterSelect = document.getElementById('monthViewFilter');
+        const filterSelectElement = document.getElementById('monthViewFilter');
         const formMonthSelect = document.getElementById('expMonthTarget');
 
         monthsRange.forEach((mStr) => {
             const [y, m] = mStr.split('-');
             const label = new Date(y, m - 1, 1).toLocaleDateString('default', { month: 'long', year: 'numeric' });
-            filterSelect.options.add(new Option(label, mStr));
+            filterSelectElement.options.add(new Option(label, mStr));
             formMonthSelect.options.add(new Option(label, mStr));
         });
 
@@ -746,7 +824,7 @@
                     form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
                     form.append('file', blob);
 
-                    const insertUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id';
+                    const insertUrl = 'https://www.googleapis.com/upload/drive/v3/fields=id';
                     const resp = await fetch(insertUrl, {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${activeAccessToken}` },
@@ -1302,10 +1380,10 @@
                         const showOriginLabel = e.originMonth && e.month !== e.originMonth;
 
                         const editedBadgeHtml = showEditedBadge ? `<span class="badge-edited">EDITED</span>` : '';
-                        const originLabelHtml = showOriginLabel ? `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>` : '';
+                        const originLabelHtml = showOriginLabel ? `<div class="origin-label">Originated: ${formatPrettyOriginLabel(e.originMonth)}</div>` : '';
                         
-                        const untilLabel = formatPrettyUntilLabel(e.seriesId);
-                        const untilLabelHtml = untilLabel ? `<div class="origin-label" style="margin-bottom: 2px; border-style: dotted;">${untilLabel}</div>` : '';
+                        const untilVal = formatPrettyUntilLabel(e.seriesId);
+                        const untilLabelHtml = (untilVal && untilVal !== 'indefinitely') ? `<div class="origin-label" style="margin-bottom: 2px; border-style: dotted;">Until: ${untilVal}</div>` : '';
 
                         const showMoveBack = (e.month !== activeMonth || (e.originMonth && e.month !== e.originMonth));
 
