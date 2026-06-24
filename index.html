@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v33.1.4</title>
+    <title>RNE Tracker - v33.1.5</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -268,12 +268,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v33.1.4</div>
+    <div class="version-watermark">RNE Tracker • v33.1.5</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260624_v33.1.4
+        // VERSION TRACKER REFERENCE: 260624_v33.1.5
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -290,7 +290,6 @@
         let activeAccessToken = null;
         let gdriveFileId = null;
 
-        // Base Configuration remains exactly as version 33.1 to preserve dashboard data binding integrity
         const recurrenceGroupsConfig = [
             { key: 0, label: "One-Time Only", icon: "📅" },
             { key: 1, label: "Monthly", icon: "📅" },
@@ -1193,13 +1192,10 @@
                 }
             });
 
-            // Make the mm/yyyy and the total unpaid sum bold
             let stringBuffer = `*${prettyMonthStr}*\n\n`;
             stringBuffer += `TOTAL UNPAID: *€${totalUnpaidSum.toFixed(2)}*\n`;
-            // Move the "====" line under the "total unpaid"
             stringBuffer += `====================\n\n`;
 
-            // Isolated cosmetic icon mappings for the clipboard text report execution cycle
             const reportIconMapping = {
                 0: "📌",  // One-Time Only
                 1: "🔁",  // Monthly
@@ -1213,7 +1209,6 @@
                 const groupData = structuredGroupMap[cfg.key];
                 if (groupData.unpaidItems.length > 0) {
                     const chosenIcon = reportIconMapping[cfg.key] || "📅";
-                    // Make the categories bold and underlined
                     stringBuffer += `*<u>${chosenIcon} ${cfg.label.toUpperCase()}</u>*\n`;
                     
                     groupData.unpaidItems.forEach(item => {
@@ -1221,7 +1216,6 @@
                         
                         const originalTemplateStartMonth = item.seriesId ? templates.find(t => t.seriesId === item.seriesId)?.startMonth : item.monthCode;
                         
-                        // Exclude "originated" label if it equals the month for which the report is created
                         const originLabel = formatPrettyOriginLabel(originalTemplateStartMonth, activeMonthStr);
                         const untilLabel = formatPrettyUntilLabel(item.seriesId);
                         
@@ -1232,14 +1226,12 @@
                         if (contextLabels.length > 0) {
                             itemRow += ` (${contextLabels.join(' | ')})`;
                         }
-                        // "edited" label is excluded by design as we do not append item.isOverride check strings here
                         stringBuffer += `${itemRow}\n`;
                     });
                     stringBuffer += `\n`;
                 }
             });
 
-            // Remove the "_Generated via HMT Apps_" line in the end by leaving it out of the trimmed buffer compilation
             const trimmedResult = stringBuffer.trim();
 
             navigator.clipboard.writeText(trimmedResult).then(() => {
@@ -1277,7 +1269,13 @@
             });
 
             matches.forEach(e => {
-                const groupKey = e.recurrenceType !== undefined ? e.recurrenceType : 0;
+                // FALLBACK CHANGE: Look up recurrence interval from template if recurrenceType property is missing from old records
+                let groupKey = e.recurrenceType !== undefined ? e.recurrenceType : 0;
+                if (e.seriesId && e.recurrenceType === undefined) {
+                    const matchedTemplate = templates.find(t => t.seriesId === e.seriesId);
+                    if (matchedTemplate) groupKey = matchedTemplate.recurrenceInterval;
+                }
+
                 if (categorizedBuckets[groupKey]) {
                     categorizedBuckets[groupKey].items.push(e);
                 } else {
