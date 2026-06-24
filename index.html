@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v30.9</title>
+    <title>RNE Tracker - v31.0</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -119,6 +119,7 @@
         .btn-pay { color: var(--success); }
         .btn-move { color: #f59e0b; }
         .btn-back { color: #6366f1; }
+        .btn-action-danger { color: var(--danger); }
         .btn-edit { color: var(--edit-color); }
         .btn-delete { color: var(--danger); }
 
@@ -130,6 +131,7 @@
         .utility-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
         
         .btn-util { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center; -webkit-appearance: none; }
+        .btn-util-danger { border-color: var(--danger); color: var(--danger); font-weight: 600; margin-top: 4px; font-size: 14px; padding: 10px; }
         .file-input-wrapper { position: relative; width: 100%; }
         .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
         .btn-fake-file { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; text-align: center; }
@@ -215,13 +217,15 @@
 
     <div class="utility-card" id="utilityDrawerCard">
         <div class="utility-title">Manual Backup (Offline)</div>
-        <div class="utility-grid">
+        <div class="utility-grid" style="margin-bottom: 12px;">
             <button class="btn-util" onclick="exportToFile()">📥 Export Data to File</button>
             <div class="file-input-wrapper">
                 <button class="btn-fake-file btn-util">📤 Import Backup File</button>
                 <input type="file" id="importFile" accept=".txt,.json" onchange="importFromFile(event)">
             </div>
         </div>
+        <div class="utility-title" style="border-top:1px dashed var(--border); padding-top:12px; color:var(--danger);">Danger Zone</div>
+        <button class="btn-util btn-util-danger" onclick="triggerResetToScratch()">☢ Start From Scratch</button>
     </div>
 
     <div class="choice-overlay" id="customChoiceOverlay">
@@ -234,12 +238,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v30.9</div>
+    <div class="version-watermark">RNE Tracker • v31.0</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 230626_v30.9
+        // VERSION TRACKER REFERENCE: 260626_v31.0
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -314,47 +318,85 @@
             });
         }
 
-        function presentCloudSyncCrossroadsPrompt(statusHeadline, localDateStr, cloudDateStr, forceShowOptions = false) {
+        function presentCloudSyncCrossroadsPrompt(syncState, statusHeadline, localDateStr, cloudDateStr) {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('customChoiceOverlay');
                 const textContainer = document.getElementById('choiceOverlayMessage');
                 const container = document.getElementById('choiceButtonsContainer');
 
-                textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
-                    ${statusHeadline}<br><br>
-                    <span style="font-size:12px; color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
-                    <span style="font-size:12px; color:var(--primary);">Cloud Backup Last Updated:</span><br><strong>${cloudDateStr}</strong><br><br>
-                    What action would you like to take?`;
                 container.className = "vertical-buttons";
-                container.innerHTML = `
-                    <button class="btn-choice btn-choice-right btn-choice-full" id="btnSyncPush">Backup (Upload Local to Cloud)</button>
-                    <button class="btn-choice btn-choice-left btn-choice-full" style="background:var(--success); color:white; border-color:var(--success);" id="btnSyncPull">Restore (Download Cloud to Local)</button>
-                    <button class="btn-choice btn-choice-left btn-choice-full" id="btnSyncIgnore">Do Nothing (Keep Offline Split)</button>
-                `;
-                const pushBtn = document.getElementById('btnSyncPush');
-                const pullBtn = document.getElementById('btnSyncPull');
-                const ignoreBtn = document.getElementById('btnSyncIgnore');
 
-                const handlePush = () => { cleanup(); resolve('push'); };
-                const handlePull = () => { cleanup(); resolve('pull'); };
-                const handleIgnore = () => { cleanup(); resolve('ignore'); };
-                const cleanup = () => {
-                    pushBtn.removeEventListener('click', handlePush);
-                    pullBtn.removeEventListener('click', handlePull);
-                    ignoreBtn.removeEventListener('click', handleIgnore);
-                    overlay.style.display = 'none';
-                    container.className = "choice-buttons-row";
+                if (syncState === 'match') {
+                    textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
+                        ${statusHeadline}<br><br>
+                        <span style="font-size:12px; color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
+                        <span style="font-size:12px; color:var(--primary);">Cloud Backup Last Updated:</span><br><strong>${cloudDateStr}</strong>`;
+                    
                     container.innerHTML = `
-                        <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
-                        <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
+                        <button class="btn-choice btn-choice-right btn-choice-full" style="background:var(--success); border-color:var(--success);" id="btnSyncPerfect">Perfect!</button>
                     `;
-                };
+                    
+                    const perfectBtn = document.getElementById('btnSyncPerfect');
+                    const handlePerfect = () => { cleanup(); resolve('ignore'); };
+                    const cleanup = () => {
+                        perfectBtn.removeEventListener('click', handlePerfect);
+                        overlay.style.display = 'none';
+                        resetContainerToDefaultTemplate(container);
+                    };
+                    perfectBtn.addEventListener('click', handlePerfect);
 
-                pushBtn.addEventListener('click', handlePush);
-                pullBtn.addEventListener('click', handlePull);
-                ignoreBtn.addEventListener('click', handleIgnore);
+                } else {
+                    textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
+                        ${statusHeadline}<br><br>
+                        <span style="font-size:12px; color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
+                        <span style="font-size:12px; color:var(--primary);">Cloud Backup Last Updated:</span><br><strong>${cloudDateStr}</strong><br><br>
+                        What action would you like to take?`;
+
+                    if (syncState === 'cloud-newer') {
+                        container.innerHTML = `
+                            <button class="btn-choice btn-choice-full" style="background:var(--success); color:white; border-color:var(--success);" id="btnSyncPull">Restore (Download Cloud to Local)</button>
+                            <button class="btn-choice btn-choice-danger btn-choice-full" id="btnSyncPush">Backup (Upload Local to Cloud)</button>
+                            <button class="btn-choice btn-choice-left btn-choice-full" id="btnSyncIgnore">Do Nothing (Keep Offline Split)</button>
+                        `;
+                    } else if (syncState === 'local-newer') {
+                        container.innerHTML = `
+                            <button class="btn-choice btn-choice-right btn-choice-full" id="btnSyncPush">Backup (Upload Local to Cloud)</button>
+                            <button class="btn-choice btn-choice-danger btn-choice-full" id="btnSyncPull">Restore (Download Cloud to Local)</button>
+                            <button class="btn-choice btn-choice-left btn-choice-full" id="btnSyncIgnore">Do Nothing (Keep Offline Split)</button>
+                        `;
+                    }
+
+                    const pushBtn = document.getElementById('btnSyncPush');
+                    const pullBtn = document.getElementById('btnSyncPull');
+                    const ignoreBtn = document.getElementById('btnSyncIgnore');
+
+                    const handlePush = () => { cleanup(); resolve('push'); };
+                    const handlePull = () => { cleanup(); resolve('pull'); };
+                    const handleIgnore = () => { cleanup(); resolve('ignore'); };
+                    
+                    const cleanup = () => {
+                        pushBtn.removeEventListener('click', handlePush);
+                        pullBtn.removeEventListener('click', handlePull);
+                        ignoreBtn.removeEventListener('click', handleIgnore);
+                        overlay.style.display = 'none';
+                        resetContainerToDefaultTemplate(container);
+                    };
+
+                    pushBtn.addEventListener('click', handlePush);
+                    pullBtn.addEventListener('click', handlePull);
+                    ignoreBtn.addEventListener('click', handleIgnore);
+                }
+
                 overlay.style.display = 'flex';
             });
+        }
+
+        function resetContainerToDefaultTemplate(containerElement) {
+            containerElement.className = "choice-buttons-row";
+            containerElement.innerHTML = `
+                <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
+                <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
+            `;
         }
 
         function presentInteractiveOverrideReview(monthStr, customName, customCost, newName, newCost) {
@@ -383,11 +425,7 @@
                     overwriteBtn.removeEventListener('click', handleOverwrite);
                     keepBtn.removeEventListener('click', handleKeep);
                     overlay.style.display = 'none';
-                    container.className = "choice-buttons-row";
-                    container.innerHTML = `
-                        <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
-                        <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
-                    `;
+                    resetContainerToDefaultTemplate(container);
                 };
 
                 overwriteBtn.addEventListener('click', handleOverwrite);
@@ -421,11 +459,7 @@
                     forwardBtn.removeEventListener('click', handleForward);
                     cancelBtn.removeEventListener('click', handleCancel);
                     overlay.style.display = 'none';
-                    container.className = "choice-buttons-row";
-                    container.innerHTML = `
-                        <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
-                        <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
-                    `;
+                    resetContainerToDefaultTemplate(container);
                 };
 
                 currentBtn.addEventListener('click', handleCurrent);
@@ -456,7 +490,6 @@
                 return `Until: ${t.endCustomUntil}`;
             }
             
-            // v30.9 Change: Suppress the label entirely if it's set to indefinitely
             return '';
         }
 
@@ -582,16 +615,21 @@
                 const localFormatTime = localTimestamp ? new Date(localTimestamp).toLocaleString() : "Never (Empty Cache)";
                 const cloudFormatTime = cloudTimestamp ? new Date(cloudTimestamp).toLocaleString() : "Never (Empty Cloud)";
 
+                let syncState = 'match';
                 let syncMessageHeadline = "";
+                
                 if (cloudTimestamp > localTimestamp) {
+                    syncState = 'cloud-newer';
                     syncMessageHeadline = `⚠️ <span style="color:var(--danger); font-weight:bold;">Cloud file is NEWER than local file.</span>`;
                 } else if (localTimestamp > cloudTimestamp) {
+                    syncState = 'local-newer';
                     syncMessageHeadline = `⚠️ <span style="color:var(--primary); font-weight:bold;">Local file is NEWER than cloud backup.</span>`;
                 } else {
+                    syncState = 'match';
                     syncMessageHeadline = `✨ <span style="color:var(--success);">Local and Cloud storage versions match perfectly.</span>`;
                 }
 
-                const userChoiceDecision = await presentCloudSyncCrossroadsPrompt(syncMessageHeadline, localFormatTime, cloudFormatTime, true);
+                const userChoiceDecision = await presentCloudSyncCrossroadsPrompt(syncState, syncMessageHeadline, localFormatTime, cloudFormatTime);
                 if (userChoiceDecision === 'push') {
                     await uploadToGoogleDrive();
                 } else if (userChoiceDecision === 'pull') {
@@ -1075,6 +1113,30 @@
                 }
             };
             reader.readAsText(file);
+        }
+
+        async function triggerResetToScratch() {
+            const verification = await presentCustomChoicePrompt(
+                "Are you absolutely sure you want to completely clear out your entire local cache database? This action cannot be undone.", 
+                "Cancel", 
+                "Clear Local Data", 
+                true
+            );
+            
+            if (verification === 'right') {
+                expenses = [];
+                templates = [];
+                meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
+                
+                localStorage.removeItem('household_expenses');
+                localStorage.removeItem('household_templates');
+                localStorage.removeItem('household_meta');
+                
+                saveToLocalStorage();
+                render();
+                toggleUtilityDrawer();
+                alert("Database reset completed successfully.");
+            }
         }
 
         function render() {
