@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v32.0</title>
+    <title>RNE Tracker - v33.0</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -262,12 +262,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v32.0</div>
+    <div class="version-watermark">RNE Tracker • v33.0</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 240626_v32.0
+        // VERSION TRACKER REFERENCE: 260624_v33.0
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -711,6 +711,10 @@
             expenses = cloudObj.expenses || [];
             templates = cloudObj.templates || [];
             meta = cloudObj.meta || { lastMonthPopulated: "", lastUpdated: Date.now() };
+            
+            // FIX 1: Force an instant clean-up of any paid entries from past months tucked inside the payload
+            expenses = expenses.filter(item => !(item.month < currentSystemMonth && item.status === 'paid'));
+
             saveToLocalStorage();
             evaluateChronologicalDataStatesAndPurge();
         }
@@ -818,7 +822,8 @@
             });
 
             meta.lastMonthPopulated = targetAnchorMonthStr;
-            meta.lastUpdated = Date.now();
+            // FIX 2: We completely separate background loop populations from manual alterations.
+            // We no longer overwrite meta.lastUpdated here, shielding outdated devices from faking a new timestamp state.
             saveToLocalStorage();
             render();
         }
