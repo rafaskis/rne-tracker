@@ -63,7 +63,6 @@
         .cloud-status-text { font-weight: 600; color: var(--cloud-bar-text); display: flex; align-items: center; gap: 4px; }
         .btn-cloud-discreet { width: auto; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 4px; }
         .btn-cloud-signin { background: var(--gdrive-color); box-shadow: 0 1px 2px rgba(15, 157, 88, 0.2); }
-        .btn-cloud-signout { background: var(--utility); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .btn-cloud-push { background: #4285f4; }
         .btn-cloud-pull { background: #16a34a; }
         .discreet-actions-grid { display: flex; gap: 6px; align-items: center; }
@@ -165,6 +164,50 @@
 
         /* Persistent Version Watermark */
         .version-watermark { position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; user-select: none; pointer-events: none; }
+
+        /* Screen-Only Presentation Layer Setup */
+        #print-report-container { display: none; }
+
+        /* Specialized Print Engine Framework Context Override */
+        @media print {
+            html, body {
+                height: auto !important;
+                overflow: visible !important;
+            }
+            body > :not(#print-report-container) { display: none !important; }
+            #print-report-container {
+                display: block !important;
+                position: absolute; left: 0; top: 0; width: 100%;
+                color: #000000 !important; background: #ffffff !important;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                line-height: 1.5; padding: 10px;
+            }
+            .print-title { font-size: 24px; margin: 0 0 4px 0; color: #000000; white-space: nowrap; }
+            .print-meta { font-size: 14px; margin: 2px 0; color: #333333; }
+            .print-spacer { height: 24px; }
+            .print-cat-section { margin-bottom: 24px; }
+            .print-cat-title { 
+                font-size: 18px; font-weight: bold; 
+                border-top: 1px solid #000000;
+                border-bottom: 1px solid #000000; 
+                padding: 4px 0; margin-top: 16px; margin-bottom: 12px; 
+                display: flex !important; align-items: center; justify-content: space-between !important;
+            }
+            .print-cat-left { display: flex !important; align-items: center !important; }
+            .print-cat-icon { margin-right: 8px; font-size: 18px; display: inline-block !important; }
+            .print-cat-total-badge { font-size: 15px; font-weight: bold; text-align: right; }
+            .print-expense-item { 
+                display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; 
+                padding: 6px 0; font-size: 14px; border-bottom: 1px dashed #e2e8f0; 
+            }
+            .print-expense-left { display: flex !important; align-items: center !important; flex-direction: row !important; }
+            .print-status-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 10px; display: inline-block !important; flex-shrink: 0; }
+            .dot-paid { background-color: #16a34a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .dot-unpaid { background-color: #dc2626 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .print-originated-tag { font-size: 11px; color: #666666; margin-left: 8px; font-style: italic; }
+            .print-expense-cost { font-weight: 600; text-align: right; margin-left: auto; }
+            .print-expense-cost.cost-paid { text-decoration: line-through !important; color: #666666 !important; }
+        }
     </style>
 </head>
 <body>
@@ -173,7 +216,7 @@
         <div class="cloud-status-text" id="cloudStatusLabel">☁ Cloud Offline</div>
         <div class="discreet-actions-grid">
             <button class="btn-theme-toggle" id="themeToggleBtn" onclick="toggleDisplayTheme()">Toggle Theme</button>
-            <button class="btn-cloud-discreet btn-cloud-signin" id="gdriveMainActionBtn" onclick="toggleGoogleDriveConnectionState()">Sign In</button>
+            <button class="btn-cloud-discreet btn-cloud-signin" id="gdriveMainActionBtn" onclick="initiateGoogleDriveSyncFlow()">Sign In</button>
             <button class="btn-cloud-discreet btn-cloud-push" id="gdrivePushBtn" onclick="manuallyTriggerCloudBackup()">Backup</button>
             <button class="btn-cloud-discreet btn-cloud-pull" id="gdrivePullBtn" onclick="manuallyTriggerCloudRestore()">Restore</button>
         </div>
@@ -269,12 +312,14 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v34.4.1</div>
+    <div id="print-report-container"></div>
+
+    <div class="version-watermark">RNE Tracker • v34.2</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260625_v34.4.1
+        // VERSION TRACKER REFERENCE: 260625_v34.2
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -466,38 +511,6 @@
             });
         }
 
-        function presentInteractiveSignOutConfirmation() {
-            return new Promise((resolve) => {
-                const overlay = document.getElementById('customChoiceOverlay');
-                const textContainer = document.getElementById('choiceOverlayMessage');
-                const container = document.getElementById('choiceButtonsContainer');
-
-                textContainer.innerHTML = `<strong>Sign Out</strong><br><br>Disconnect this browser from Google Drive? Local data adjustments will remain intact until browser cache is explicitly cleared.`;
-                container.className = "choice-buttons-row";
-                container.innerHTML = `
-                    <button class="btn-choice btn-choice-left" id="btnConfirmSignOutCancel">Cancel</button>
-                    <button class="btn-choice btn-choice-danger" id="btnConfirmSignOutProceed">Sign Out</button>
-                `;
-
-                const cancelBtn = document.getElementById('btnConfirmSignOutCancel');
-                const proceedBtn = document.getElementById('btnConfirmSignOutProceed');
-
-                const handleCancel = () => { cleanup(); resolve(false); };
-                const handleProceed = () => { cleanup(); resolve(true); };
-
-                const cleanup = () => {
-                    cancelBtn.removeEventListener('click', handleCancel);
-                    proceedBtn.removeEventListener('click', handleProceed);
-                    overlay.style.display = 'none';
-                    resetContainerToDefaultTemplate(container);
-                };
-
-                cancelBtn.addEventListener('click', handleCancel);
-                proceedBtn.addEventListener('click', handleProceed);
-                overlay.style.display = 'flex';
-            });
-        }
-
         function presentThreeWayDeleteCrossroads() {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('customChoiceOverlay');
@@ -611,7 +624,7 @@
 
         function saveStateToLocalStorage() {
             meta.lastUpdated = Date.now();
-            meta.isInitialBlank = false;
+            meta.isInitialBlank = false; // Turn off initial flag as soon as any state writes
             localStorage.setItem('household_expenses', JSON.stringify(expenses));
             localStorage.setItem('household_templates', JSON.stringify(templates));
             localStorage.setItem('household_meta', JSON.stringify(meta));
@@ -964,7 +977,7 @@
             if (!exp) return;
 
             const currentIndex = monthsRange.indexOf(exp.month);
-            if (currentIndex === -1 || currentIndex <= 0) {
+            if (currentIndex <= 0) {
                 alert("Cannot push records into past historical ranges.");
                 return;
             }
@@ -1066,7 +1079,7 @@
         }
 
         // ==========================================
-        // LOCAL PDF GENERATION SUBENGINE LAYER (v34.4.1)
+        // LOCAL PDF GENERATION SUBENGINE LAYER (v34.2)
         // ==========================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1093,6 +1106,7 @@
                 <h1 class="print-title">RNE Tracker - ${bMonthYearText} Report</h1>
                 <div class="print-meta">Total unpaid: <strong>€${totalUnpaidSum.toFixed(2)}</strong></div>
                 <div class="print-meta">${generatedClockStampStr}</div>
+                
                 <div class="print-spacer"></div>
             `;
 
@@ -1135,7 +1149,7 @@
                         htmlReportContent += `
                             <div class="print-expense-item">
                                 <div class="print-expense-left">
-                                    <span class="print-status-dot ${markerDotClass}">•</span>
+                                    <span class="print-status-dot ${markerDotClass}"></span>
                                     <span>${e.name}${originLabelHtml}</span>
                                 </div>
                                 <div class="print-expense-cost ${costPaidClass}">€${parseFloat(e.cost || 0).toFixed(2)}</div>
@@ -1147,69 +1161,16 @@
                 }
             });
 
-            const isWindowPrintSupported = (typeof window.print === 'function');
-
-            const iframe = document.createElement('iframe');
-            iframe.style.position = 'fixed';
-            iframe.style.right = '0';
-            iframe.style.bottom = '0';
-            iframe.style.width = '0';
-            iframe.style.height = '0';
-            iframe.style.border = 'none';
-            document.body.appendChild(iframe);
-
-            const iframeDoc = iframe.contentWindow.document;
+            const reportFrameTarget = document.getElementById('print-report-container');
+            reportFrameTarget.innerHTML = htmlReportContent;
             
-            iframeDoc.write(`
-                <html>
-                <head>
-                    <style>
-                        body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 20px; color: #000; background: #fff; }
-                        .print-title { font-size: 24px; margin: 0 0 4px 0; }
-                        .print-meta { font-size: 14px; margin: 2px 0; color: #333; }
-                        .print-spacer { height: 24px; }
-                        .print-cat-section { margin-bottom: 24px; page-break-inside: avoid; }
-                        .print-cat-title { font-size: 18px; font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 6px 0; margin-top: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; }
-                        .print-cat-left { display: flex; align-items: center; }
-                        .print-cat-icon { margin-right: 8px; }
-                        .print-cat-total-badge { font-weight: bold; }
-                        .print-expense-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px dashed #ccc; }
-                        .print-expense-left { display: flex; align-items: center; }
-                        .print-status-dot { font-size: 24px; line-height: 14px; vertical-align: middle; margin-right: 8px; display: inline-block; }
-                        .dot-paid { color: #16a34a !important; }
-                        .dot-unpaid { color: #dc2626 !important; }
-                        .print-originated-tag { font-size: 11px; color: #666; margin-left: 8px; font-style: italic; }
-                        .print-expense-cost { font-weight: 600; }
-                        .print-expense-cost.cost-paid { text-decoration: line-through; color: #666; }
-                    </style>
-                </head>
-                <body>
-                    ${htmlReportContent}
-                </body>
-                </html>
-            `);
-            iframeDoc.close();
-
+            // Asynchronous delayed scheduling layout execution to fix mobile web view spooling processes global bugs
             setTimeout(() => {
-                if (isWindowPrintSupported) {
-                    try {
-                        iframe.contentWindow.focus();
-                        iframe.contentWindow.print();
-                    } catch (e) {
-                        executeOperaFallbackAlert(bMonthYearText);
-                    }
-                } else {
-                    executeOperaFallbackAlert(bMonthYearText);
-                }
-                
+                window.print();
                 setTimeout(() => {
-                    document.body.removeChild(iframe);
-                }, 2000);
-            }, 500);
-        }
-
-        function executeOperaFallbackAlert(reportDateString) {
-            alert(`💡 Mobile Printing Notice (${reportDateString}):\n\nYour current browser variant does not allow automatic print launching. \n\nPlease use your browser's menu option: \nSettings / Share -> Choose "Print" to export this view manually.`);
+                    reportFrameTarget.innerHTML = '';
+                }, 1500);
+            }, 300);
         }
 
         // ==========================================
@@ -1231,7 +1192,6 @@
                     activeAccessToken = tokenResponse.access_token;
                     localStorage.setItem('gdrive_access_token', activeAccessToken);
                     updateCloudStatusInterfaceDisplay("☁ Resolving Profile...");
-                    evaluateSignActionBtnVisualState();
                     await lookupAndSynchronizeCloudBackupStorageState(true);
                 }
             });
@@ -1239,10 +1199,7 @@
             const savedToken = localStorage.getItem('gdrive_access_token');
             if (savedToken) {
                 activeAccessToken = savedToken;
-                evaluateSignActionBtnVisualState();
                 silentlyExecuteCloudSyncEngineCheck();
-            } else {
-                evaluateSignActionBtnVisualState();
             }
         }
 
@@ -1250,34 +1207,12 @@
             document.getElementById('cloudStatusLabel').innerText = statusTextString;
         }
 
-        function evaluateSignActionBtnVisualState() {
-            const actionBtn = document.getElementById('gdriveMainActionBtn');
-            if (activeAccessToken) {
-                actionBtn.innerText = "Sign Out";
-                actionBtn.className = "btn-cloud-discreet btn-cloud-signout";
-            } else {
-                actionBtn.innerText = "Sign In";
-                actionBtn.className = "btn-cloud-discreet btn-cloud-signin";
+        function initiateGoogleDriveSyncFlow() {
+            if (!tokenClient) {
+                alert("Google Interface components are initialize-pending.");
+                return;
             }
-        }
-
-        async function toggleGoogleDriveConnectionState() {
-            if (activeAccessToken) {
-                const confirmed = await presentInteractiveSignOutConfirmation();
-                if (confirmed) {
-                    activeAccessToken = null;
-                    gdriveFileId = null;
-                    localStorage.removeItem('gdrive_access_token');
-                    updateCloudStatusInterfaceDisplay("☁ Cloud Offline");
-                    evaluateSignActionBtnVisualState();
-                }
-            } else {
-                if (!tokenClient) {
-                    alert("Google Interface components are initialize-pending.");
-                    return;
-                }
-                tokenClient.requestAccessToken({ prompt: 'consent' });
-            }
+            tokenClient.requestAccessToken({ prompt: 'consent' });
         }
 
         async function silentlyExecuteCloudSyncEngineCheck() {
@@ -1295,10 +1230,8 @@
                 if (result.error) {
                     if (result.error.status === 'UNAUTHENTICATED' || result.error.code === 401) {
                         activeAccessToken = null;
-                        gdriveFileId = null;
                         localStorage.removeItem('gdrive_access_token');
                         updateCloudStatusInterfaceDisplay("☁ Session Terminated");
-                        evaluateSignActionBtnVisualState();
                     }
                     return;
                 }
@@ -1322,6 +1255,7 @@
                 });
                 let cloudData = await response.json();
 
+                // If local configuration cache is totally uninitialized and blank, auto-restore silently
                 if (meta.isInitialBlank === true || (expenses.length === 0 && templates.length === 0)) {
                     console.log("Blank environment lifecycle profile found. Syncing from cloud...");
                     await performCloudPullExtractionSequence(cloudData);
@@ -1359,36 +1293,25 @@
             }
         }
 
+        // REDIRECTED ACTION: Trigger beautiful comparison prompt layout directly
         async function manuallyTriggerCloudBackup() {
             if (!activeAccessToken) { alert("Please log in using your Google Account credential validation first."); return; }
-            if (confirm("Overwrite the existing cloud database state backup wrapper with your current browser tracking layout dataset?")) {
-                await performCloudWriteExecutionSequence(false);
-            }
+            updateCloudStatusInterfaceDisplay("☁ Checking Sync...");
+            await lookupAndSynchronizeCloudBackupStorageState(true);
         }
 
+        // REDIRECTED ACTION: Trigger beautiful comparison prompt layout directly 
         async function manuallyTriggerCloudRestore() {
             if (!activeAccessToken) { alert("Please log in using your Google Account credential validation first."); return; }
-            if (!gdriveFileId) { alert("No active cloud instance targets found to pull data streams from."); return; }
-            if (confirm("Replace your complete current tracker grid structure layout completely by restoring data from Google Drive?")) {
-                updateCloudStatusInterfaceDisplay("☁ Restoring...");
-                try {
-                    let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, {
-                        headers: { 'Authorization': `Bearer ${activeAccessToken}` }
-                    });
-                    let cloudData = await response.json();
-                    await performCloudPullExtractionSequence(cloudData);
-                } catch(e) {
-                    alert("Fatal fault pulling baseline file references.");
-                    updateCloudStatusInterfaceDisplay("☁ Restore Aborted");
-                }
-            }
+            updateCloudStatusInterfaceDisplay("☁ Checking Sync...");
+            await lookupAndSynchronizeCloudBackupStorageState(true);
         }
 
         async function performCloudPullExtractionSequence(cloudDataPayload) {
             expenses = cloudDataPayload.expenses || [];
             templates = cloudDataPayload.templates || [];
             meta = cloudDataPayload.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
-            meta.isInitialBlank = false;
+            meta.isInitialBlank = false; // Flag false on dynamic setup injection completion
             
             localStorage.setItem('household_expenses', JSON.stringify(expenses));
             localStorage.setItem('household_templates', JSON.stringify(templates));
@@ -1402,6 +1325,10 @@
         async function performCloudWriteExecutionSequence(isInitialInstantiation = false) {
             updateCloudStatusInterfaceDisplay("☁ Syncing...");
             meta.isInitialBlank = false;
+            // Update time stamp precisely before serializing payload data streams
+            meta.lastUpdated = Date.now();
+            localStorage.setItem('household_meta', JSON.stringify(meta));
+
             const serializedPayload = JSON.stringify({ meta, templates, expenses });
             
             let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=media';
@@ -1434,7 +1361,7 @@
 
                 if (response.ok) {
                     updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
-                    if (!isInitialInstantiation) alert("Cloud backup wrapper updated successfully.");
+                    alert("Cloud backup wrapper updated successfully.");
                 } else {
                     updateCloudStatusInterfaceDisplay("☁ Push Error");
                 }
