@@ -164,50 +164,6 @@
 
         /* Persistent Version Watermark */
         .version-watermark { position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; user-select: none; pointer-events: none; }
-
-        /* Screen-Only Presentation Layer Setup */
-        #print-report-container { display: none; }
-
-        /* Specialized Print Engine Framework Context Override */
-        @media print {
-            html, body {
-                height: auto !important;
-                overflow: visible !important;
-            }
-            body > :not(#print-report-container) { display: none !important; }
-            #print-report-container {
-                display: block !important;
-                position: absolute; left: 0; top: 0; width: 100%;
-                color: #000000 !important; background: #ffffff !important;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                line-height: 1.5; padding: 10px;
-            }
-            .print-title { font-size: 24px; margin: 0 0 4px 0; color: #000000; white-space: nowrap; }
-            .print-meta { font-size: 14px; margin: 2px 0; color: #333333; }
-            .print-spacer { height: 24px; }
-            .print-cat-section { margin-bottom: 24px; }
-            .print-cat-title { 
-                font-size: 18px; font-weight: bold; 
-                border-top: 1px solid #000000;
-                border-bottom: 1px solid #000000; 
-                padding: 4px 0; margin-top: 16px; margin-bottom: 12px; 
-                display: flex !important; align-items: center; justify-content: space-between !important;
-            }
-            .print-cat-left { display: flex !important; align-items: center !important; }
-            .print-cat-icon { margin-right: 8px; font-size: 18px; display: inline-block !important; }
-            .print-cat-total-badge { font-size: 15px; font-weight: bold; text-align: right; }
-            .print-expense-item { 
-                display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; 
-                padding: 6px 0; font-size: 14px; border-bottom: 1px dashed #e2e8f0; 
-            }
-            .print-expense-left { display: flex !important; align-items: center !important; flex-direction: row !important; }
-            .print-status-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 10px; display: inline-block !important; flex-shrink: 0; }
-            .dot-paid { background-color: #16a34a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .dot-unpaid { background-color: #dc2626 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .print-originated-tag { font-size: 11px; color: #666666; margin-left: 8px; font-style: italic; }
-            .print-expense-cost { font-weight: 600; text-align: right; margin-left: auto; }
-            .print-expense-cost.cost-paid { text-decoration: line-through !important; color: #666666 !important; }
-        }
     </style>
 </head>
 <body>
@@ -312,14 +268,12 @@
         </div>
     </div>
 
-    <div id="print-report-container"></div>
-
-    <div class="version-watermark">RNE Tracker • v34.1</div>
+    <div class="version-watermark">RNE Tracker • v34.2</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260625_v34.1
+        // VERSION TRACKER REFERENCE: 260625_v34.2
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -624,7 +578,7 @@
 
         function saveStateToLocalStorage() {
             meta.lastUpdated = Date.now();
-            meta.isInitialBlank = false; // Turn off initial flag as soon as any state writes
+            meta.isInitialBlank = false;
             localStorage.setItem('household_expenses', JSON.stringify(expenses));
             localStorage.setItem('household_templates', JSON.stringify(templates));
             localStorage.setItem('household_meta', JSON.stringify(meta));
@@ -977,7 +931,7 @@
             if (!exp) return;
 
             const currentIndex = monthsRange.indexOf(exp.month);
-            if (currentIndex <= 0) {
+            if (currentIndex === -1 || currentIndex <= 0) {
                 alert("Cannot push records into past historical ranges.");
                 return;
             }
@@ -1079,7 +1033,7 @@
         }
 
         // ==========================================
-        // LOCAL PDF GENERATION SUBENGINE LAYER (v34.1)
+        // LOCAL PDF GENERATION SUBENGINE LAYER (v34.2)
         // ==========================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1106,7 +1060,6 @@
                 <h1 class="print-title">RNE Tracker - ${bMonthYearText} Report</h1>
                 <div class="print-meta">Total unpaid: <strong>€${totalUnpaidSum.toFixed(2)}</strong></div>
                 <div class="print-meta">${generatedClockStampStr}</div>
-                
                 <div class="print-spacer"></div>
             `;
 
@@ -1161,16 +1114,69 @@
                 }
             });
 
-            const reportFrameTarget = document.getElementById('print-report-container');
-            reportFrameTarget.innerHTML = htmlReportContent;
+            const isWindowPrintSupported = (typeof window.print === 'function');
+
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.right = '0';
+            iframe.style.bottom = '0';
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = 'none';
+            document.body.appendChild(iframe);
+
+            const iframeDoc = iframe.contentWindow.document;
             
-            // Asynchronous delayed scheduling layout execution to fix mobile web view spooling processes global bugs
+            iframeDoc.write(`
+                <html>
+                <head>
+                    <style>
+                        body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 20px; color: #000; background: #fff; }
+                        .print-title { font-size: 24px; margin: 0 0 4px 0; }
+                        .print-meta { font-size: 14px; margin: 2px 0; color: #333; }
+                        .print-spacer { height: 24px; }
+                        .print-cat-section { margin-bottom: 24px; page-break-inside: avoid; }
+                        .print-cat-title { font-size: 18px; font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 6px 0; margin-top: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; }
+                        .print-cat-left { display: flex; align-items: center; }
+                        .print-cat-icon { margin-right: 8px; }
+                        .print-cat-total-badge { font-weight: bold; }
+                        .print-expense-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px dashed #ccc; }
+                        .print-expense-left { display: flex; align-items: center; }
+                        .print-status-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 10px; display: inline-block; }
+                        .dot-paid { background-color: #16a34a !important; }
+                        .dot-unpaid { background-color: #dc2626 !important; }
+                        .print-originated-tag { font-size: 11px; color: #666; margin-left: 8px; font-style: italic; }
+                        .print-expense-cost { font-weight: 600; }
+                        .print-expense-cost.cost-paid { text-decoration: line-through; color: #666; }
+                    </style>
+                </head>
+                <body>
+                    ${htmlReportContent}
+                </body>
+                </html>
+            `);
+            iframeDoc.close();
+
             setTimeout(() => {
-                window.print();
+                if (isWindowPrintSupported) {
+                    try {
+                        iframe.contentWindow.focus();
+                        iframe.contentWindow.print();
+                    } catch (e) {
+                        executeOperaFallbackAlert(bMonthYearText);
+                    }
+                } else {
+                    executeOperaFallbackAlert(bMonthYearText);
+                }
+                
                 setTimeout(() => {
-                    reportFrameTarget.innerHTML = '';
-                }, 1500);
-            }, 300);
+                    document.body.removeChild(iframe);
+                }, 2000);
+            }, 500);
+        }
+
+        function executeOperaFallbackAlert(reportDateString) {
+            alert(`💡 Mobile Printing Notice (${reportDateString}):\n\nYour current browser variant does not allow automatic print launching. \n\nPlease use your browser's menu option: \nSettings / Share -> Choose "Print" to export this view manually.`);
         }
 
         // ==========================================
@@ -1255,7 +1261,6 @@
                 });
                 let cloudData = await response.json();
 
-                // FIX LOGIC GLITCH: If local configuration cache is totally uninitialized and blank, auto-restore silently
                 if (meta.isInitialBlank === true || (expenses.length === 0 && templates.length === 0)) {
                     console.log("Blank environment lifecycle profile found. Syncing from cloud...");
                     await performCloudPullExtractionSequence(cloudData);
@@ -1322,7 +1327,7 @@
             expenses = cloudDataPayload.expenses || [];
             templates = cloudDataPayload.templates || [];
             meta = cloudDataPayload.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
-            meta.isInitialBlank = false; // Flag false on dynamic setup injection completion
+            meta.isInitialBlank = false;
             
             localStorage.setItem('household_expenses', JSON.stringify(expenses));
             localStorage.setItem('household_templates', JSON.stringify(templates));
