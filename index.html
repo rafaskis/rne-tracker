@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v33.1</title>
+    <title>RNE Tracker - v33.0</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -196,7 +196,7 @@
 
     <div class="top-bar">
         <div class="header-card">
-            <div style="font-size: 14px; color: var(--text-muted); font-weight: 500;">📊 TOTAL UNPAID FOR THIS MONTH</div>
+            <div style="font-size: 14px; color: var(--text-muted); font-weight: 500;">TOTAL UNPAID FOR THIS MONTH</div>
             <div class="unpaid-badge" id="totalUnpaid">€0.00</div>
         </div>
     </div>
@@ -262,12 +262,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v33.1</div>
+    <div class="version-watermark">RNE Tracker • v33.0</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260624_v33.1
+        // VERSION TRACKER REFERENCE: 260624_v33.0
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -712,6 +712,7 @@
             templates = cloudObj.templates || [];
             meta = cloudObj.meta || { lastMonthPopulated: "", lastUpdated: Date.now() };
             
+            // FIX 1: Force an instant clean-up of any paid entries from past months tucked inside the payload
             expenses = expenses.filter(item => !(item.month < currentSystemMonth && item.status === 'paid'));
 
             saveToLocalStorage();
@@ -779,8 +780,12 @@
         }
 
         function evaluateChronologicalDataStatesAndPurge() {
+            // Step 1: Detect if a month rollover has occurred
             if (!meta.lastMonthPopulated || meta.lastMonthPopulated < currentSystemMonth) {
+                // Instantly purge paid expenses from previous periods
                 expenses = expenses.filter(item => !(item.month < currentSystemMonth && item.status === 'paid'));
+                
+                // Trigger normal template generation pipeline for the fresh month anchor
                 runRecurrenceEngineAutoPopulation(currentSystemMonth);
             } else {
                 render();
@@ -817,6 +822,8 @@
             });
 
             meta.lastMonthPopulated = targetAnchorMonthStr;
+            // FIX 2: We completely separate background loop populations from manual alterations.
+            // We no longer overwrite meta.lastUpdated here, shielding outdated devices from faking a new timestamp state.
             saveToLocalStorage();
             render();
         }
@@ -841,6 +848,7 @@
             const banner = document.getElementById('globalArrearsBanner');
             const messageText = document.getElementById('arrearsBannerMessage');
             
+            // Query for any unhandled outstanding items lingering in previous months
             const outstandingArrears = expenses.filter(item => item.month < currentSystemMonth && item.status === 'unpaid');
             
             if (outstandingArrears.length > 0) {
@@ -852,6 +860,7 @@
         }
 
         function executeBatchBringArrearsToCurrent() {
+            // Process past unpaid items using the moveNextMonth method architecture
             expenses.forEach(item => {
                 if (item.month < currentSystemMonth && item.status === 'unpaid') {
                     item.month = currentSystemMonth;
@@ -873,6 +882,7 @@
             );
 
             if (verification === 'right') {
+                // Filter out all historical unpaid items from the primary database structure
                 expenses = expenses.filter(item => !(item.month < currentSystemMonth && item.status === 'unpaid'));
                 
                 meta.lastUpdated = Date.now();
@@ -1217,6 +1227,7 @@
         }
 
         function render() {
+            // Evaluate global historical balance conditions before building layout components
             checkAndRenderArrearsBannerState();
 
             const activeMonth = document.getElementById('monthViewFilter').value;
@@ -1238,7 +1249,7 @@
 
             currentMonthItems.forEach(item => {
                 const k = (item.recur !== undefined) ? item.recur : 0;
-                if (groupsDataMap[k] !== undefined) {
+                if (groupsDataMap[k]) {
                     groupsDataMap[k].items.push(item);
                 } else {
                     groupsDataMap[0].items.push(item);
@@ -1247,7 +1258,7 @@
 
             recurrenceGroupsConfig.forEach(g => {
                 const groupObj = groupsDataMap[g.key];
-                if (!groupObj || groupObj.items.length === 0) return;
+                if (groupObj.items.length === 0) return;
 
                 let groupUnpaidCostSum = 0;
                 groupObj.items.forEach(item => {
