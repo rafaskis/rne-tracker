@@ -64,13 +64,10 @@
         .btn-cloud-discreet { width: auto; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 4px; }
         .btn-cloud-signin { background: var(--gdrive-color); box-shadow: 0 1px 2px rgba(15, 157, 88, 0.2); }
         .btn-cloud-signout { background: var(--utility); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        
-        /* v40 Manual Sync Buttons Structural Styles */
-        .btn-cloud-sync-active { background: var(--primary) !important; color: white !important; cursor: pointer !important; }
-        .btn-cloud-sync-disabled { background: #cbd5e1 !important; color: #94a3b8 !important; cursor: not-allowed !important; }
-        [data-theme="dark"] .btn-cloud-sync-disabled { background: #334155 !important; color: #64748b !important; }
-
+        .btn-cloud-push { background: #4285f4; }
+        .btn-cloud-pull { background: #16a34a; }
         .discreet-actions-grid { display: flex; gap: 6px; align-items: center; }
+
         .btn-theme-toggle { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); font-size: 12px; font-weight: bold; padding: 6px 12px; border-radius: 6px; cursor: pointer; height: auto; width: auto; display: inline-flex; align-items: center; justify-content: center; }
 
         /* Global Arrears Alerts Bar Container */
@@ -177,7 +174,8 @@
         <div class="discreet-actions-grid">
             <button class="btn-theme-toggle" id="themeToggleBtn" onclick="toggleDisplayTheme()">Toggle Theme</button>
             <button class="btn-cloud-discreet btn-cloud-signin" id="gdriveMainActionBtn" onclick="toggleGoogleDriveConnectionState()">Sign In</button>
-            <button class="btn-cloud-discreet btn-cloud-sync-disabled" id="gdriveManualSyncBtn" onclick="manuallyInvokeSyncGateway()">Backup / Restore</button>
+            <button class="btn-cloud-discreet btn-cloud-push" id="gdrivePushBtn" onclick="manuallyTriggerCloudBackup()">Backup</button>
+            <button class="btn-cloud-discreet btn-cloud-pull" id="gdrivePullBtn" onclick="manuallyTriggerCloudRestore()">Restore</button>
         </div>
     </div>
 
@@ -271,13 +269,14 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v40</div>
+    <div class="version-watermark">RNE Tracker • v34.4.1</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260625_v40
+        // VERSION TRACKER REFERENCE: 260625_v34.4.1
         // ==========================================
+
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
         const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
         const DEDICATED_FILE_NAME = 'rne_database.json';
@@ -285,10 +284,11 @@
         let expenses = [];
         let templates = [];
         let meta = { lastMonthPopulated: "", lastUpdated: 0, isInitialBlank: true };
+
         let editingTargetId = null;
         let collapsedGroups = JSON.parse(localStorage.getItem('household_collapsed_groups')) || {};
         let tokenClient = null;
-        let googleDriveAccessToken = null;
+        let activeAccessToken = null;
         let gdriveFileId = null;
 
         const recurrenceGroupsConfig = [
@@ -318,448 +318,471 @@
                 const textContainer = document.getElementById('choiceOverlayMessage');
                 const leftBtn = document.getElementById('choiceLeftActionBtn');
                 const rightBtn = document.getElementById('choiceRightActionBtn');
+                const container = document.getElementById('choiceButtonsContainer');
 
-                textContainer.textContent = questionMessage;
-                leftBtn.textContent = leftLabel;
-                rightBtn.textContent = rightLabel;
+                container.className = "choice-buttons-row";
+                leftBtn.style.display = "inline-block";
+                rightBtn.style.display = "inline-block";
 
+                textContainer.innerText = questionMessage;
+                leftBtn.innerText = leftLabel;
+                rightBtn.innerText = rightLabel;
                 if (isDestructive) {
                     rightBtn.className = "btn-choice btn-choice-danger";
                 } else {
                     rightBtn.className = "btn-choice btn-choice-right";
                 }
 
-                overlay.style.display = 'flex';
-
-                leftBtn.onclick = () => { overlay.style.display = 'none'; resolve('left'); };
-                rightBtn.onclick = () => { overlay.style.display = 'none'; resolve('right'); };
-            });
-        }
-
-        function showVisualChoiceDialog(bodyText, actionableOptionsArray) {
-            const overlay = document.getElementById('customChoiceOverlay');
-            const textContainer = document.getElementById('choiceOverlayMessage');
-            const actionContainer = document.getElementById('choiceButtonsContainer');
-
-            textContainer.innerHTML = bodyText;
-            actionContainer.className = "vertical-buttons";
-            actionContainer.innerHTML = '';
-
-            actionableOptionsArray.forEach(opt => {
-                const element = document.createElement('button');
-                element.className = `btn-choice ${opt.clazz}`;
-                element.textContent = opt.text;
-                element.style.backgroundColor = opt.customBg || '';
-                element.style.color = opt.customColor || '';
-                element.onclick = () => {
+                const handleLeftSelection = () => { cleanup(); resolve('left'); };
+                const handleRightSelection = () => { cleanup(); resolve('right'); };
+                const cleanup = () => {
+                    leftBtn.removeEventListener('click', handleLeftSelection);
+                    rightBtn.removeEventListener('click', handleRightSelection);
                     overlay.style.display = 'none';
-                    if (opt.callback) opt.callback();
+                    leftBtn.innerText = "Current";
+                    rightBtn.innerText = "All";
                 };
-                actionContainer.appendChild(element);
-            });
 
-            overlay.style.display = 'flex';
+                leftBtn.addEventListener('click', handleLeftSelection);
+                rightBtn.addEventListener('click', handleRightSelection);
+                overlay.style.display = 'flex';
+            });
         }
+
+        function presentCloudSyncCrossroadsPrompt(syncState, statusHeadline, localDateStr, cloudDateStr) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('customChoiceOverlay');
+                const textContainer = document.getElementById('choiceOverlayMessage');
+                const container = document.getElementById('choiceButtonsContainer');
+
+                container.className = "vertical-buttons";
+
+                if (syncState === 'match') {
+                    textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
+                        ${statusHeadline}<br><br>
+                        <span style="font-size:12px; color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
+                        <span style="font-size:12px; color:var(--primary);">Cloud Backup Last Updated:</span><br><strong>${cloudDateStr}</strong>`;
+                    
+                    container.innerHTML = `
+                        <button class="btn-choice btn-choice-right btn-choice-full" style="background:var(--success); border-color:var(--success);" id="btnSyncPerfect">Perfect!</button>
+                    `;
+                    
+                    const perfectBtn = document.getElementById('btnSyncPerfect');
+                    const handlePerfect = () => { cleanup(); resolve('ignore'); };
+                    const cleanup = () => {
+                        perfectBtn.removeEventListener('click', handlePerfect);
+                        overlay.style.display = 'none';
+                        resetContainerToDefaultTemplate(container);
+                    };
+                    perfectBtn.addEventListener('click', handlePerfect);
+
+                } else {
+                    textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
+                        ${statusHeadline}<br><br>
+                        <span style="font-size:12px; color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
+                        <span style="font-size:12px; color:var(--primary);">Cloud Backup Last Updated:</span><br><strong>${cloudDateStr}</strong><br><br>
+                        What action would you like to take?`;
+
+                    if (syncState === 'cloud-newer') {
+                        container.innerHTML = `
+                            <button class="btn-choice btn-choice-full" style="background:var(--success); color:white; border-color:var(--success);" id="btnSyncPull">Restore (Download Cloud to Local)</button>
+                            <button class="btn-choice btn-choice-danger btn-choice-full" id="btnSyncPush">Backup (Upload Local to Cloud)</button>
+                            <button class="btn-choice btn-choice-left btn-choice-full" id="btnSyncIgnore">Do Nothing (Keep Offline Split)</button>
+                        `;
+                    } else if (syncState === 'local-newer') {
+                        container.innerHTML = `
+                            <button class="btn-choice btn-choice-right btn-choice-full" id="btnSyncPush">Backup (Upload Local to Cloud)</button>
+                            <button class="btn-choice btn-choice-danger btn-choice-full" id="btnSyncPull">Restore (Download Cloud to Local)</button>
+                            <button class="btn-choice btn-choice-left btn-choice-full" id="btnSyncIgnore">Do Nothing (Keep Offline Split)</button>
+                        `;
+                    }
+
+                    const pushBtn = document.getElementById('btnSyncPush');
+                    const pullBtn = document.getElementById('btnSyncPull');
+                    const ignoreBtn = document.getElementById('btnSyncIgnore');
+
+                    const handlePush = () => { cleanup(); resolve('push'); };
+                    const handlePull = () => { cleanup(); resolve('pull'); };
+                    const handleIgnore = () => { cleanup(); resolve('ignore'); };
+
+                    const cleanup = () => {
+                        if(pushBtn) pushBtn.removeEventListener('click', handlePush);
+                        if(pullBtn) pullBtn.removeEventListener('click', handlePull);
+                        if(ignoreBtn) ignoreBtn.removeEventListener('click', handleIgnore);
+                        overlay.style.display = 'none';
+                        resetContainerToDefaultTemplate(container);
+                    };
+
+                    if(pushBtn) pushBtn.addEventListener('click', handlePush);
+                    if(pullBtn) pullBtn.addEventListener('click', handlePull);
+                    if(ignoreBtn) ignoreBtn.addEventListener('click', handleIgnore);
+                }
+                overlay.style.display = 'flex';
+            });
+        }
+
+        function resetContainerToDefaultTemplate(containerElement) {
+            containerElement.className = "choice-buttons-row";
+            containerElement.innerHTML = `
+                <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
+                <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
+            `;
+        }
+
+        function presentInteractiveOverrideReview(monthStr, customName, customCost, newName, newCost) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('customChoiceOverlay');
+                const textContainer = document.getElementById('choiceOverlayMessage');
+                const container = document.getElementById('choiceButtonsContainer');
+                const prettyMonth = new Date(monthStr + '-01').toLocaleDateString('default', { month: 'long', year: 'numeric' });
+                
+                textContainer.innerHTML = `<strong>Review EDITED in ${prettyMonth}</strong><br><br>
+                    <span style="font-size:13px; color:var(--text-muted);">Current Custom Entry:</span><br><strong>${customName} (€${customCost.toFixed(2)})</strong><br><br>
+                    <span style="font-size:13px; color:var(--edit-color);">Proposed Master Update:</span><br><strong>${newName} (€${newCost.toFixed(2)})</strong><br><br>
+                    Do you want to overwrite this custom entry or keep it as is?`;
+                
+                container.className = "vertical-buttons";
+                container.innerHTML = `
+                    <button class="btn-choice btn-choice-right btn-choice-full" id="btnOverrideOverwrite">Overwrite Custom Entry</button>
+                    <button class="btn-choice btn-choice-left btn-choice-full" id="btnOverrideKeep">Keep My Custom Entry</button>
+                `;
+
+                const overwriteBtn = document.getElementById('btnOverrideOverwrite');
+                const keepBtn = document.getElementById('btnOverrideKeep');
+
+                const handleOverwrite = () => { cleanup(); resolve('overwrite'); };
+                const handleKeep = () => { cleanup(); resolve('keep'); };
+
+                const cleanup = () => {
+                    overwriteBtn.removeEventListener('click', handleOverwrite);
+                    keepBtn.removeEventListener('click', handleKeep);
+                    overlay.style.display = 'none';
+                    resetContainerToDefaultTemplate(container);
+                };
+
+                overwriteBtn.addEventListener('click', handleOverwrite);
+                keepBtn.addEventListener('click', handleKeep);
+                overlay.style.display = 'flex';
+            });
+        }
+
+        function presentInteractiveSignOutConfirmation() {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('customChoiceOverlay');
+                const textContainer = document.getElementById('choiceOverlayMessage');
+                const container = document.getElementById('choiceButtonsContainer');
+
+                textContainer.innerHTML = `<strong>Sign Out</strong><br><br>Disconnect this browser from Google Drive? Local data adjustments will remain intact until browser cache is explicitly cleared.`;
+                container.className = "choice-buttons-row";
+                container.innerHTML = `
+                    <button class="btn-choice btn-choice-left" id="btnConfirmSignOutCancel">Cancel</button>
+                    <button class="btn-choice btn-choice-danger" id="btnConfirmSignOutProceed">Sign Out</button>
+                `;
+
+                const cancelBtn = document.getElementById('btnConfirmSignOutCancel');
+                const proceedBtn = document.getElementById('btnConfirmSignOutProceed');
+
+                const handleCancel = () => { cleanup(); resolve(false); };
+                const handleProceed = () => { cleanup(); resolve(true); };
+
+                const cleanup = () => {
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    proceedBtn.removeEventListener('click', handleProceed);
+                    overlay.style.display = 'none';
+                    resetContainerToDefaultTemplate(container);
+                };
+
+                cancelBtn.addEventListener('click', handleCancel);
+                proceedBtn.addEventListener('click', handleProceed);
+                overlay.style.display = 'flex';
+            });
+        }
+
+        function presentThreeWayDeleteCrossroads() {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('customChoiceOverlay');
+                const textContainer = document.getElementById('choiceOverlayMessage');
+                const container = document.getElementById('choiceButtonsContainer');
+
+                textContainer.innerHTML = `<strong>Delete Expense Entry</strong><br><br>How would you like to handle this deletion?`;
+                container.className = "vertical-buttons";
+                container.innerHTML = `
+                    <button class="btn-choice btn-choice-left btn-choice-full" id="delCurrentBtn">Delete Current Month Only</button>
+                    <button class="btn-choice btn-choice-danger btn-choice-full" id="delForwardBtn">Delete Whole Series Forward</button>
+                    <button class="btn-choice btn-choice-left btn-choice-full" style="background:#cbd5e1;" id="delCancelBtn">Cancel</button>
+                `;
+
+                const currentBtn = document.getElementById('delCurrentBtn');
+                const forwardBtn = document.getElementById('delForwardBtn');
+                const cancelBtn = document.getElementById('delCancelBtn');
+
+                const handleCurrent = () => { cleanup(); resolve('current'); };
+                const handleForward = () => { cleanup(); resolve('forward'); };
+                const handleCancel = () => { cleanup(); resolve('cancel'); };
+
+                const cleanup = () => {
+                    currentBtn.removeEventListener('click', handleCurrent);
+                    forwardBtn.removeEventListener('click', handleForward);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    overlay.style.display = 'none';
+                    resetContainerToDefaultTemplate(container);
+                };
+
+                currentBtn.addEventListener('click', handleCurrent);
+                forwardBtn.addEventListener('click', handleForward);
+                cancelBtn.addEventListener('click', handleCancel);
+                overlay.style.display = 'flex';
+            });
+        }
+
+        function formatPrettyOriginLabel(monthKeyString) {
+            if (!monthKeyString || !monthKeyString.includes('-')) return '';
+            const [year, month] = monthKeyString.split('-');
+            const labelStr = new Date(year, month - 1, 1).toLocaleDateString('default', { month: 'short', year: 'numeric' });
+            return `Originated: ${labelStr}`;
+        }
+
+        function formatPrettyUntilLabel(seriesId) {
+            if (!seriesId) return '';
+            const t = templates.find(tpl => tpl.seriesId === seriesId);
+            if (!t) return '';
+            if (t.durationLimit && t.durationLimit.includes('-')) {
+                const [year, month] = t.durationLimit.split('-');
+                return `Until: ${month}/${year}`;
+            }
+            if (t.endType === 'custom' && t.endCustomUntil) {
+                return `Until: ${t.endCustomUntil}`;
+            }
+            return '';
+        }
+
+        function getMonthList() {
+            const list = [];
+            const d = new Date();
+            for (let i = 0; i <= 12; i++) {
+                let targetMonth = d.getMonth() + i;
+                let targetYear = d.getFullYear() + Math.floor(targetMonth / 12);
+                let m = (targetMonth % 12) + 1;
+                list.push(`${targetYear}-${m < 10 ? '0' + m : m}`);
+            }
+            return list;
+        }
+
+        const monthsRange = getMonthList();
+        const currentSystemMonth = monthsRange[0];
+        const filterSelect = document.getElementById('monthViewFilter');
+        const formMonthSelect = document.getElementById('expMonthTarget');
+
+        monthsRange.forEach((mStr) => {
+            const [y, m] = mStr.split('-');
+            const label = new Date(y, m - 1, 1).toLocaleDateString('default', { month: 'long', year: 'numeric' });
+            filterSelect.options.add(new Option(label, mStr));
+            formMonthSelect.options.add(new Option(label, mStr));
+        });
 
         window.onload = function() {
             initializeSavedDisplayTheme();
-            loadStateFromBrowserEngine();
-            buildGlobalTargetSelectDropdowns();
-            executeChronologicalAutoPopulation();
-            recalculateAggregatedBalances();
+            loadLocalStorageCache();
+            detectAndTriggerArrearsLogic();
             render();
-            initializeGoogleIdentityPlatformServices();
-            updateManualSyncButtonUiState();
+            initializeGoogleIdentityServiceServices();
         };
 
-        function updateManualSyncButtonUiState() {
-            const manualSyncBtn = document.getElementById('gdriveManualSyncBtn');
-            if (googleDriveAccessToken) {
-                manualSyncBtn.className = "btn-cloud-discreet btn-cloud-sync-active";
+        function loadLocalStorageCache() {
+            const cacheExpenses = localStorage.getItem('household_expenses');
+            const cacheTemplates = localStorage.getItem('household_templates');
+            const cacheMeta = localStorage.getItem('household_meta');
+
+            if (cacheExpenses) expenses = JSON.parse(cacheExpenses);
+            if (cacheTemplates) templates = JSON.parse(cacheTemplates);
+            if (cacheMeta) {
+                meta = JSON.parse(cacheMeta);
             } else {
-                manualSyncBtn.className = "btn-cloud-discreet btn-cloud-sync-disabled";
+                meta.isInitialBlank = true;
             }
-        }
 
-        function initializeGoogleIdentityPlatformServices() {
-            try {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: GOOGLE_CLIENT_ID,
-                    scope: GOOGLE_DRIVE_SCOPE,
-                    callback: async (tokenResponse) => {
-                        if (tokenResponse.error) {
-                            console.error(tokenResponse);
-                            return;
-                        }
-                        googleDriveAccessToken = tokenResponse.access_token;
-                        document.getElementById('cloudStatusLabel').textContent = "☁ Online";
-                        document.getElementById('gdriveMainActionBtn').textContent = "Sign Out";
-                        document.getElementById('gdriveMainActionBtn').className = "btn-cloud-discreet btn-cloud-signout";
-                        updateManualSyncButtonUiState();
-                        await triggerGatewayComparisonMergeLoop();
-                    }
-                });
-            } catch (err) {
-                console.error("Identity Engine Initialization Failure:", err);
+            if (!meta.lastMonthPopulated) {
+                meta.lastMonthPopulated = currentSystemMonth;
+                meta.lastUpdated = Date.now();
+                saveStateToLocalStorage();
             }
+            ensureSequencePopulatedUpToMonth(filterSelect.value);
         }
 
-        function toggleGoogleDriveConnectionState() {
-            if (googleDriveAccessToken) {
-                google.accounts.oauth2.revokeToken(googleDriveAccessToken, () => {});
-                googleDriveAccessToken = null;
-                gdriveFileId = null;
-                document.getElementById('cloudStatusLabel').textContent = "☁ Cloud Offline";
-                document.getElementById('gdriveMainActionBtn').textContent = "Sign In";
-                document.getElementById('gdriveMainActionBtn').className = "btn-cloud-discreet btn-cloud-signin";
-                updateManualSyncButtonUiState();
-            } else {
-                tokenClient.requestAccessToken({ prompt: 'consent' });
-            }
-        }
-
-        async function manuallyInvokeSyncGateway() {
-            if (!googleDriveAccessToken) {
-                alert("Please connect and sign in to Google Drive Cloud Services framework layer first.");
-                return;
-            }
-            await triggerGatewayComparisonMergeLoop();
-        }
-
-        async function triggerGatewayComparisonMergeLoop() {
-            document.getElementById('cloudStatusLabel').textContent = "🔄 Checking...";
-            try {
-                const cloudFile = await lookUpDedicatedCloudPayloadFile();
-                if (!cloudFile) {
-                    const localSize = expenses.length + templates.length;
-                    if (localSize > 0) {
-                        await executeSecureCloudPayloadPush();
-                    } else {
-                        document.getElementById('cloudStatusLabel').textContent = "☁ Online";
-                        alert("Cloud is empty. Ready to track items locally or backup later.");
-                    }
-                    return;
-                }
-
-                gdriveFileId = cloudFile.id;
-                const cloudRawData = await downloadCloudJsonDataPayload(gdriveFileId);
-                triggerVisualSyncComparisonMode(cloudRawData);
-            } catch (err) {
-                console.error("Sync Error Loop Execution Fault:", err);
-                document.getElementById('cloudStatusLabel').textContent = "⚠️ Sync Error";
-            }
-        }
-
-        function parseDatabaseStatsSummaryString(dbObj) {
-            if (!dbObj || !dbObj.expenses) return "No verifiable dataset context present.";
-            let totalUnpaid = 0;
-            dbObj.expenses.forEach(e => {
-                if (e.status === 'unpaid') totalUnpaid += parseFloat(e.cost || 0);
-            });
-            const lastStamp = dbObj.meta && dbObj.meta.lastUpdated ? new Date(dbObj.meta.lastUpdated).toLocaleString() : "Never";
-            return `<strong>Total Unpaid:</strong> €${totalUnpaid.toFixed(2)}<br>` +
-                   `<strong>Database Row Registry:</strong> ${dbObj.expenses.length} Items, ${dbObj.templates ? dbObj.templates.length : 0} Recurrent Chains<br>` +
-                   `<strong>Last Updated Mark:</strong> ${lastStamp}`;
-        }
-
-        function triggerVisualSyncComparisonMode(cloudDb) {
-            const currentLocalDb = {
-                expenses: expenses,
-                templates: templates,
-                meta: meta
-            };
-
-            const localLabel = parseDatabaseStatsSummaryString(currentLocalDb);
-            const cloudLabel = parseDatabaseStatsSummaryString(cloudDb);
-
-            const layoutHtml = `
-                <div style="text-align: left; font-size: 13px; line-height: 1.4; display: flex; flex-direction: column; gap: 14px;">
-                    <div style="background: var(--bg-color); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
-                        <div style="font-weight: bold; color: var(--primary); margin-bottom: 4px;">💻 LOCAL ENVIRONMENT MATRIX</div>
-                        <div>${localLabel}</div>
-                    </div>
-                    <div style="background: var(--bg-color); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
-                        <div style="font-weight: bold; color: var(--gdrive-color); margin-bottom: 4px;">☁ GOOGLE DRIVE SECURE PAYLOAD</div>
-                        <div>${cloudLabel}</div>
-                    </div>
-                </div>
-            `;
-
-            const localTime = (meta && meta.lastUpdated) ? meta.lastUpdated : 0;
-            const cloudTime = (cloudDb.meta && cloudDb.meta.lastUpdated) ? cloudDb.meta.lastUpdated : 0;
-
-            // Scenario (1): Perfect Sync Match
-            if (localTime === cloudTime) {
-                document.getElementById('cloudStatusLabel').textContent = "☁ Online";
-                showVisualChoiceDialog(layoutHtml, [
-                    {
-                        text: "Awesome!",
-                        clazz: "btn-choice-full",
-                        customBg: "var(--primary)",
-                        customColor: "white",
-                        callback: () => {}
-                    }
-                ]);
-            }
-            // Scenario (2): Cloud is Newer
-            else if (cloudTime > localTime) {
-                document.getElementById('cloudStatusLabel').textContent = "☁ Cloud is Newer";
-                showVisualChoiceDialog(layoutHtml, [
-                    {
-                        text: "Restore",
-                        clazz: "btn-choice-full",
-                        customBg: "var(--primary)",
-                        customColor: "white",
-                        callback: async () => {
-                            applyDownloadedCloudStateIntoMemory(cloudDb);
-                            alert("Database successfully restored from cloud storage.");
-                        }
-                    },
-                    {
-                        text: "Backup",
-                        clazz: "btn-choice-full",
-                        customBg: "var(--danger)",
-                        customColor: "white",
-                        callback: async () => {
-                            await executeSecureCloudPayloadPush();
-                        }
-                    },
-                    {
-                        text: "Close",
-                        clazz: "btn-choice-full",
-                        customBg: "#e2e8f0",
-                        customColor: "#334155",
-                        callback: () => {}
-                    }
-                ]);
-            }
-            // Scenario (3): Local is Newer
-            else {
-                document.getElementById('cloudStatusLabel').textContent = "☁ Local is Newer";
-                showVisualChoiceDialog(layoutHtml, [
-                    {
-                        text: "Backup",
-                        clazz: "btn-choice-full",
-                        customBg: "var(--success)",
-                        customColor: "white",
-                        callback: async () => {
-                            await executeSecureCloudPayloadPush();
-                        }
-                    },
-                    {
-                        text: "Restore",
-                        clazz: "btn-choice-full",
-                        customBg: "var(--danger)",
-                        customColor: "white",
-                        callback: async () => {
-                            applyDownloadedCloudStateIntoMemory(cloudDb);
-                            alert("Database successfully restored from cloud storage.");
-                        }
-                    },
-                    {
-                        text: "Close",
-                        clazz: "btn-choice-full",
-                        customBg: "#e2e8f0",
-                        customColor: "#334155",
-                        callback: () => {}
-                    }
-                ]);
-            }
-        }
-
-        function applyDownloadedCloudStateIntoMemory(cloudPayload) {
-            expenses = cloudPayload.expenses || [];
-            templates = cloudPayload.templates || [];
-            meta = cloudPayload.meta || { lastMonthPopulated: "", lastUpdated: Date.now(), isInitialBlank: false };
-            saveStateToBrowserEngine();
-            recalculateAggregatedBalances();
-            render();
-            document.getElementById('cloudStatusLabel').textContent = "☁ Online";
-        }
-
-        async function executeSecureCloudPayloadPush() {
-            document.getElementById('cloudStatusLabel').textContent = "📤 Saving...";
-            try {
-                const currentDataDump = {
-                    expenses: expenses,
-                    templates: templates,
-                    meta: meta
-                };
-                const bodyContent = JSON.stringify(currentDataDump, null, 2);
-
-                if (!gdriveFileId) {
-                    const trackingRecord = await createCloudPayloadContainerFile(bodyContent);
-                    gdriveFileId = trackingRecord.id;
-                } else {
-                    await updateCloudPayloadContentString(gdriveFileId, bodyContent);
-                }
-                document.getElementById('cloudStatusLabel').textContent = "☁ Online";
-                alert("Database successfully backed up to cloud storage.");
-            } catch (err) {
-                console.error("Payload Push Failure Action Intercept:", err);
-                document.getElementById('cloudStatusLabel').textContent = "⚠️ Save Failure";
-                alert("Cloud backup failed. Check connection parameters.");
-            }
-        }
-
-        async function lookUpDedicatedCloudPayloadFile() {
-            const url = `https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false&fields=files(id, name)`;
-            const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${googleDriveAccessToken}` } });
-            const data = await resp.json();
-            return (data.files && data.files.length > 0) ? data.files[0] : null;
-        }
-
-        async function createCloudPayloadContainerFile(contentString) {
-            const metadata = { name: DEDICATED_FILE_NAME, mimeType: 'application/json' };
-            const form = new FormData();
-            form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
-            form.append("file", new Blob([contentString], { type: "application/json" }));
-
-            const url = "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name";
-            const resp = await fetch(url, { method: "POST", headers: { 'Authorization': `Bearer ${googleDriveAccessToken}` }, body: form });
-            return await resp.json();
-        }
-
-        async function updateCloudPayloadContentString(fileTargetId, contentString) {
-            const url = `https://www.googleapis.com/upload/drive/v3/files/${fileTargetId}?uploadType=media`;
-            await fetch(url, { method: "PATCH", headers: { 'Authorization': `Bearer ${googleDriveAccessToken}`, 'Content-Type': 'application/json' }, body: contentString });
-        }
-
-        async function downloadCloudJsonDataPayload(fileTargetId) {
-            const url = `https://www.googleapis.com/drive/v3/files/${fileTargetId}?alt=media`;
-            const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${googleDriveAccessToken}` } });
-            return await resp.json();
-        }
-
-        function updateDatabaseMutationTimestamp() {
+        function saveStateToLocalStorage() {
             meta.lastUpdated = Date.now();
             meta.isInitialBlank = false;
-            saveStateToBrowserEngine();
+            localStorage.setItem('household_expenses', JSON.stringify(expenses));
+            localStorage.setItem('household_templates', JSON.stringify(templates));
+            localStorage.setItem('household_meta', JSON.stringify(meta));
         }
 
-        function loadStateFromBrowserEngine() {
-            try {
-                expenses = JSON.parse(localStorage.getItem('rne_expenses_store')) || [];
-                templates = JSON.parse(localStorage.getItem('rne_templates_store')) || [];
-                meta = JSON.parse(localStorage.getItem('rne_meta_store')) || { lastMonthPopulated: "", lastUpdated: 0, isInitialBlank: true };
-            } catch (e) {
-                console.error("Local Browser Engine Store Corruption Detected:", e);
-                expenses = []; templates = []; meta = { lastMonthPopulated: "", lastUpdated: 0, isInitialBlank: true };
+        function detectAndTriggerArrearsLogic() {
+            const absoluteLeftOvers = expenses.filter(e => e.month < currentSystemMonth && e.status === 'unpaid');
+            const banner = document.getElementById('globalArrearsBanner');
+            if (absoluteLeftOvers.length > 0) {
+                banner.style.display = "flex";
+            } else {
+                banner.style.display = "none";
             }
         }
 
-        function saveStateToBrowserEngine() {
-            localStorage.setItem('rne_expenses_store', JSON.stringify(expenses));
-            localStorage.setItem('rne_templates_store', JSON.stringify(templates));
-            localStorage.setItem('rne_meta_store', JSON.stringify(meta));
-        }
-
-        function createStructuralMonthIdentifier(dateObj) {
-            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const y = dateObj.getFullYear();
-            return `${m}/${y}`;
-        }
-
-        function getCurrentSelectedMonthViewContext() {
-            const dropdown = document.getElementById('monthViewFilter');
-            if (dropdown && dropdown.value) return dropdown.value;
-            return createStructuralMonthIdentifier(new Date());
-        }
-
-        function stepMonth(deltaSteps) {
-            const activeView = getCurrentSelectedMonthViewContext();
-            const parts = activeView.split('/');
-            const d = new Date(parseInt(parts[1]), parseInt(parts[0]) - 1, 1);
-            d.setMonth(d.getMonth() + deltaSteps);
+        async function executeBatchBringArrearsToCurrent() {
+            const activeMonth = filterSelect.value;
+            const absoluteLeftOvers = expenses.filter(e => e.month < activeMonth && e.status === 'unpaid');
             
-            const targetView = createStructuralMonthIdentifier(d);
-            buildGlobalTargetSelectDropdowns(targetView);
-            executeChronologicalAutoPopulation();
-            recalculateAggregatedBalances();
+            absoluteLeftOvers.forEach(e => {
+                e.status = 'paid';
+                const alreadyExists = expenses.find(x => x.seriesId === e.seriesId && x.month === activeMonth);
+                if (!alreadyExists) {
+                    expenses.push({
+                        id: 'exp_' + Math.random().toString(36).substr(2, 9),
+                        seriesId: e.seriesId,
+                        name: e.name,
+                        cost: e.cost,
+                        month: activeMonth,
+                        recur: e.recur,
+                        status: 'unpaid',
+                        originMonth: e.originMonth || e.month,
+                        isEdited: e.isEdited || false
+                    });
+                }
+            });
+            saveStateToLocalStorage();
+            detectAndTriggerArrearsLogic();
             render();
+            await silentlyExecuteCloudSyncEngineCheck();
         }
 
-        function buildGlobalTargetSelectDropdowns(explicitSelectTarget = null) {
-            const currentSelectionBeforeWipe = explicitSelectTarget || getCurrentSelectedMonthViewContext();
-            const filterDropdown = document.getElementById('monthViewFilter');
-            const targetDropdown = document.getElementById('expMonthTarget');
-
-            const referenceDate = new Date();
-            referenceDate.setMonth(referenceDate.getMonth() - 12);
-
-            let trackingList = [];
-            for (let i = 0; i <= 36; i++) {
-                trackingList.push(createStructuralMonthIdentifier(referenceDate));
-                referenceDate.setMonth(referenceDate.getMonth() + 1);
-            }
-
-            if (!trackingList.includes(currentSelectionBeforeWipe)) {
-                trackingList.push(currentSelectionBeforeWipe);
-            }
-            trackingList.sort((a, b) => {
-                const pa = a.split('/'), pb = b.split('/');
-                return new Date(pa[1], pa[0]-1) - new Date(pb[1], pb[0]-1);
-            });
-
-            filterDropdown.innerHTML = '';
-            targetDropdown.innerHTML = '';
-
-            trackingList.forEach(m => {
-                const optA = document.createElement('option'); optA.value = m; optA.textContent = m;
-                const optB = document.createElement('option'); optB.value = m; optB.textContent = m;
-                filterDropdown.appendChild(optA);
-                targetDropdown.appendChild(optB);
-            });
-
-            filterDropdown.value = currentSelectionBeforeWipe;
-            targetDropdown.value = currentSelectionBeforeWipe;
+        async function executeBatchDiscardArrears() {
+            const activeMonth = filterSelect.value;
+            expenses = expenses.filter(e => !(e.month < activeMonth && e.status === 'unpaid'));
+            saveStateToLocalStorage();
+            detectAndTriggerArrearsLogic();
+            render();
+            await silentlyExecuteCloudSyncEngineCheck();
         }
 
-        function generateUniqueCryptoIdentifier() {
-            return 'id_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+        function ensureSequencePopulatedUpToMonth(targetMonthStr) {
+            if (!meta.lastMonthPopulated || meta.lastMonthPopulated >= targetMonthStr) return;
+            
+            let cursor = new Date(meta.lastMonthPopulated + '-01');
+            const targetDate = new Date(targetMonthStr + '-01');
+
+            while (cursor <= targetDate) {
+                cursor.setMonth(cursor.getMonth() + 1);
+                let y = cursor.getFullYear();
+                let m = cursor.getMonth() + 1;
+                let cursorMonthStr = `${y}-${m < 10 ? '0' + m : m}`;
+
+                templates.forEach(tpl => {
+                    if (shouldTemplateGenerateInstance(tpl, cursorMonthStr)) {
+                        const alreadyExists = expenses.find(x => x.seriesId === tpl.seriesId && x.month === cursorMonthStr);
+                        if (!alreadyExists) {
+                            expenses.push({
+                                id: 'exp_' + Math.random().toString(36).substr(2, 9),
+                                seriesId: tpl.seriesId,
+                                name: tpl.name,
+                                cost: tpl.cost,
+                                month: cursorMonthStr,
+                                recur: tpl.recur,
+                                status: 'unpaid',
+                                originMonth: cursorMonthStr,
+                                isEdited: false
+                            });
+                        }
+                    }
+                });
+                if (cursorMonthStr === targetMonthStr) break;
+            }
+            meta.lastMonthPopulated = targetMonthStr;
+            saveStateToLocalStorage();
+        }
+
+        function shouldTemplateGenerateInstance(tpl, targetMonthStr) {
+            if (tpl.startMonth > targetMonthStr) return false;
+            
+            if (tpl.endType === 'custom' && tpl.durationLimit && targetMonthStr > tpl.durationLimit) {
+                return false;
+            }
+
+            if (tpl.recur === 1) return true;
+            
+            const [startY, startM] = tpl.startMonth.split('-').map(Number);
+            const [targetY, targetM] = targetMonthStr.split('-').map(Number);
+            const absoluteDiffMonths = (targetY - startY) * 12 + (targetM - startM);
+            
+            return (absoluteDiffMonths % tpl.recur) === 0;
+        }
+
+        function stepMonth(delta) {
+            let index = filterSelect.selectedIndex + delta;
+            if (index >= 0 && index < filterSelect.options.length) {
+                filterSelect.selectedIndex = index;
+                ensureSequencePopulatedUpToMonth(filterSelect.value);
+                detectAndTriggerArrearsLogic();
+                render();
+            }
+        }
+
+        function toggleDurationField() {
+            const recurVal = parseInt(document.getElementById('expRecur').value);
+            const endTypeField = document.getElementById('expEndType');
+            if (recurVal > 0) {
+                endTypeField.style.display = 'block';
+            } else {
+                endTypeField.style.display = 'none';
+                endTypeField.value = 'inf';
+            }
+            toggleEndTypeField();
+        }
+
+        function toggleEndTypeField() {
+            const endType = document.getElementById('expEndType').value;
+            const customUntilInput = document.getElementById('expCustomUntil');
+            if (endType === 'custom' && document.getElementById('expEndType').style.display !== 'none') {
+                customUntilInput.style.display = 'block';
+            } else {
+                customUntilInput.style.display = 'none';
+                customUntilInput.value = '';
+            }
         }
 
         function openCreateMode() {
             editingTargetId = null;
             document.getElementById('editBannerElement').style.display = 'none';
-            document.getElementById('formSubmitBtn').textContent = "Save Expense Entry";
+            document.getElementById('formSubmitBtn').innerText = "Save New Expense";
             document.getElementById('expName').value = '';
             document.getElementById('expCost').value = '';
-            document.getElementById('expRecur').value = "0";
-            document.getElementById('expEndType').value = "inf";
+            document.getElementById('expMonthTarget').value = filterSelect.value;
+            document.getElementById('expRecur').value = '0';
+            document.getElementById('expEndType').value = 'inf';
             document.getElementById('expCustomUntil').value = '';
-            
-            document.getElementById('expMonthTarget').value = getCurrentSelectedMonthViewContext();
-            document.getElementById('expMonthTarget').disabled = false;
             
             toggleDurationField();
             document.getElementById('expenseFormCard').style.display = 'block';
             document.getElementById('formTriggerBtn').style.display = 'none';
         }
 
-        function openEditMode(targetId) {
-            const matchedItem = expenses.find(e => e.id === targetId);
-            if (!matchedItem) return;
+        function openEditMode(id) {
+            const exp = expenses.find(e => e.id === id);
+            if (!exp) return;
 
-            editingTargetId = targetId;
+            editingTargetId = id;
             document.getElementById('editBannerElement').style.display = 'block';
-            document.getElementById('formSubmitBtn').textContent = "Apply Changes";
-            document.getElementById('expName').value = matchedItem.name;
-            document.getElementById('expCost').value = matchedItem.cost;
-            document.getElementById('expMonthTarget').value = matchedItem.monthView;
-            document.getElementById('expMonthTarget').disabled = true;
+            document.getElementById('formSubmitBtn').innerText = "Update Existing Entry";
+            document.getElementById('expName').value = exp.name;
+            document.getElementById('expCost').value = exp.cost;
+            document.getElementById('expMonthTarget').value = exp.month;
+            document.getElementById('expRecur').value = exp.recur.toString();
 
-            if (matchedItem.templateId) {
-                const chain = templates.find(t => t.id === matchedItem.templateId);
-                if (chain) {
-                    document.getElementById('expRecur').value = chain.recurrence;
-                    document.getElementById('expEndType').value = chain.endType;
-                    document.getElementById('expCustomUntil').value = chain.customUntil || '';
-                } else {
-                    document.getElementById('expRecur').value = "0";
-                }
+            const tpl = templates.find(t => t.seriesId === exp.seriesId);
+            if (tpl) {
+                document.getElementById('expEndType').value = tpl.endType || 'inf';
+                document.getElementById('expCustomUntil').value = tpl.durationLimit || '';
             } else {
-                document.getElementById('expRecur').value = "0";
+                document.getElementById('expEndType').value = 'inf';
+                document.getElementById('expCustomUntil').value = '';
             }
 
             toggleDurationField();
@@ -774,370 +797,252 @@
             editingTargetId = null;
         }
 
-        function toggleDurationField() {
-            const recurrenceVal = document.getElementById('expRecur').value;
-            const durationWrapper = document.getElementById('expEndType');
-            if (recurrenceVal === "0") {
-                durationWrapper.style.display = 'none';
-                document.getElementById('expCustomUntil').style.display = 'none';
-            } else {
-                durationWrapper.style.display = 'block';
-                toggleEndTypeField();
-            }
-        }
-
-        function toggleEndTypeField() {
-            const endTypeVal = document.getElementById('expEndType').value;
-            const customInput = document.getElementById('expCustomUntil');
-            if (endTypeVal === "custom" && document.getElementById('expRecur').value !== "0") {
-                customInput.style.display = 'block';
-            } else {
-                customInput.style.display = 'none';
-            }
-        }
-
         async function processFormSubmit() {
-            const nameStr = document.getElementById('expName').value.trim();
-            const costNum = parseFloat(document.getElementById('expCost').value);
-            const viewMonth = document.getElementById('expMonthTarget').value;
-            const recurInt = parseInt(document.getElementById('expRecur').value);
-            const stopType = document.getElementById('expEndType').value;
-            const stopDateStr = document.getElementById('expCustomUntil').value.trim();
+            const name = document.getElementById('expName').value.trim();
+            const costVal = parseFloat(document.getElementById('expCost').value);
+            const monthTarget = document.getElementById('expMonthTarget').value;
+            const recur = parseInt(document.getElementById('expRecur').value);
+            const endType = document.getElementById('expEndType').value;
+            let customUntil = document.getElementById('expCustomUntil').value.trim();
 
-            if (!nameStr) { alert("Please input a valid name descriptor string."); return; }
-            if (isNaN(costNum) || costNum <= 0) { alert("Please entry a numeric cost valuation greater than zero."); return; }
-
-            if (stopType === 'custom' && recurInt !== 0) {
-                const regexPattern = /^(0[1-9]|1[0-2])\/\d{4}$/;
-                if (!regexPattern.test(stopDateStr)) { alert("Format end date restriction using MM/YYYY constraint parameters."); return; }
+            if (!name || isNaN(costVal)) {
+                alert("Please fill in valid name and cost fields.");
+                return;
             }
 
-            if (editingTargetId !== null) {
-                const activeItem = expenses.find(e => e.id === editingTargetId);
-                if (activeItem) {
-                    if (activeItem.templateId) {
-                        const optionChoice = await presentCustomChoicePrompt("Modify exclusively this active item instantiation, or modify all existing timeline iterations connected to this template engine link?", "Current Only", "All Timeline Instances");
-                        if (optionChoice === 'right') {
-                            const parentTemplate = templates.find(t => t.id === activeItem.templateId);
-                            if (parentTemplate) {
-                                parentTemplate.name = nameStr;
-                                parentTemplate.cost = costNum.toFixed(2);
-                                parentTemplate.recurrence = recurInt;
-                                parentTemplate.endType = stopType;
-                                parentTemplate.customUntil = stopDateStr;
-                            }
-                            expenses.forEach(e => {
-                                if (e.templateId === activeItem.templateId) {
-                                    e.name = nameStr;
-                                    e.cost = costNum.toFixed(2);
-                                    e.isEdited = true;
+            if (endType === 'custom' && recur > 0) {
+                if (!/^\d{2}\/\d{4}$/.test(customUntil)) {
+                    alert("Please specify clean end limit date using standard MM/YYYY syntax structure.");
+                    return;
+                }
+                const [m, y] = customUntil.split('/');
+                customUntil = `${y}-${m}`;
+            } else {
+                customUntil = "";
+            }
+
+            if (editingTargetId) {
+                const targetExpense = expenses.find(e => e.id === editingTargetId);
+                if (!targetExpense) return;
+
+                if (targetExpense.recur === 0 && recur === 0) {
+                    targetExpense.name = name;
+                    targetExpense.cost = costVal;
+                    targetExpense.month = monthTarget;
+                    saveStateToLocalStorage();
+                } else {
+                    const choice = await presentCustomChoicePrompt("Apply changes to current month item instance only, or cascade adjustments across entire template configuration series onwards?", "Current Only", "All (Series Cascade)");
+                    if (choice === 'left') {
+                        targetExpense.name = name;
+                        targetExpense.cost = costVal;
+                        targetExpense.isEdited = true;
+                        saveStateToLocalStorage();
+                    } else if (choice === 'right') {
+                        let tpl = templates.find(t => t.seriesId === targetExpense.seriesId);
+                        if (!tpl) {
+                            tpl = { seriesId: targetExpense.seriesId, startMonth: targetExpense.month };
+                            templates.push(tpl);
+                        }
+                        tpl.name = name;
+                        tpl.cost = costVal;
+                        tpl.recur = recur;
+                        tpl.endType = endType;
+                        tpl.durationLimit = customUntil;
+
+                        const matchingInstancesForward = expenses.filter(e => e.seriesId === targetExpense.seriesId && e.month >= targetExpense.month);
+                        for (const instance of matchingInstancesForward) {
+                            if (instance.isEdited) {
+                                const overrideDecision = await presentInteractiveOverrideReview(instance.month, instance.name, instance.cost, name, costVal);
+                                if (overrideDecision === 'overwrite') {
+                                    instance.name = name;
+                                    instance.cost = costVal;
+                                    instance.recur = recur;
+                                    instance.isEdited = false;
                                 }
-                            });
-                        } else {
-                            activeItem.name = nameStr;
-                            activeItem.cost = costNum.toFixed(2);
-                            activeItem.isEdited = true;
+                            } else {
+                                instance.name = name;
+                                instance.cost = costVal;
+                                instance.recur = recur;
+                            }
                         }
-                    } else {
-                        if (recurInt !== 0) {
-                            const freshTemplateObj = {
-                                id: generateUniqueCryptoIdentifier(),
-                                name: nameStr,
-                                cost: costNum.toFixed(2),
-                                originMonth: viewMonth,
-                                recurrence: recurInt,
-                                endType: stopType,
-                                customUntil: stopDateStr
-                            };
-                            templates.push(freshTemplateObj);
-                            activeItem.templateId = freshTemplateObj.id;
-                        }
-                        activeItem.name = nameStr;
-                        activeItem.cost = costNum.toFixed(2);
+                        
+                        expenses = expenses.filter(e => !(e.seriesId === targetExpense.seriesId && e.month > targetExpense.month && !shouldTemplateGenerateInstance(tpl, e.month)));
+                        saveStateToLocalStorage();
                     }
                 }
             } else {
-                let linkedChainId = null;
-                if (recurInt !== 0) {
-                    const templateStructure = {
-                        id: generateUniqueCryptoIdentifier(),
-                        name: nameStr,
-                        cost: costNum.toFixed(2),
-                        originMonth: viewMonth,
-                        recurrence: recurInt,
-                        endType: stopType,
-                        customUntil: stopDateStr
-                    };
-                    templates.push(templateStructure);
-                    linkedChainId = templateStructure.id;
-                }
-
-                const transactionEntry = {
-                    id: generateUniqueCryptoIdentifier(),
-                    templateId: linkedChainId,
-                    name: nameStr,
-                    cost: costNum.toFixed(2),
-                    monthView: viewMonth,
-                    status: 'unpaid',
-                    isEdited: false
-                };
-                expenses.push(transactionEntry);
-            }
-
-            updateDatabaseMutationTimestamp();
-            executeChronologicalAutoPopulation();
-            recalculateAggregatedBalances();
-            render();
-            closeFormDisplay();
-        }
-
-        async function togglePaid(itemId) {
-            const target = expenses.find(e => e.id === itemId);
-            if (!target) return;
-
-            target.status = target.status === 'unpaid' ? 'paid' : 'unpaid';
-            updateDatabaseMutationTimestamp();
-            recalculateAggregatedBalances();
-            render();
-        }
-
-        async function moveNextMonth(itemId) {
-            const target = expenses.find(e => e.id === itemId);
-            if (!target) return;
-
-            const tokens = target.monthView.split('/');
-            const workingDate = new Date(parseInt(tokens[1]), parseInt(tokens[0]) - 1, 1);
-            workingDate.setMonth(workingDate.getMonth() + 1);
-            const projectedMonthString = createStructuralMonthIdentifier(workingDate);
-
-            if (target.templateId) {
-                const modalResolution = await presentCustomChoicePrompt("Shift exclusively this selected transaction row forward, or cascade structural monthly postponement updates forward across all future template pipeline models?", "Current Instantiation Only", "Postpone All Upcoming Instances");
-                if (modalResolution === 'right') {
-                    expenses.forEach(e => {
-                        if (e.templateId === target.templateId && e.status === 'unpaid') {
-                            const eTokens = e.monthView.split('/');
-                            const eDate = new Date(parseInt(eTokens[1]), parseInt(eTokens[0]) - 1, 1);
-                            eDate.setMonth(eDate.getMonth() + 1);
-                            e.monthView = createStructuralMonthIdentifier(eDate);
-                        }
+                if (recur === 0) {
+                    expenses.push({
+                        id: 'exp_' + Math.random().toString(36).substr(2, 9),
+                        seriesId: 'static_' + Math.random().toString(36).substr(2, 9),
+                        name: name,
+                        cost: costVal,
+                        month: monthTarget,
+                        recur: 0,
+                        status: 'unpaid',
+                        originMonth: monthTarget,
+                        isEdited: false
                     });
+                    saveStateToLocalStorage();
                 } else {
-                    target.monthView = projectedMonthString;
-                }
-            } else {
-                target.monthView = projectedMonthString;
-            }
+                    const newSeriesId = 'series_' + Date.now();
+                    const newTemplate = {
+                        seriesId: newSeriesId,
+                        name: name,
+                        cost: costVal,
+                        recur: recur,
+                        startMonth: monthTarget,
+                        endType: endType,
+                        durationLimit: customUntil
+                    };
+                    templates.push(newTemplate);
 
-            updateDatabaseMutationTimestamp();
-            buildGlobalTargetSelectDropdowns();
-            recalculateAggregatedBalances();
-            render();
-        }
+                    const viewIndex = monthsRange.indexOf(filterSelect.value);
+                    const startIndex = monthsRange.indexOf(monthTarget);
+                    const topLimit = Math.max(viewIndex, startIndex);
 
-        async function movePreviousMonth(itemId) {
-            const target = expenses.find(e => e.id === itemId);
-            if (!target) return;
-
-            const tokens = target.monthView.split('/');
-            const workingDate = new Date(parseInt(tokens[1]), parseInt(tokens[0]) - 1, 1);
-            workingDate.setMonth(workingDate.getMonth() - 1);
-            const targetMonthStr = createStructuralMonthIdentifier(workingDate);
-
-            target.monthView = targetMonthStr;
-            updateDatabaseMutationTimestamp();
-            buildGlobalTargetSelectDropdowns();
-            recalculateAggregatedBalances();
-            render();
-        }
-
-        async function deleteExpense(itemId) {
-            const matchIndex = expenses.findIndex(e => e.id === itemId);
-            if (matchIndex === -1) return;
-
-            const item = expenses[matchIndex];
-            if (item.templateId) {
-                const choice = await presentCustomChoicePrompt("Remove exclusively this standalone row item configuration, or entirely delete the template engine registry logic to purge future structural generations?", "Delete Single Item", "Purge Entire Series Chain Structure", true);
-                if (choice === 'right') {
-                    templates = templates.filter(t => t.id !== item.templateId);
-                    expenses = expenses.filter(e => e.templateId !== item.templateId);
-                } else {
-                    expenses.splice(matchIndex, 1);
-                }
-            } else {
-                expenses.splice(matchIndex, 1);
-            }
-
-            updateDatabaseMutationTimestamp();
-            recalculateAggregatedBalances();
-            render();
-        }
-
-        function checkIsTargetDateBoundaryMet(originMonthStr, checkMonthStr, stepDeltaInterval, typeConstraint, borderDateStr) {
-            const parseParts = (str) => { const p = str.split('/'); return new Date(parseInt(p[1]), parseInt(p[0]) - 1, 1); };
-            const start = parseParts(originMonthStr);
-            const curr = parseParts(checkMonthStr);
-
-            if (curr < start) return false;
-
-            let monthDifferenceCount = (curr.getFullYear() - start.getFullYear()) * 12 + (curr.getMonth() - start.getMonth());
-            if (monthDifferenceCount % stepDeltaInterval !== 0) return false;
-
-            if (typeConstraint === 'custom' && borderDateStr) {
-                const endLimit = parseParts(borderDateStr);
-                if (curr > endLimit) return false;
-            }
-            return true;
-        }
-
-        function executeChronologicalAutoPopulation() {
-            const currentActiveViewContext = getCurrentSelectedMonthViewContext();
-            if (!currentActiveViewContext) return;
-
-            const parts = currentActiveViewContext.split('/');
-            const targetBoundaryDate = new Date(parseInt(parts[1]), parseInt(parts[0]) - 1, 1);
-
-            let engineStartAnchorDate;
-            if (meta.lastMonthPopulated) {
-                const p = meta.lastMonthPopulated.split('/');
-                engineStartAnchorDate = new Date(parseInt(p[1]), parseInt(p[0]) - 1, 1);
-                engineStartAnchorDate.setMonth(engineStartAnchorDate.getMonth() + 1);
-            } else {
-                engineStartAnchorDate = new Date(targetBoundaryDate);
-                engineStartAnchorDate.setMonth(engineStartAnchorDate.getMonth() - 2);
-            }
-
-            const scanIteratorDate = new Date(engineStartAnchorDate);
-            while (scanIteratorDate <= targetBoundaryDate) {
-                const loopMonthString = createStructuralMonthIdentifier(scanIteratorDate);
-                
-                templates.forEach(t => {
-                    const isEligible = checkIsTargetDateBoundaryMet(t.originMonth, loopMonthString, parseInt(t.recurrence), t.endType, t.customUntil);
-                    if (isEligible) {
-                        const alreadyExists = expenses.some(e => e.templateId === t.id && e.monthView === loopMonthString);
-                        if (!alreadyExists) {
+                    for (let i = startIndex; i <= topLimit; i++) {
+                        if (i < 0) continue;
+                        let mStr = monthsRange[i];
+                        if (shouldTemplateGenerateInstance(newTemplate, mStr)) {
                             expenses.push({
-                                id: generateUniqueCryptoIdentifier(),
-                                templateId: t.id,
-                                name: t.name,
-                                cost: t.cost,
-                                monthView: loopMonthString,
+                                id: 'exp_' + Math.random().toString(36).substr(2, 9),
+                                seriesId: newSeriesId,
+                                name: name,
+                                cost: costVal,
+                                month: mStr,
+                                recur: recur,
                                 status: 'unpaid',
+                                originMonth: mStr,
                                 isEdited: false
                             });
                         }
                     }
-                });
-
-                scanIteratorDate.setMonth(scanIteratorDate.getMonth() + 1);
+                    saveStateToLocalStorage();
+                }
             }
 
-            const currentStamp = new Date(parts[1], parts[0] - 1, 1);
-            let recordedStamp = null;
-            if (meta.lastMonthPopulated) {
-                const rp = meta.lastMonthPopulated.split('/');
-                recordedStamp = new Date(rp[1], rp[0] - 1, 1);
-            }
-
-            if (!recordedStamp || currentStamp > recordedStamp) {
-                meta.lastMonthPopulated = currentActiveViewContext;
-                saveStateToBrowserEngine();
-            }
+            closeFormDisplay();
+            ensureSequencePopulatedUpToMonth(filterSelect.value);
+            detectAndTriggerArrearsLogic();
+            render();
+            await silentlyExecuteCloudSyncEngineCheck();
         }
 
-        function recalculateAggregatedBalances() {
-            const activeView = getCurrentSelectedMonthViewContext();
-            let sumVal = 0;
-            expenses.forEach(e => {
-                if (e.monthView === activeView && e.status === 'unpaid') {
-                    sumVal += parseFloat(e.cost || 0);
-                }
-            });
-            document.getElementById('totalUnpaid').textContent = `€${sumVal.toFixed(2)}`;
+        async function togglePaid(id) {
+            const exp = expenses.find(e => e.id === id);
+            if (!exp) return;
+            exp.status = (exp.status === 'unpaid') ? 'paid' : 'unpaid';
+            saveStateToLocalStorage();
+            detectAndTriggerArrearsLogic();
+            render();
+            await silentlyExecuteCloudSyncEngineCheck();
+        }
 
-            let distinctMonthsEvaluated = [];
-            expenses.forEach(e => { if (!distinctMonthsEvaluated.includes(e.monthView)) distinctMonthsEvaluated.push(e.monthView); });
+        async function moveNextMonth(id) {
+            const exp = expenses.find(e => e.id === id);
+            if (!exp) return;
+
+            const currentIndex = monthsRange.indexOf(exp.month);
+            if (currentIndex === -1 || currentIndex >= monthsRange.length - 1) {
+                alert("Cannot shift records past active planning buffers.");
+                return;
+            }
             
-            distinctMonthsEvaluated.sort((a, b) => {
-                const pa = a.split('/'), pb = b.split('/');
-                return new Date(pa[1], pa[0]-1) - new Date(pb[1], pb[0]-1);
-            });
+            const nextMonthStr = monthsRange[currentIndex + 1];
+            exp.month = nextMonthStr;
+            
+            saveStateToLocalStorage();
+            ensureSequencePopulatedUpToMonth(filterSelect.value);
+            detectAndTriggerArrearsLogic();
+            render();
+            await silentlyExecuteCloudSyncEngineCheck();
+        }
 
-            const indexPosition = distinctMonthsEvaluated.indexOf(activeView);
-            let historicalArrearsDetected = false;
+        async function movePreviousMonth(id) {
+            const exp = expenses.find(e => e.id === id);
+            if (!exp) return;
 
-            if (indexPosition !== -1) {
-                for (let i = 0; i < indexPosition; i++) {
-                    const checkMonth = distinctMonthsEvaluated[i];
-                    const containsUnpaid = expenses.some(e => e.monthView === checkMonth && e.status === 'unpaid');
-                    if (containsUnpaid) { historicalArrearsDetected = true; break; }
+            const currentIndex = monthsRange.indexOf(exp.month);
+            if (currentIndex === -1 || currentIndex <= 0) {
+                alert("Cannot push records into past historical ranges.");
+                return;
+            }
+
+            const prevMonthStr = monthsRange[currentIndex - 1];
+            exp.month = prevMonthStr;
+
+            saveStateToLocalStorage();
+            detectAndTriggerArrearsLogic();
+            render();
+            await silentlyExecuteCloudSyncEngineCheck();
+        }
+
+        async function deleteExpense(id) {
+            const exp = expenses.find(e => e.id === id);
+            if (!exp) return;
+
+            if (exp.recur === 0) {
+                if (confirm(`Remove custom one-time item "${exp.name}" entirely?`)) {
+                    expenses = expenses.filter(e => e.id !== id);
+                    saveStateToLocalStorage();
                 }
             } else {
-                for (let i = 0; i < distinctMonthsEvaluated.length; i++) {
-                    if (distinctMonthsEvaluated[i] === activeView) break;
-                    const containsUnpaid = expenses.some(e => e.monthView === distinctMonthsEvaluated[i] && e.status === 'unpaid');
-                    if (containsUnpaid) { historicalArrearsDetected = true; break; }
+                const decision = await presentThreeWayDeleteCrossroads();
+                if (decision === 'current') {
+                    expenses = expenses.filter(e => e.id !== id);
+                    saveStateToLocalStorage();
+                } else if (decision === 'forward') {
+                    expenses = expenses.filter(e => !(e.seriesId === exp.seriesId && e.month >= exp.month));
+                    templates = templates.filter(t => t.seriesId !== exp.seriesId);
+                    saveStateToLocalStorage();
                 }
             }
-
-            document.getElementById('globalArrearsBanner').style.display = historicalArrearsDetected ? 'flex' : 'none';
-        }
-
-        async function executeBatchBringArrearsToCurrent() {
-            const activeView = getCurrentSelectedMonthViewContext();
-            expenses.forEach(e => {
-                if (e.monthView !== activeView && e.status === 'unpaid') {
-                    const pa = e.monthView.split('/'), pb = activeView.split('/');
-                    const dateA = new Date(pa[1], pa[0]-1), dateB = new Date(pb[1], pb[0]-1);
-                    if (dateA < dateB) {
-                        e.monthView = activeView;
-                    }
-                }
-            });
-            updateDatabaseMutationTimestamp();
-            recalculateAggregatedBalances();
+            detectAndTriggerArrearsLogic();
             render();
+            await silentlyExecuteCloudSyncEngineCheck();
         }
 
-        async function executeBatchDiscardArrears() {
-            const activeView = getCurrentSelectedMonthViewContext();
-            expenses = expenses.filter(e => {
-                if (e.status === 'unpaid') {
-                    const pa = e.monthView.split('/'), pb = activeView.split('/');
-                    const dateA = new Date(pa[1], pa[0]-1), dateB = new Date(pb[1], pb[0]-1);
-                    return !(dateA < dateB);
-                }
-                return true;
-            });
-            updateDatabaseMutationTimestamp();
-            recalculateAggregatedBalances();
+        function toggleGroupCollapse(key) {
+            collapsedGroups[key] = !collapsedGroups[key];
+            localStorage.setItem('household_collapsed_groups', JSON.stringify(collapsedGroups));
             render();
         }
 
         function toggleUtilityDrawer() {
-            const drawer = document.getElementById('utilityDrawerCard');
+            const card = document.getElementById('utilityDrawerCard');
             const arrow = document.getElementById('utilArrow');
-            if (drawer.style.display === 'block') {
-                drawer.style.display = 'none';
+            if (card.style.display === 'block') {
+                card.style.display = 'none';
                 arrow.style.transform = 'rotate(0deg)';
             } else {
-                drawer.style.display = 'block';
+                card.style.display = 'block';
                 arrow.style.transform = 'rotate(180deg)';
             }
         }
 
-        function exportToFile() {
-            const packet = { expenses, templates, meta };
-            const str = JSON.stringify(packet, null, 2);
-            const b = new Blob([str], { type: "text/plain;charset=utf-8" });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(b);
-            a.download = `rne_tracker_backup_${getCurrentSelectedMonthViewContext().replace('/', '_')}.txt`;
-            a.click();
+        function triggerResetToScratch() {
+            if (confirm("Are you sure you want to clear your local database files completely? All stored configuration profiles will be wiped out.")) {
+                localStorage.clear();
+                expenses = [];
+                templates = [];
+                meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now(), isInitialBlank: true };
+                localStorage.setItem('household_meta', JSON.stringify(meta));
+                location.reload();
+            }
         }
 
-        function importFromFile(evt) {
-            const f = evt.target.files[0];
-            if (!f) return;
+        function exportToFile() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ meta, templates, expenses }));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `rne_database_backup_${filterSelect.value}.txt`);
+            dlAnchorElem.click();
+        }
+
+        function importFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
@@ -1145,238 +1050,513 @@
                     if (parsed.expenses && parsed.templates) {
                         expenses = parsed.expenses;
                         templates = parsed.templates;
-                        meta = parsed.meta || meta;
-                        updateDatabaseMutationTimestamp();
-                        buildGlobalTargetSelectDropdowns();
-                        recalculateAggregatedBalances();
-                        render();
-                        alert("Backup file matrix integrated successfully.");
+                        meta = parsed.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now(), isInitialBlank: false };
+                        meta.isInitialBlank = false;
+                        saveStateToLocalStorage();
+                        alert("Database configuration state recovered successfully.");
+                        location.reload();
                     } else {
-                        alert("Invalid JSON data dictionary trace.");
+                        alert("Malformed data context detected within backup wrapper.");
                     }
-                } catch (err) {
-                    alert("Failure reading parsing parameters.");
+                } catch(err) {
+                    alert("Failure parsing local backup stream asset structural contents.");
                 }
             };
-            reader.readAsText(f);
+            reader.readAsText(file);
         }
 
-        function triggerResetToScratch() {
-            if (confirm("☢ Critical Alert: Are you completely certain you want to wipe out the database and start fresh?")) {
-                expenses = []; templates = []; meta = { lastMonthPopulated: "", lastUpdated: Date.now(), isInitialBlank: true };
-                localStorage.clear();
-                updateDatabaseMutationTimestamp();
-                buildGlobalTargetSelectDropdowns();
-                recalculateAggregatedBalances();
-                render();
-            }
-        }
-
+        // ==========================================
+        // LOCAL PDF GENERATION SUBENGINE LAYER (v34.4.1)
+        // ==========================================
         function exportToPDF() {
-            const currentView = getCurrentSelectedMonthViewContext();
-            let printableRows = expenses.filter(e => e.monthView === currentView);
+            const selectEl = document.getElementById('monthViewFilter');
+            if (!selectEl) return;
             
-            let accumulatedUnpaidAmount = 0;
-            printableRows.forEach(e => { if(e.status === 'unpaid') accumulatedUnpaidAmount += parseFloat(e.cost || 0); });
-
-            let structuralGroupingMap = {};
-            recurrenceGroupsConfig.forEach(g => structuralGroupingMap[g.label] = []);
-            structuralGroupingMap["One-Time Only"] = [];
-
-            printableRows.forEach(e => {
-                let assignedLabel = "One-Time Only";
-                if (e.templateId) {
-                    const match = templates.find(t => t.id === e.templateId);
-                    if (match) {
-                        const groupMeta = recurrenceGroupsConfig.find(g => g.key === parseInt(match.recurrence));
-                        if (groupMeta) assignedLabel = groupMeta.label;
-                    }
+            const rawValue = selectEl.value; 
+            const [yearStr, monthStr] = rawValue.split('-');
+            const bMonthYearText = `${monthStr}/${yearStr}`;
+            
+            const monthFilteredItems = expenses.filter(e => e.month === rawValue);
+            
+            let totalUnpaidSum = 0;
+            monthFilteredItems.forEach(item => {
+                if (item.status === 'unpaid') {
+                    totalUnpaidSum += parseFloat(item.cost || 0);
                 }
-                structuralGroupingMap[assignedLabel].push(e);
             });
 
-            let win = window.open('', '_blank');
-            win.document.write(`
+            const timestamp = new Date();
+            const zPad = (num) => num.toString().padStart(2, '0');
+            const generatedClockStampStr = `${zPad(timestamp.getDate())}/${zPad(timestamp.getMonth() + 1)}/${timestamp.getFullYear()} - ${zPad(timestamp.getHours())}:${zPad(timestamp.getMinutes())}`;
+
+            let htmlReportContent = `
+                <h1 class="print-title">RNE Tracker - ${bMonthYearText} Report</h1>
+                <div class="print-meta">Total unpaid: <strong>€${totalUnpaidSum.toFixed(2)}</strong></div>
+                <div class="print-meta">${generatedClockStampStr}</div>
+                <div class="print-spacer"></div>
+            `;
+
+            const sectionIconsLookupMap = { 0: '🏷️', 1: '🔄', 2: '📅', 3: '📊', 6: '📆', 12: '🏢' };
+
+            recurrenceGroupsConfig.forEach(cfg => {
+                const groupSpecificSubset = monthFilteredItems.filter(e => e.recur === cfg.key);
+                
+                if (groupSpecificSubset.length > 0) {
+                    const iconDisplaySymbol = sectionIconsLookupMap[cfg.key] || '📁';
+                    
+                    let categoryUnpaidSum = 0;
+                    groupSpecificSubset.forEach(e => {
+                        if (e.status === 'unpaid') {
+                            categoryUnpaidSum += parseFloat(e.cost || 0);
+                        }
+                    });
+                    
+                    htmlReportContent += `
+                        <div class="print-cat-section">
+                            <div class="print-cat-title">
+                                <div class="print-cat-left">
+                                    <span class="print-cat-icon">${iconDisplaySymbol}</span>
+                                    ${cfg.label}
+                                </div>
+                                <div class="print-cat-total-badge">€${categoryUnpaidSum.toFixed(2)}</div>
+                            </div>
+                    `;
+                    
+                    groupSpecificSubset.forEach(e => {
+                        const markerDotClass = e.status === 'paid' ? 'dot-paid' : 'dot-unpaid';
+                        const costPaidClass = e.status === 'paid' ? 'cost-paid' : '';
+                        
+                        let originLabelHtml = '';
+                        if (e.originMonth && e.originMonth !== rawValue) {
+                            const [oYear, oMonth] = e.originMonth.split('-');
+                            originLabelHtml = `<span class="print-originated-tag">(Originated: ${oMonth}/${oYear})</span>`;
+                        }
+
+                        htmlReportContent += `
+                            <div class="print-expense-item">
+                                <div class="print-expense-left">
+                                    <span class="print-status-dot ${markerDotClass}">•</span>
+                                    <span>${e.name}${originLabelHtml}</span>
+                                </div>
+                                <div class="print-expense-cost ${costPaidClass}">€${parseFloat(e.cost || 0).toFixed(2)}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    htmlReportContent += `</div>`;
+                }
+            });
+
+            const isWindowPrintSupported = (typeof window.print === 'function');
+
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.right = '0';
+            iframe.style.bottom = '0';
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = 'none';
+            document.body.appendChild(iframe);
+
+            const iframeDoc = iframe.contentWindow.document;
+            
+            iframeDoc.write(`
                 <html>
                 <head>
-                    <title>RNE Tracker - ${currentView} Report</title>
                     <style>
-                        body { font-family: sans-serif; padding: 24px; color: #333; }
-                        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 12px; margin-bottom: 20px; }
-                        .title { font-size: 24px; font-weight: bold; }
-                        .summary { font-size: 16px; font-weight: bold; color: #dc2626; }
-                        .group-section { margin-bottom: 20px; page-break-inside: avoid; }
-                        .group-title { font-size: 14px; font-weight: bold; background: #e2e8f0; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px; }
-                        .item-row { display: flex; justify-content: space-between; padding: 6px 12px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
-                        .item-name { display: flex; align-items: center; gap: 6px; }
-                        .item-cost { font-weight: bold; }
-                        .paid-line { text-decoration: line-through; opacity: 0.5; }
-                        .bullet { color: #2563eb; font-size: 12px; }
+                        body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 20px; color: #000; background: #fff; }
+                        .print-title { font-size: 24px; margin: 0 0 4px 0; }
+                        .print-meta { font-size: 14px; margin: 2px 0; color: #333; }
+                        .print-spacer { height: 24px; }
+                        .print-cat-section { margin-bottom: 24px; page-break-inside: avoid; }
+                        .print-cat-title { font-size: 18px; font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 6px 0; margin-top: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; }
+                        .print-cat-left { display: flex; align-items: center; }
+                        .print-cat-icon { margin-right: 8px; }
+                        .print-cat-total-badge { font-weight: bold; }
+                        .print-expense-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px dashed #ccc; }
+                        .print-expense-left { display: flex; align-items: center; }
+                        .print-status-dot { font-size: 24px; line-height: 14px; vertical-align: middle; margin-right: 8px; display: inline-block; }
+                        .dot-paid { color: #16a34a !important; }
+                        .dot-unpaid { color: #dc2626 !important; }
+                        .print-originated-tag { font-size: 11px; color: #666; margin-left: 8px; font-style: italic; }
+                        .print-expense-cost { font-weight: 600; }
+                        .print-expense-cost.cost-paid { text-decoration: line-through; color: #666; }
                     </style>
                 </head>
                 <body>
-                    <div class="header">
-                        <div>
-                            <div class="title">RNE Tracker - ${currentView} Report</div>
-                            <div style="font-size: 11px; color: #666; margin-top: 4px;">Generated: ${new Date().toLocaleString()}</div>
-                        </div>
-                        <div class="summary">Total Unpaid: €${accumulatedUnpaidAmount.toFixed(2)}</div>
-                    </div>
-            `);
-
-            recurrenceGroupsConfig.forEach(g => {
-                const rows = structuralGroupingMap[g.label] || [];
-                if (rows.length > 0) {
-                    win.document.write(`
-                        <div class="group-section">
-                            <div class="group-title">${g.label}</div>
-                    `);
-                    rows.forEach(e => {
-                        let classFlag = e.status === 'paid' ? 'paid-line' : '';
-                        let suffixMark = e.isEdited ? ' <span style="font-size:9px; font-weight:bold; color:#0284c7;">[EDITED]</span>' : '';
-                        win.document.write(`
-                            <div class="item-row ${classFlag}">
-                                <div class="item-name"><span class="bullet">■</span> ${e.name}${suffixMark}</div>
-                                <div class="item-cost">€${parseFloat(e.cost).toFixed(2)}</div>
-                            </div>
-                        `);
-                    });
-                    win.document.write(`</div>`);
-                }
-            });
-
-            win.document.write(`
-                <script>
-                    window.onload = function() { window.print(); };
-                <\/script>
+                    ${htmlReportContent}
                 </body>
                 </html>
             `);
-            win.document.close();
+            iframeDoc.close();
+
+            setTimeout(() => {
+                if (isWindowPrintSupported) {
+                    try {
+                        iframe.contentWindow.focus();
+                        iframe.contentWindow.print();
+                    } catch (e) {
+                        executeOperaFallbackAlert(bMonthYearText);
+                    }
+                } else {
+                    executeOperaFallbackAlert(bMonthYearText);
+                }
+                
+                setTimeout(() => {
+                    document.body.removeChild(iframe);
+                }, 2000);
+            }, 500);
         }
 
-        function toggleGroupCollapse(groupTitleKey) {
-            collapsedGroups[groupTitleKey] = !collapsedGroups[groupTitleKey];
-            localStorage.setItem('household_collapsed_groups', JSON.stringify(collapsedGroups));
-            render();
+        function executeOperaFallbackAlert(reportDateString) {
+            alert(`💡 Mobile Printing Notice (${reportDateString}):\n\nYour current browser variant does not allow automatic print launching. \n\nPlease use your browser's menu option: \nSettings / Share -> Choose "Print" to export this view manually.`);
         }
 
+        // ==========================================
+        // GOOGLE DRIVE SYNC PIPELINE ARCHITECTURE LAYER
+        // ==========================================
+        function initializeGoogleIdentityServiceServices() {
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+                console.warn("Google API script asset is not fully loaded yet.");
+                return;
+            }
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: GOOGLE_DRIVE_SCOPE,
+                callback: async (tokenResponse) => {
+                    if (tokenResponse.error) {
+                        updateCloudStatusInterfaceDisplay("☁ Connection Fault");
+                        return;
+                    }
+                    activeAccessToken = tokenResponse.access_token;
+                    localStorage.setItem('gdrive_access_token', activeAccessToken);
+                    updateCloudStatusInterfaceDisplay("☁ Resolving Profile...");
+                    evaluateSignActionBtnVisualState();
+                    await lookupAndSynchronizeCloudBackupStorageState(true);
+                }
+            });
+            
+            const savedToken = localStorage.getItem('gdrive_access_token');
+            if (savedToken) {
+                activeAccessToken = savedToken;
+                evaluateSignActionBtnVisualState();
+                silentlyExecuteCloudSyncEngineCheck();
+            } else {
+                evaluateSignActionBtnVisualState();
+            }
+        }
+
+        function updateCloudStatusInterfaceDisplay(statusTextString) {
+            document.getElementById('cloudStatusLabel').innerText = statusTextString;
+        }
+
+        function evaluateSignActionBtnVisualState() {
+            const actionBtn = document.getElementById('gdriveMainActionBtn');
+            if (activeAccessToken) {
+                actionBtn.innerText = "Sign Out";
+                actionBtn.className = "btn-cloud-discreet btn-cloud-signout";
+            } else {
+                actionBtn.innerText = "Sign In";
+                actionBtn.className = "btn-cloud-discreet btn-cloud-signin";
+            }
+        }
+
+        async function toggleGoogleDriveConnectionState() {
+            if (activeAccessToken) {
+                const confirmed = await presentInteractiveSignOutConfirmation();
+                if (confirmed) {
+                    activeAccessToken = null;
+                    gdriveFileId = null;
+                    localStorage.removeItem('gdrive_access_token');
+                    updateCloudStatusInterfaceDisplay("☁ Cloud Offline");
+                    evaluateSignActionBtnVisualState();
+                }
+            } else {
+                if (!tokenClient) {
+                    alert("Google Interface components are initialize-pending.");
+                    return;
+                }
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            }
+        }
+
+        async function silentlyExecuteCloudSyncEngineCheck() {
+            if (!activeAccessToken) return;
+            await lookupAndSynchronizeCloudBackupStorageState(false);
+        }
+
+        async function lookupAndSynchronizeCloudBackupStorageState(triggerUserPromptDialog = false) {
+            try {
+                let response = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, {
+                    headers: { 'Authorization': `Bearer ${activeAccessToken}` }
+                });
+                let result = await response.json();
+                
+                if (result.error) {
+                    if (result.error.status === 'UNAUTHENTICATED' || result.error.code === 401) {
+                        activeAccessToken = null;
+                        gdriveFileId = null;
+                        localStorage.removeItem('gdrive_access_token');
+                        updateCloudStatusInterfaceDisplay("☁ Session Terminated");
+                        evaluateSignActionBtnVisualState();
+                    }
+                    return;
+                }
+
+                if (result.files && result.files.length > 0) {
+                    gdriveFileId = result.files[0].id;
+                    await checkTimelineMetricsAgainstCloudTarget(gdriveFileId, triggerUserPromptDialog);
+                } else {
+                    updateCloudStatusInterfaceDisplay("☁ Initializing Sync...");
+                    await performCloudWriteExecutionSequence(true);
+                }
+            } catch (err) {
+                updateCloudStatusInterfaceDisplay("☁ Cloud Offline");
+            }
+        }
+
+        async function checkTimelineMetricsAgainstCloudTarget(fileId, triggerUserPromptDialog) {
+            try {
+                let response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+                    headers: { 'Authorization': `Bearer ${activeAccessToken}` }
+                });
+                let cloudData = await response.json();
+
+                if (meta.isInitialBlank === true || (expenses.length === 0 && templates.length === 0)) {
+                    console.log("Blank environment lifecycle profile found. Syncing from cloud...");
+                    await performCloudPullExtractionSequence(cloudData);
+                    return;
+                }
+
+                const localStamp = meta.lastUpdated || 0;
+                const cloudStamp = (cloudData.meta && cloudData.meta.lastUpdated) ? cloudData.meta.lastUpdated : 0;
+
+                const localDateStr = localStamp ? new Date(localStamp).toLocaleString() : 'Never';
+                const cloudDateStr = cloudStamp ? new Date(cloudStamp).toLocaleString() : 'Never';
+
+                if (localStamp === cloudStamp) {
+                    updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
+                    if (triggerUserPromptDialog) {
+                        await presentCloudSyncCrossroadsPrompt('match', "Your local cache database timeline perfectly matches the Cloud asset baseline storage.", localDateStr, cloudDateStr);
+                    }
+                } else if (cloudStamp > localStamp) {
+                    updateCloudStatusInterfaceDisplay("☁ Update Available");
+                    if (triggerUserPromptDialog) {
+                        const decision = await presentCloudSyncCrossroadsPrompt('cloud-newer', "The backup copy on Google Drive is newer than your current local browser instance.", localDateStr, cloudDateStr);
+                        if (decision === 'pull') await performCloudPullExtractionSequence(cloudData);
+                        else if (decision === 'push') await performCloudWriteExecutionSequence(false);
+                    }
+                } else {
+                    updateCloudStatusInterfaceDisplay("☁ Local Changes Pending");
+                    if (triggerUserPromptDialog) {
+                        const decision = await presentCloudSyncCrossroadsPrompt('local-newer', "Your current browser state contains changes that are newer than the active cloud backup file.", localDateStr, cloudDateStr);
+                        if (decision === 'push') await performCloudWriteExecutionSequence(false);
+                        else if (decision === 'pull') await performCloudPullExtractionSequence(cloudData);
+                    }
+                }
+            } catch(e) {
+                updateCloudStatusInterfaceDisplay("☁ Timeline Error");
+            }
+        }
+
+        async function manuallyTriggerCloudBackup() {
+            if (!activeAccessToken) { alert("Please log in using your Google Account credential validation first."); return; }
+            if (confirm("Overwrite the existing cloud database state backup wrapper with your current browser tracking layout dataset?")) {
+                await performCloudWriteExecutionSequence(false);
+            }
+        }
+
+        async function manuallyTriggerCloudRestore() {
+            if (!activeAccessToken) { alert("Please log in using your Google Account credential validation first."); return; }
+            if (!gdriveFileId) { alert("No active cloud instance targets found to pull data streams from."); return; }
+            if (confirm("Replace your complete current tracker grid structure layout completely by restoring data from Google Drive?")) {
+                updateCloudStatusInterfaceDisplay("☁ Restoring...");
+                try {
+                    let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, {
+                        headers: { 'Authorization': `Bearer ${activeAccessToken}` }
+                    });
+                    let cloudData = await response.json();
+                    await performCloudPullExtractionSequence(cloudData);
+                } catch(e) {
+                    alert("Fatal fault pulling baseline file references.");
+                    updateCloudStatusInterfaceDisplay("☁ Restore Aborted");
+                }
+            }
+        }
+
+        async function performCloudPullExtractionSequence(cloudDataPayload) {
+            expenses = cloudDataPayload.expenses || [];
+            templates = cloudDataPayload.templates || [];
+            meta = cloudDataPayload.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
+            meta.isInitialBlank = false;
+            
+            localStorage.setItem('household_expenses', JSON.stringify(expenses));
+            localStorage.setItem('household_templates', JSON.stringify(templates));
+            localStorage.setItem('household_meta', JSON.stringify(meta));
+            
+            updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
+            alert("Database recovery completed smoothly.");
+            location.reload();
+        }
+
+        async function performCloudWriteExecutionSequence(isInitialInstantiation = false) {
+            updateCloudStatusInterfaceDisplay("☁ Syncing...");
+            meta.isInitialBlank = false;
+            const serializedPayload = JSON.stringify({ meta, templates, expenses });
+            
+            let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=media';
+            let method = 'POST';
+            let metadata = { name: DEDICATED_FILE_NAME, mimeType: 'application/json' };
+
+            if (!isInitialInstantiation && gdriveFileId) {
+                url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=media`;
+                method = 'PATCH';
+            }
+
+            try {
+                if (isInitialInstantiation) {
+                    let metaResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(metadata)
+                    });
+                    let metaResult = await metaResponse.json();
+                    gdriveFileId = metaResult.id;
+                    url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=media`;
+                    method = 'PATCH';
+                }
+
+                let response = await fetch(url, {
+                    method: method,
+                    headers: { 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': 'application/json' },
+                    body: serializedPayload
+                });
+
+                if (response.ok) {
+                    updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
+                    if (!isInitialInstantiation) alert("Cloud backup wrapper updated successfully.");
+                } else {
+                    updateCloudStatusInterfaceDisplay("☁ Push Error");
+                }
+            } catch (err) {
+                updateCloudStatusInterfaceDisplay("☁ Sync Aborted");
+            }
+        }
+
+        // ==========================================
+        // DYNAMIC DOM RENDERING PIPELINE CONTROLLER
+        // ==========================================
         function render() {
+            const activeMonth = filterSelect.value;
             const container = document.getElementById('listContainer');
             container.innerHTML = '';
 
-            const currentActiveViewContext = getCurrentSelectedMonthViewContext();
-            let printableRows = expenses.filter(e => e.monthView === currentActiveViewContext);
+            const currentFilteredList = expenses.filter(e => e.month === activeMonth);
 
-            if (printableRows.length === 0) {
-                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 32px 16px; font-size: 14px; font-weight: 500;">No expenses matching target criteria.</div>`;
-                return;
-            }
-
-            let categoryMap = {};
-            recurrenceGroupsConfig.forEach(g => categoryMap[g.label] = []);
-            categoryMap["One-Time Only"] = [];
-
-            printableRows.forEach(e => {
-                let tag = "One-Time Only";
-                if (e.templateId) {
-                    const match = templates.find(t => t.id === e.templateId);
-                    if (match) {
-                        const configurationDetails = recurrenceGroupsConfig.find(g => g.key === parseInt(match.recurrence));
-                        if (configurationDetails) tag = configurationDetails.label;
-                    }
+            let calculatedUnpaidTotalValue = 0;
+            currentFilteredList.forEach(e => {
+                if (e.status === 'unpaid') {
+                    calculatedUnpaidTotalValue += parseFloat(e.cost || 0);
                 }
-                categoryMap[tag].push(e);
             });
+            document.getElementById('totalUnpaid').innerText = `€${calculatedUnpaidTotalValue.toFixed(2)}`;
 
             recurrenceGroupsConfig.forEach(groupConfig => {
-                const elementsList = categoryMap[groupConfig.label] || [];
-                if (elementsList.length > 0) {
-                    let unpaidGroupSum = 0;
-                    let paidGroupCount = 0;
+                const subsetItems = currentFilteredList.filter(e => e.recur === groupConfig.key);
+                
+                if (subsetItems.length === 0) return;
 
-                    elementsList.forEach(e => {
-                        if (e.status === 'unpaid') unpaidGroupSum += parseFloat(e.cost || 0);
-                        else paidGroupCount++;
-                    });
+                const groupContainer = document.createElement('div');
+                groupContainer.className = "group-container";
 
-                    const groupContainer = document.createElement('div');
-                    groupContainer.className = "group-container";
+                let unpaidSum = 0;
+                let paidCount = 0;
+                subsetItems.forEach(e => {
+                    if (e.status === 'unpaid') unpaidSum += parseFloat(e.cost || 0);
+                    else paidCount++;
+                });
 
-                    const isCollapsed = !!collapsedGroups[groupConfig.label];
+                const isCollapsed = collapsedGroups[groupConfig.key] || false;
 
-                    const headerElement = document.createElement('div');
-                    headerElement.className = "group-header";
-                    headerElement.onclick = () => toggleGroupCollapse(groupConfig.label);
+                const headerDiv = document.createElement('div');
+                headerDiv.className = "group-header";
+                headerDiv.onclick = () => toggleGroupCollapse(groupConfig.key);
 
-                    const badgeStyleClass = unpaidGroupSum > 0 ? "has-unpaid" : "all-paid";
-                    const badgeTextContent = unpaidGroupSum > 0 ? `€${unpaidGroupSum.toFixed(2)} Unpaid` : "Fully Settled ✓";
+                const titleSpan = document.createElement('div');
+                titleSpan.className = "group-header-title";
+                titleSpan.innerHTML = `<span>${isCollapsed ? '▶' : '▼'}</span> <span>${groupConfig.label}</span>`;
+                headerDiv.appendChild(titleSpan);
 
-                    headerElement.innerHTML = `
-                        <div class="group-header-title">
-                            <span style="font-size: 10px; color: var(--primary); transition: transform 0.2s;" style="transform: ${isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'};">▼</span>
-                            <span>${groupConfig.label}</span>
-                        </div>
-                        <div class="group-badges-container">
-                            <span class="group-unpaid-cost ${badgeStyleClass}">${badgeTextContent}</span>
-                            <span class="group-badge">${elementsList.length}</span>
-                        </div>
-                    `;
-                    groupContainer.appendChild(headerElement);
+                const badgesDiv = document.createElement('div');
+                badgesDiv.className = "group-badges-container";
 
-                    if (!isCollapsed) {
-                        const groupContent = document.createElement('div');
-                        groupContent.className = "group-content";
-
-                        elementsList.forEach(e => {
-                            const itemDiv = document.createElement('div');
-                            itemDiv.className = `expense-item ${e.status}`;
-
-                            let untilLabelHtml = '';
-                            let showMoveBack = false;
-
-                            if (e.templateId) {
-                                const activeChain = templates.find(t => t.id === e.templateId);
-                                if (activeChain && activeChain.endType === 'custom' && activeChain.customUntil) {
-                                    untilLabelHtml = `<div class="origin-label">📅 Valid Until: ${activeChain.customUntil}</div>`;
-                                }
-                                if (activeChain && activeChain.originMonth !== e.monthView) {
-                                    showMoveBack = true;
-                                }
-                            }
-
-                            const editedBadge = e.isEdited ? `<span class="badge-edited">Modified Iteration</span>` : '';
-
-                            itemDiv.innerHTML = `
-                                <div class="info">
-                                    <div class="name-wrapper">
-                                        <div class="name">${e.name}</div>
-                                        ${editedBadge}
-                                    </div>
-                                    <div class="cost-row">
-                                        <div class="cost">€${parseFloat(e.cost).toFixed(2)}</div>
-                                        ${untilLabelHtml}
-                                    </div>
-                                </div>
-                                <div class="actions">
-                                    ${showMoveBack ? `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);">➔</button>` : ''}
-                                    ${e.status === 'unpaid' ? `
-                                        <button class="btn-action btn-move" onclick="moveNextMonth('${e.id}')">➔</button>
-                                        <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
-                                        <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">✓</button>
-                                    ` : `
-                                        <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
-                                        <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">↩</button>
-                                    `}
-                                    <button class="btn-action btn-delete" onclick="deleteExpense('${e.id}')">✕</button>
-                                </div>
-                            `;
-                            groupContent.appendChild(itemDiv);
-                        });
-                        groupContainer.appendChild(groupContent);
-                    }
-                    container.appendChild(groupContainer);
+                const costBadge = document.createElement('span');
+                if (unpaidSum > 0) {
+                    costBadge.className = "group-unpaid-cost has-unpaid";
+                    costBadge.innerText = `€${unpaidSum.toFixed(2)}`;
+                } else {
+                    costBadge.className = "group-unpaid-cost all-paid";
+                    costBadge.innerText = "✓ Paid";
                 }
+                badgesDiv.appendChild(costBadge);
+
+                const countBadge = document.createElement('span');
+                countBadge.className = "group-badge";
+                countBadge.innerText = `${paidCount}/${subsetItems.length}`;
+                badgesDiv.appendChild(countBadge);
+
+                headerDiv.appendChild(badgesDiv);
+                groupContainer.appendChild(headerDiv);
+
+                if (!isCollapsed) {
+                    const groupContent = document.createElement('div');
+                    groupContent.className = "group-content";
+
+                    subsetItems.forEach(e => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = `expense-item ${e.status}`;
+
+                        let badgeHtml = e.isEdited ? `<span class="badge-edited">Custom</span>` : '';
+                        let originLabelHtml = '';
+                        if (e.originMonth && e.originMonth !== activeMonth) {
+                            originLabelHtml = `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>`;
+                        }
+
+                        let untilLabelText = formatPrettyUntilLabel(e.seriesId);
+                        let untilLabelHtml = untilLabelText ? `<div class="origin-label" style="color:var(--primary); border-color:var(--primary);">${untilLabelText}</div>` : '';
+
+                        let showMoveBack = (e.month !== e.originMonth);
+
+                        itemDiv.innerHTML = `
+                            <div class="info">
+                                <div class="name-wrapper">
+                                    <span class="name">${e.name}</span>
+                                    ${badgeHtml}
+                                </div>
+                                <div class="cost-row">
+                                    <span class="cost">€${parseFloat(e.cost || 0).toFixed(2)}</span>
+                                    ${originLabelHtml}
+                                    ${untilLabelHtml}
+                                </div>
+                            </div>
+                            <div class="actions">
+                                ${showMoveBack ? `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);">➔</button>` : ''}
+                                ${e.status === 'unpaid' ? `
+                                    <button class="btn-action btn-move" onclick="moveNextMonth('${e.id}')">➔</button>
+                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
+                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">✓</button>
+                                ` : `
+                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
+                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">↩</button>
+                                `}
+                                <button class="btn-action btn-delete" onclick="deleteExpense('${e.id}')">✕</button>
+                            </div>
+                        `;
+                        groupContent.appendChild(itemDiv);
+                    });
+                    groupContainer.appendChild(groupContent);
+                }
+                container.appendChild(groupContainer);
             });
         }
     </script>
