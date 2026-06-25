@@ -63,6 +63,7 @@
         .cloud-status-text { font-weight: 600; color: var(--cloud-bar-text); display: flex; align-items: center; gap: 4px; }
         .btn-cloud-discreet { width: auto; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 4px; }
         .btn-cloud-signin { background: var(--gdrive-color); box-shadow: 0 1px 2px rgba(15, 157, 88, 0.2); }
+        .btn-cloud-signout { background: var(--utility); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .btn-cloud-push { background: #4285f4; }
         .btn-cloud-pull { background: #16a34a; }
         .discreet-actions-grid { display: flex; gap: 6px; align-items: center; }
@@ -172,7 +173,7 @@
         <div class="cloud-status-text" id="cloudStatusLabel">☁ Cloud Offline</div>
         <div class="discreet-actions-grid">
             <button class="btn-theme-toggle" id="themeToggleBtn" onclick="toggleDisplayTheme()">Toggle Theme</button>
-            <button class="btn-cloud-discreet btn-cloud-signin" id="gdriveMainActionBtn" onclick="initiateGoogleDriveSyncFlow()">Sign In</button>
+            <button class="btn-cloud-discreet btn-cloud-signin" id="gdriveMainActionBtn" onclick="toggleGoogleDriveConnectionState()">Sign In</button>
             <button class="btn-cloud-discreet btn-cloud-push" id="gdrivePushBtn" onclick="manuallyTriggerCloudBackup()">Backup</button>
             <button class="btn-cloud-discreet btn-cloud-pull" id="gdrivePullBtn" onclick="manuallyTriggerCloudRestore()">Restore</button>
         </div>
@@ -268,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v34.2</div>
+    <div class="version-watermark">RNE Tracker • v34.3</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260625_v34.2
+        // VERSION TRACKER REFERENCE: 260625_v34.3
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -461,6 +462,38 @@
 
                 overwriteBtn.addEventListener('click', handleOverwrite);
                 keepBtn.addEventListener('click', handleKeep);
+                overlay.style.display = 'flex';
+            });
+        }
+
+        function presentInteractiveSignOutConfirmation() {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('customChoiceOverlay');
+                const textContainer = document.getElementById('choiceOverlayMessage');
+                const container = document.getElementById('choiceButtonsContainer');
+
+                textContainer.innerHTML = `<strong>Sign Out</strong><br><br>Disconnect this browser from Google Drive? Local data adjustments will remain intact until browser cache is explicitly cleared.`;
+                container.className = "choice-buttons-row";
+                container.innerHTML = `
+                    <button class="btn-choice btn-choice-left" id="btnConfirmSignOutCancel">Cancel</button>
+                    <button class="btn-choice btn-choice-danger" id="btnConfirmSignOutProceed">Sign Out</button>
+                `;
+
+                const cancelBtn = document.getElementById('btnConfirmSignOutCancel');
+                const proceedBtn = document.getElementById('btnConfirmSignOutProceed');
+
+                const handleCancel = () => { cleanup(); resolve(false); };
+                const handleProceed = () => { cleanup(); resolve(true); };
+
+                const cleanup = () => {
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    proceedBtn.removeEventListener('click', handleProceed);
+                    overlay.style.display = 'none';
+                    resetContainerToDefaultTemplate(container);
+                };
+
+                cancelBtn.addEventListener('click', handleCancel);
+                proceedBtn.addEventListener('click', handleProceed);
                 overlay.style.display = 'flex';
             });
         }
@@ -1033,7 +1066,7 @@
         }
 
         // ==========================================
-        // LOCAL PDF GENERATION SUBENGINE LAYER (v34.2)
+        // LOCAL PDF GENERATION SUBENGINE LAYER (v34.3)
         // ==========================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1198,6 +1231,7 @@
                     activeAccessToken = tokenResponse.access_token;
                     localStorage.setItem('gdrive_access_token', activeAccessToken);
                     updateCloudStatusInterfaceDisplay("☁ Resolving Profile...");
+                    evaluateSignActionBtnVisualState();
                     await lookupAndSynchronizeCloudBackupStorageState(true);
                 }
             });
@@ -1205,7 +1239,10 @@
             const savedToken = localStorage.getItem('gdrive_access_token');
             if (savedToken) {
                 activeAccessToken = savedToken;
+                evaluateSignActionBtnVisualState();
                 silentlyExecuteCloudSyncEngineCheck();
+            } else {
+                evaluateSignActionBtnVisualState();
             }
         }
 
@@ -1213,12 +1250,34 @@
             document.getElementById('cloudStatusLabel').innerText = statusTextString;
         }
 
-        function initiateGoogleDriveSyncFlow() {
-            if (!tokenClient) {
-                alert("Google Interface components are initialize-pending.");
-                return;
+        function evaluateSignActionBtnVisualState() {
+            const actionBtn = document.getElementById('gdriveMainActionBtn');
+            if (activeAccessToken) {
+                actionBtn.innerText = "Sign Out";
+                actionBtn.className = "btn-cloud-discreet btn-cloud-signout";
+            } else {
+                actionBtn.innerText = "Sign In";
+                actionBtn.className = "btn-cloud-discreet btn-cloud-signin";
             }
-            tokenClient.requestAccessToken({ prompt: 'consent' });
+        }
+
+        async function toggleGoogleDriveConnectionState() {
+            if (activeAccessToken) {
+                const confirmed = await presentInteractiveSignOutConfirmation();
+                if (confirmed) {
+                    activeAccessToken = null;
+                    gdriveFileId = null;
+                    localStorage.removeItem('gdrive_access_token');
+                    updateCloudStatusInterfaceDisplay("☁ Cloud Offline");
+                    evaluateSignActionBtnVisualState();
+                }
+            } else {
+                if (!tokenClient) {
+                    alert("Google Interface components are initialize-pending.");
+                    return;
+                }
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            }
         }
 
         async function silentlyExecuteCloudSyncEngineCheck() {
@@ -1236,8 +1295,10 @@
                 if (result.error) {
                     if (result.error.status === 'UNAUTHENTICATED' || result.error.code === 401) {
                         activeAccessToken = null;
+                        gdriveFileId = null;
                         localStorage.removeItem('gdrive_access_token');
                         updateCloudStatusInterfaceDisplay("☁ Session Terminated");
+                        evaluateSignActionBtnVisualState();
                     }
                     return;
                 }
