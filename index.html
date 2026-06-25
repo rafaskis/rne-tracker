@@ -170,6 +170,10 @@
 
         /* Specialized Print Engine Framework Context Override */
         @media print {
+            html, body {
+                height: auto !important;
+                overflow: visible !important;
+            }
             body > :not(#print-report-container) { display: none !important; }
             #print-report-container {
                 display: block !important;
@@ -310,12 +314,12 @@
 
     <div id="print-report-container"></div>
 
-    <div class="version-watermark">RNE Tracker • v34</div>
+    <div class="version-watermark">RNE Tracker • v34.1</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260625_v34
+        // VERSION TRACKER REFERENCE: 260625_v34.1
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -324,7 +328,7 @@
 
         let expenses = [];
         let templates = [];
-        let meta = { lastMonthPopulated: "", lastUpdated: 0 };
+        let meta = { lastMonthPopulated: "", lastUpdated: 0, isInitialBlank: true };
 
         let editingTargetId = null;
         let collapsedGroups = JSON.parse(localStorage.getItem('household_collapsed_groups')) || {};
@@ -604,7 +608,11 @@
 
             if (cacheExpenses) expenses = JSON.parse(cacheExpenses);
             if (cacheTemplates) templates = JSON.parse(cacheTemplates);
-            if (cacheMeta) meta = JSON.parse(cacheMeta);
+            if (cacheMeta) {
+                meta = JSON.parse(cacheMeta);
+            } else {
+                meta.isInitialBlank = true;
+            }
 
             if (!meta.lastMonthPopulated) {
                 meta.lastMonthPopulated = currentSystemMonth;
@@ -616,6 +624,7 @@
 
         function saveStateToLocalStorage() {
             meta.lastUpdated = Date.now();
+            meta.isInitialBlank = false; // Turn off initial flag as soon as any state writes
             localStorage.setItem('household_expenses', JSON.stringify(expenses));
             localStorage.setItem('household_templates', JSON.stringify(templates));
             localStorage.setItem('household_meta', JSON.stringify(meta));
@@ -1030,8 +1039,8 @@
                 localStorage.clear();
                 expenses = [];
                 templates = [];
-                meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
-                saveStateToLocalStorage();
+                meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now(), isInitialBlank: true };
+                localStorage.setItem('household_meta', JSON.stringify(meta));
                 location.reload();
             }
         }
@@ -1054,7 +1063,8 @@
                     if (parsed.expenses && parsed.templates) {
                         expenses = parsed.expenses;
                         templates = parsed.templates;
-                        meta = parsed.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
+                        meta = parsed.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now(), isInitialBlank: false };
+                        meta.isInitialBlank = false;
                         saveStateToLocalStorage();
                         alert("Database configuration state recovered successfully.");
                         location.reload();
@@ -1069,13 +1079,13 @@
         }
 
         // ==========================================
-        // LOCAL PDF GENERATION SUBENGINE LAYER (v34)
+        // LOCAL PDF GENERATION SUBENGINE LAYER (v34.1)
         // ==========================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
             if (!selectEl) return;
             
-            const rawValue = selectEl.value; // Expected layout string format: "YYYY-MM"
+            const rawValue = selectEl.value; 
             const [yearStr, monthStr] = rawValue.split('-');
             const bMonthYearText = `${monthStr}/${yearStr}`;
             
@@ -1092,7 +1102,6 @@
             const zPad = (num) => num.toString().padStart(2, '0');
             const generatedClockStampStr = `${zPad(timestamp.getDate())}/${zPad(timestamp.getMonth() + 1)}/${timestamp.getFullYear()} - ${zPad(timestamp.getHours())}:${zPad(timestamp.getMinutes())}`;
 
-            // Assemble clean reporting headers matching criteria
             let htmlReportContent = `
                 <h1 class="print-title">RNE Tracker - ${bMonthYearText} Report</h1>
                 <div class="print-meta">Total unpaid: <strong>€${totalUnpaidSum.toFixed(2)}</strong></div>
@@ -1101,23 +1110,14 @@
                 <div class="print-spacer"></div>
             `;
 
-            const sectionIconsLookupMap = {
-                0: '🏷️',
-                1: '🔄',
-                2: '📅',
-                3: '📊',
-                6: '📆',
-                12: '🏢'
-            };
+            const sectionIconsLookupMap = { 0: '🏷️', 1: '🔄', 2: '📅', 3: '📊', 6: '📆', 12: '🏢' };
 
-            // Loop and compile valid operational items dynamically
             recurrenceGroupsConfig.forEach(cfg => {
                 const groupSpecificSubset = monthFilteredItems.filter(e => e.recur === cfg.key);
                 
                 if (groupSpecificSubset.length > 0) {
                     const iconDisplaySymbol = sectionIconsLookupMap[cfg.key] || '📁';
                     
-                    // Calculate the total unpaid sum specifically for this current category
                     let categoryUnpaidSum = 0;
                     groupSpecificSubset.forEach(e => {
                         if (e.status === 'unpaid') {
@@ -1164,11 +1164,13 @@
             const reportFrameTarget = document.getElementById('print-report-container');
             reportFrameTarget.innerHTML = htmlReportContent;
             
-            // Invoke native context interface
-            window.print();
-            
-            // Reset frame state tracking safely
-            reportFrameTarget.innerHTML = '';
+            // Asynchronous delayed scheduling layout execution to fix mobile web view spooling processes global bugs
+            setTimeout(() => {
+                window.print();
+                setTimeout(() => {
+                    reportFrameTarget.innerHTML = '';
+                }, 1500);
+            }, 300);
         }
 
         // ==========================================
@@ -1253,6 +1255,13 @@
                 });
                 let cloudData = await response.json();
 
+                // FIX LOGIC GLITCH: If local configuration cache is totally uninitialized and blank, auto-restore silently
+                if (meta.isInitialBlank === true || (expenses.length === 0 && templates.length === 0)) {
+                    console.log("Blank environment lifecycle profile found. Syncing from cloud...");
+                    await performCloudPullExtractionSequence(cloudData);
+                    return;
+                }
+
                 const localStamp = meta.lastUpdated || 0;
                 const cloudStamp = (cloudData.meta && cloudData.meta.lastUpdated) ? cloudData.meta.lastUpdated : 0;
 
@@ -1313,6 +1322,7 @@
             expenses = cloudDataPayload.expenses || [];
             templates = cloudDataPayload.templates || [];
             meta = cloudDataPayload.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
+            meta.isInitialBlank = false; // Flag false on dynamic setup injection completion
             
             localStorage.setItem('household_expenses', JSON.stringify(expenses));
             localStorage.setItem('household_templates', JSON.stringify(templates));
@@ -1325,6 +1335,7 @@
 
         async function performCloudWriteExecutionSequence(isInitialInstantiation = false) {
             updateCloudStatusInterfaceDisplay("☁ Syncing...");
+            meta.isInitialBlank = false;
             const serializedPayload = JSON.stringify({ meta, templates, expenses });
             
             let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=media';
