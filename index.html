@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker - v33.4</title>
+    <title>RNE Tracker - v33.5</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -181,15 +181,17 @@
             .print-title { font-size: 24px; margin: 0 0 4px 0; color: #000000; white-space: nowrap; }
             .print-meta { font-size: 14px; margin: 2px 0; color: #333333; }
             .print-spacer { height: 24px; }
-            .print-cat-section { margin-bottom: 24px; page-break-inside: avoid; }
+            .print-cat-section { margin-bottom: 24px; }
             .print-cat-title { 
                 font-size: 18px; font-weight: bold; 
                 border-top: 1px solid #000000;
                 border-bottom: 1px solid #000000; 
                 padding: 4px 0; margin-top: 16px; margin-bottom: 12px; 
-                display: flex !important; align-items: center; 
+                display: flex !important; align-items: center; justify-content: space-between !important;
             }
+            .print-cat-left { display: flex !important; align-items: center !important; }
             .print-cat-icon { margin-right: 8px; font-size: 18px; display: inline-block !important; }
+            .print-cat-total-badge { font-size: 15px; font-weight: bold; text-align: right; }
             .print-expense-item { 
                 display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; 
                 padding: 6px 0; font-size: 14px; border-bottom: 1px dashed #e2e8f0; 
@@ -200,6 +202,7 @@
             .dot-unpaid { background-color: #dc2626 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .print-originated-tag { font-size: 11px; color: #666666; margin-left: 8px; font-style: italic; }
             .print-expense-cost { font-weight: 600; text-align: right; margin-left: auto; }
+            .print-expense-cost.cost-paid { text-decoration: line-through !important; color: #666666 !important; }
         }
     </style>
 </head>
@@ -307,12 +310,12 @@
 
     <div id="print-report-container"></div>
 
-    <div class="version-watermark">RNE Tracker • v33.4</div>
+    <div class="version-watermark">RNE Tracker • v33.5</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260624_v33.4
+        // VERSION TRACKER REFERENCE: 260625_v33.5
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1066,7 +1069,7 @@
         }
 
         // ==========================================
-        // LOCAL PDF GENERATION SUBENGINE LAYER (v33.4)
+        // LOCAL PDF GENERATION SUBENGINE LAYER (v33.5)
         // ==========================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1096,7 +1099,6 @@
                 <div class="print-meta">${generatedClockStampStr}</div>
                 
                 <div class="print-spacer"></div>
-                <div class="print-spacer"></div>
             `;
 
             const sectionIconsLookupMap = {
@@ -1115,16 +1117,28 @@
                 if (groupSpecificSubset.length > 0) {
                     const iconDisplaySymbol = sectionIconsLookupMap[cfg.key] || '📁';
                     
+                    // Calculate the total unpaid sum specifically for this current category
+                    let categoryUnpaidSum = 0;
+                    groupSpecificSubset.forEach(e => {
+                        if (e.status === 'unpaid') {
+                            categoryUnpaidSum += parseFloat(e.cost || 0);
+                        }
+                    });
+                    
                     htmlReportContent += `
                         <div class="print-cat-section">
                             <div class="print-cat-title">
-                                <span class="print-cat-icon">${iconDisplaySymbol}</span>
-                                ${cfg.label}
+                                <div class="print-cat-left">
+                                    <span class="print-cat-icon">${iconDisplaySymbol}</span>
+                                    ${cfg.label}
+                                </div>
+                                <div class="print-cat-total-badge">€${categoryUnpaidSum.toFixed(2)}</div>
                             </div>
                     `;
                     
                     groupSpecificSubset.forEach(e => {
                         const markerDotClass = e.status === 'paid' ? 'dot-paid' : 'dot-unpaid';
+                        const costPaidClass = e.status === 'paid' ? 'cost-paid' : '';
                         
                         let originLabelHtml = '';
                         if (e.originMonth && e.originMonth !== rawValue) {
@@ -1138,7 +1152,7 @@
                                     <span class="print-status-dot ${markerDotClass}"></span>
                                     <span>${e.name}${originLabelHtml}</span>
                                 </div>
-                                <div class="print-expense-cost">€${parseFloat(e.cost || 0).toFixed(2)}</div>
+                                <div class="print-expense-cost ${costPaidClass}">€${parseFloat(e.cost || 0).toFixed(2)}</div>
                             </div>
                         `;
                     });
