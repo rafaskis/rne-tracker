@@ -170,33 +170,36 @@
 
         /* Specialized Print Engine Framework Context Override */
         @media print {
-            body * { display: none !important; }
-            #print-report-container, #print-report-container * { display: block !important; }
+            body > :not(#print-report-container) { display: none !important; }
             #print-report-container {
+                display: block !important;
                 position: absolute; left: 0; top: 0; width: 100%;
                 color: #000000 !important; background: #ffffff !important;
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
                 line-height: 1.5; padding: 10px;
             }
-            .print-title { font-size: 24px; margin: 0 0 4px 0; color: #000000; }
+            .print-title { font-size: 24px; margin: 0 0 4px 0; color: #000000; white-space: nowrap; }
             .print-meta { font-size: 14px; margin: 2px 0; color: #333333; }
             .print-spacer { height: 24px; }
             .print-cat-section { margin-bottom: 24px; page-break-inside: avoid; }
             .print-cat-title { 
-                font-size: 18px; font-weight: bold; border-bottom: 1px solid #000000; 
-                padding-bottom: 4px; margin-bottom: 12px; display: flex !important; align-items: center; 
+                font-size: 18px; font-weight: bold; 
+                border-top: 1px solid #000000;
+                border-bottom: 1px solid #000000; 
+                padding: 4px 0; margin-top: 16px; margin-bottom: 12px; 
+                display: flex !important; align-items: center; 
             }
-            .print-cat-icon { margin-right: 8px; font-size: 18px; }
+            .print-cat-icon { margin-right: 8px; font-size: 18px; display: inline-block !important; }
             .print-expense-item { 
-                display: flex !important; align-items: center; justify-content: space-between; 
+                display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; 
                 padding: 6px 0; font-size: 14px; border-bottom: 1px dashed #e2e8f0; 
             }
-            .print-expense-left { display: flex !important; align-items: center; }
-            .print-status-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 10px; display: inline-block !important; }
+            .print-expense-left { display: flex !important; align-items: center !important; flex-direction: row !important; }
+            .print-status-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 10px; display: inline-block !important; flex-shrink: 0; }
             .dot-paid { background-color: #16a34a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .dot-unpaid { background-color: #dc2626 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .print-originated-tag { font-size: 11px; color: #666666; margin-left: 8px; font-style: italic; }
-            .print-expense-cost { font-weight: 600; }
+            .print-expense-cost { font-weight: 600; text-align: right; margin-left: auto; }
         }
     </style>
 </head>
@@ -616,7 +619,6 @@
         }
 
         function detectAndTriggerArrearsLogic() {
-            // Check against the actual real-world current month instead of the active dropdown view
             const absoluteLeftOvers = expenses.filter(e => e.month < currentSystemMonth && e.status === 'unpaid');
             const banner = document.getElementById('globalArrearsBanner');
             if (absoluteLeftOvers.length > 0) {
@@ -1089,8 +1091,8 @@
 
             // Assemble clean reporting headers matching criteria
             let htmlReportContent = `
-                <h1 class="print-title">RNE Tracker - <strong>${bMonthYearText}</strong> Report</h1>
-                <div class="print-meta">Total unpaid: €${totalUnpaidSum.toFixed(2)}</div>
+                <h1 class="print-title">RNE Tracker - ${bMonthYearText} Report</h1>
+                <div class="print-meta">Total unpaid: <strong>€${totalUnpaidSum.toFixed(2)}</strong></div>
                 <div class="print-meta">${generatedClockStampStr}</div>
                 
                 <div class="print-spacer"></div>
