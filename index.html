@@ -269,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v34.3</div>
+    <div class="version-watermark">RNE Tracker • v34.4</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260625_v34.3
+        // VERSION TRACKER REFERENCE: 260625_v34.4
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1066,7 +1066,7 @@
         }
 
         // ==========================================
-        // LOCAL PDF GENERATION SUBENGINE LAYER (v34.3)
+        // LOCAL PDF GENERATION SUBENGINE LAYER (v34.4)
         // ==========================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1135,7 +1135,7 @@
                         htmlReportContent += `
                             <div class="print-expense-item">
                                 <div class="print-expense-left">
-                                    <span class="print-status-dot ${markerDotClass}"></span>
+                                    <span class="print-status-dot ${markerDotClass}">•</span>
                                     <span>${e.name}${originLabelHtml}</span>
                                 </div>
                                 <div class="print-expense-cost ${costPaidClass}">€${parseFloat(e.cost || 0).toFixed(2)}</div>
@@ -1175,9 +1175,9 @@
                         .print-cat-total-badge { font-weight: bold; }
                         .print-expense-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px dashed #ccc; }
                         .print-expense-left { display: flex; align-items: center; }
-                        .print-status-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 10px; display: inline-block; }
-                        .dot-paid { background-color: #16a34a !important; }
-                        .dot-unpaid { background-color: #dc2626 !important; }
+                        .print-status-dot { font-size: 24px; line-height: 14px; vertical-align: middle; margin-right: 8px; display: inline-block; }
+                        .dot-paid { color: #16a34a !important; }
+                        .dot-unpaid { color: #dc2626 !important; }
                         .print-originated-tag { font-size: 11px; color: #666; margin-left: 8px; font-style: italic; }
                         .print-expense-cost { font-weight: 600; }
                         .print-expense-cost.cost-paid { text-decoration: line-through; color: #666; }
