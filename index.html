@@ -269,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v46</div>
+    <div class="version-watermark">RNE Tracker • v46.3</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260626_v46
+        // VERSION TRACKER REFERENCE: 260626_v46.3
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1071,7 +1071,7 @@
         }
 
         // ==========================================
-        // LOCAL PDF GENERATION SUBENGINE LAYER (v46)
+        // LOCAL PDF GENERATION SUBENGINE LAYER (v46.3)
         // ==========================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1371,16 +1371,29 @@ async function manuallyTriggerCloudBackup() {
     }
     updateCloudStatusInterfaceDisplay("☁ Fetching State...");
     try {
+        // 1. Check for file ID via your native Google endpoint loop
         if (!gdriveFileId) {
-            gdriveFileId = await locateDedicatedDatabaseFileOnCloudStorage();
+            let response = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, { 
+                headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
+            });
+            let result = await response.json();
+            if (result.files && result.files.length > 0) {
+                gdriveFileId = result.files[0].id;
+            }
         }
         
+        // 2. Fetch the cloud data using your native media endpoint block
         let cloudDb = null;
         if (gdriveFileId) {
-            cloudDb = await downloadDataPayloadFromCloudStorageFile(gdriveFileId);
+            let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, { 
+                headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
+            });
+            if (response.ok) {
+                cloudDb = await response.json();
+            }
         }
 
-        // 1. Fully defend local database parsing against an empty cache
+        // 3. Securely handle local metadata parsing
         let localMeta = { lastUpdated: 0 };
         try {
             const rawMeta = localStorage.getItem('household_meta');
@@ -1400,9 +1413,7 @@ async function manuallyTriggerCloudBackup() {
         let syncState = 'match';
         let statusHeadline = 'Your offline storage is perfectly matching cloud copies.';
 
-        // 2. Clear state logic mapping
         if (!cloudDb && localUpdateTimestamp === 0) {
-            // Both are completely fresh
             syncState = 'match';
             statusHeadline = 'Both local storage and cloud storage are currently uninitialized.';
         } else if (localUpdateTimestamp > cloudUpdateTimestamp) {
