@@ -1360,86 +1360,95 @@
         }
 
         async function manuallyTriggerCloudBackup() {
-            if (!activeAccessToken) { alert("Please log in using your Google Account credential validation first."); return; }
-            if (confirm("Overwrite the existing cloud database state backup wrapper with your current browser tracking layout dataset?")) {
-                await performCloudWriteExecutionSequence(false);
+            if (!activeAccessToken) {
+                updateCloudStatusInterfaceDisplay("☁ Access Token Missing");
+                return;
+            }
+            updateCloudStatusInterfaceDisplay("☁ Fetching State...");
+            try {
+                if (!gdriveFileId) {
+                    gdriveFileId = await locateDedicatedDatabaseFileOnCloudStorage();
+                }
+                
+                let cloudDb = null;
+                if (gdriveFileId) {
+                    cloudDb = await downloadDataPayloadFromCloudStorageFile(gdriveFileId);
+                }
+        
+                const localMeta = JSON.parse(localStorage.getItem('household_meta')) || { lastUpdated: 0 };
+                const localUpdateTimestamp = localMeta.lastUpdated || 0;
+                const cloudUpdateTimestamp = (cloudDb && cloudDb.meta) ? (cloudDb.meta.lastUpdated || 0) : 0;
+        
+                const localDateStr = localUpdateTimestamp ? new Date(localUpdateTimestamp).toLocaleString() : "Never";
+                const cloudDateStr = cloudUpdateTimestamp ? new Date(cloudUpdateTimestamp).toLocaleString() : "Empty Storage";
+        
+                let syncState = 'match';
+                let statusHeadline = 'Your offline storage is perfectly matching cloud copies.';
+        
+                if (localUpdateTimestamp > cloudUpdateTimestamp) {
+                    syncState = 'local-newer';
+                    statusHeadline = 'Your Local Cache is newer than the Cloud Backup.';
+                } else if (cloudUpdateTimestamp > localUpdateTimestamp) {
+                    syncState = 'cloud-newer';
+                    statusHeadline = 'The Cloud Backup is newer than your Local Cache.';
+                } else if (!cloudDb && localUpdateTimestamp > 0) {
+                    syncState = 'local-newer';
+                    statusHeadline = 'No file found in the cloud. Local cache is ready to back up.';
+                }
+        
+                const decision = await presentCloudSyncCrossroadsPrompt(syncState, statusHeadline, localDateStr, cloudDateStr);
+                if (decision === 'push') {
+                    await performCloudWriteExecutionSequence();
+                } else if (decision === 'pull') {
+                    await performCloudPullExtractionSequence();
+                }
+            } catch (err) {
+                console.error(err);
+                updateCloudStatusInterfaceDisplay("☁ Dynamic Sync Error");
             }
         }
 
         async function manuallyTriggerCloudRestore() {
-            if (!activeAccessToken) { alert("Please log in using your Google Account credential validation first."); return; }
-            if (!gdriveFileId) { alert("No active cloud instance targets found to pull data streams from."); return; }
-            if (confirm("Replace your complete current tracker grid structure layout completely by restoring data from Google Drive?")) {
-                updateCloudStatusInterfaceDisplay("☁ Restoring...");
-                try {
-                    let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, {
-                        headers: { 'Authorization': `Bearer ${activeAccessToken}` }
-                    });
-                    let cloudData = await response.json();
-                    await performCloudPullExtractionSequence(cloudData);
-                } catch(e) {
-                    alert("Fatal fault pulling baseline file references.");
-                    updateCloudStatusInterfaceDisplay("☁ Restore Aborted");
-                }
+            if (!activeAccessToken) {
+                updateCloudStatusInterfaceDisplay("☁ Access Token Missing");
+                return;
+            }
+            // Reuse the exact same comparison modal logic for a unified structure
+            await manuallyTriggerCloudBackup();
+        }
+
+        async function performCloudPullExtractionSequence() {
+            updateCloudStatusInterfaceDisplay("☁ Downloading...");
+            if (!gdriveFileId) gdriveFileId = await locateDedicatedDatabaseFileOnCloudStorage();
+            if (!gdriveFileId) {
+                updateCloudStatusInterfaceDisplay("☁ Cloud File Missing");
+                return;
+            }
+            const cloudDb = await downloadDataPayloadFromCloudStorageFile(gdriveFileId);
+            if (cloudDb) {
+                localStorage.setItem('household_expenses', JSON.stringify(cloudDb.expenses || []));
+                localStorage.setItem('household_templates', JSON.stringify(cloudDb.templates || []));
+                localStorage.setItem('household_meta', JSON.stringify(cloudDb.meta || { lastUpdated: Date.now() }));
+                updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
+                location.reload();
+            } else {
+                updateCloudStatusInterfaceDisplay("☁ Extract Action Failed");
             }
         }
 
-        async function performCloudPullExtractionSequence(cloudDataPayload) {
-            expenses = cloudDataPayload.expenses || [];
-            templates = cloudDataPayload.templates || [];
-            meta = cloudDataPayload.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now() };
-            meta.isInitialBlank = false;
-            
-            localStorage.setItem('household_expenses', JSON.stringify(expenses));
-            localStorage.setItem('household_templates', JSON.stringify(templates));
-            localStorage.setItem('household_meta', JSON.stringify(meta));
-            
-            updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
-            alert("Database recovery completed smoothly.");
-            location.reload();
-        }
-
-        async function performCloudWriteExecutionSequence(isInitialInstantiation = false) {
-            updateCloudStatusInterfaceDisplay("☁ Syncing...");
-            meta.isInitialBlank = false;
-            const serializedPayload = JSON.stringify({ meta, templates, expenses });
-            
-            let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=media';
-            let method = 'POST';
-            let metadata = { name: DEDICATED_FILE_NAME, mimeType: 'application/json' };
-
-            if (!isInitialInstantiation && gdriveFileId) {
-                url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=media`;
-                method = 'PATCH';
-            }
-
-            try {
-                if (isInitialInstantiation) {
-                    let metaResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify(metadata)
-                    });
-                    let metaResult = await metaResponse.json();
-                    gdriveFileId = metaResult.id;
-                    url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=media`;
-                    method = 'PATCH';
-                }
-
-                let response = await fetch(url, {
-                    method: method,
-                    headers: { 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': 'application/json' },
-                    body: serializedPayload
-                });
-
-                if (response.ok) {
-                    updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
-                    if (!isInitialInstantiation) alert("Cloud backup wrapper updated successfully.");
-                } else {
-                    updateCloudStatusInterfaceDisplay("☁ Push Error");
-                }
-            } catch (err) {
-                updateCloudStatusInterfaceDisplay("☁ Sync Aborted");
+        async function performCloudWriteExecutionSequence() {
+            updateCloudStatusInterfaceDisplay("☁ Synchronizing...");
+            const payload = {
+                expenses: JSON.parse(localStorage.getItem('household_expenses')) || [],
+                templates: JSON.parse(localStorage.getItem('household_templates')) || [],
+                meta: JSON.parse(localStorage.getItem('household_meta')) || { lastUpdated: Date.now() }
+            };
+        
+            const response = await uploadPayloadDataIntoCloudStorage(gdriveFileId, payload);
+            if (response.ok) {
+                updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
+            } else {
+                updateCloudStatusInterfaceDisplay("☁ Write Action Failed");
             }
         }
 
