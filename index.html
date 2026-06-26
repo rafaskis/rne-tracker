@@ -269,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v34.4.1</div>
+    <div class="version-watermark">RNE Tracker • v46</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260625_v34.4.1
+        // VERSION TRACKER REFERENCE: 260626_v46
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -427,6 +427,9 @@
                 <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
                 <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
             `;
+            // Re-bind global elements so expense actions don't break after a sync check
+            document.getElementById('choiceLeftActionBtn').style.display = "inline-block";
+            document.getElementById('choiceRightActionBtn').style.display = "inline-block";
         }
 
         function presentInteractiveOverrideReview(monthStr, customName, customCost, newName, newCost) {
@@ -454,8 +457,10 @@
                 const handleKeep = () => { cleanup(); resolve('keep'); };
 
                 const cleanup = () => {
-                    overwriteBtn.removeEventListener('click', handleOverwrite);
-                    keepBtn.removeEventListener('click', handleKeep);
+                    if (typeof perfectBtn !== 'undefined' && perfectBtn) perfectBtn.removeEventListener('click', handlePerfect);
+                    if (typeof pushBtn !== 'undefined' && pushBtn) pushBtn.removeEventListener('click', handlePush);
+                    if (typeof pullBtn !== 'undefined' && pullBtn) pullBtn.removeEventListener('click', handlePull);
+                    if (typeof ignoreBtn !== 'undefined' && ignoreBtn) ignoreBtn.removeEventListener('click', handleIgnore);
                     overlay.style.display = 'none';
                     resetContainerToDefaultTemplate(container);
                 };
@@ -1066,7 +1071,7 @@
         }
 
         // ==========================================
-        // LOCAL PDF GENERATION SUBENGINE LAYER (v34.4.1)
+        // LOCAL PDF GENERATION SUBENGINE LAYER (v46)
         // ==========================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
