@@ -269,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v46.4</div>
+    <div class="version-watermark">RNE Tracker • v46.5</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260626_v46.4
+        // VERSION TRACKER REFERENCE: 260626_v46.5
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1071,7 +1071,7 @@
         }
 
         // ==========================================
-        // LOCAL PDF GENERATION SUBENGINE LAYER (v46.4)
+        // LOCAL PDF GENERATION SUBENGINE LAYER (v46.5)
         // ==========================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1408,17 +1408,17 @@ async function manuallyTriggerCloudBackup() {
         const cloudDateStr = cloudUpdateTimestamp ? new Date(cloudUpdateTimestamp).toLocaleString() : "Empty Cloud Storage";
 
         let syncState = 'match';
-        let statusHeadline = 'Your offline storage is perfectly matching cloud copies.';
-
+let statusHeadline = '<span style="color: #d4af37; font-weight: bold;">Your offline storage is perfectly matching cloud copies.</span>';
+        
         if (!cloudDb && localUpdateTimestamp === 0) {
             syncState = 'match';
             statusHeadline = 'Both local storage and cloud storage are currently uninitialized.';
         } else if (localUpdateTimestamp > cloudUpdateTimestamp) {
             syncState = 'local-newer';
-            statusHeadline = 'Your Local Cache is newer than the Cloud Backup.';
+statusHeadline = '<span style="color: #2563eb; font-weight: bold;">Your Local Cache is newer than the Cloud Backup.</span>';
         } else if (cloudUpdateTimestamp > localUpdateTimestamp) {
             syncState = 'cloud-newer';
-            statusHeadline = 'The Cloud Backup is newer than your Local Cache.';
+statusHeadline = '<span style="color: #16a34a; font-weight: bold;">The Cloud Backup is newer than your Local Cache.</span>';
         } else if (!cloudDb && localUpdateTimestamp > 0) {
             syncState = 'local-newer';
             statusHeadline = 'No file found in the cloud. Local cache is ready to back up.';
