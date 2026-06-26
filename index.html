@@ -269,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v46.3</div>
+    <div class="version-watermark">RNE Tracker • v46.4</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260626_v46.3
+        // VERSION TRACKER REFERENCE: 260626_v46.4
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1071,7 +1071,7 @@
         }
 
         // ==========================================
-        // LOCAL PDF GENERATION SUBENGINE LAYER (v46.3)
+        // LOCAL PDF GENERATION SUBENGINE LAYER (v46.4)
         // ==========================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1371,7 +1371,6 @@ async function manuallyTriggerCloudBackup() {
     }
     updateCloudStatusInterfaceDisplay("☁ Fetching State...");
     try {
-        // 1. Check for file ID via your native Google endpoint loop
         if (!gdriveFileId) {
             let response = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, { 
                 headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
@@ -1382,7 +1381,6 @@ async function manuallyTriggerCloudBackup() {
             }
         }
         
-        // 2. Fetch the cloud data using your native media endpoint block
         let cloudDb = null;
         if (gdriveFileId) {
             let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, { 
@@ -1393,7 +1391,6 @@ async function manuallyTriggerCloudBackup() {
             }
         }
 
-        // 3. Securely handle local metadata parsing
         let localMeta = { lastUpdated: 0 };
         try {
             const rawMeta = localStorage.getItem('household_meta');
@@ -1401,7 +1398,7 @@ async function manuallyTriggerCloudBackup() {
                 localMeta = JSON.parse(rawMeta) || { lastUpdated: 0 };
             }
         } catch (e) {
-            console.warn("Local metadata missing or unreadable, defaulting.", e);
+            console.warn("Local metadata missing, defaulting.", e);
         }
 
         const localUpdateTimestamp = localMeta && localMeta.lastUpdated ? localMeta.lastUpdated : 0;
@@ -1448,40 +1445,109 @@ async function manuallyTriggerCloudBackup() {
             await manuallyTriggerCloudBackup();
         }
 
-        async function performCloudPullExtractionSequence() {
-            updateCloudStatusInterfaceDisplay("☁ Downloading...");
-            if (!gdriveFileId) gdriveFileId = await locateDedicatedDatabaseFileOnCloudStorage();
-            if (!gdriveFileId) {
-                updateCloudStatusInterfaceDisplay("☁ Cloud File Missing");
-                return;
+async function performCloudPullExtractionSequence() {
+    if (!activeAccessToken) return;
+    updateCloudStatusInterfaceDisplay("☁ Downloading...");
+
+    try {
+        if (!gdriveFileId) {
+            let fileSearchResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, { 
+                headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
+            });
+            let searchResult = await fileSearchResponse.json();
+            if (searchResult.files && searchResult.files.length > 0) {
+                gdriveFileId = searchResult.files[0].id;
             }
-            const cloudDb = await downloadDataPayloadFromCloudStorageFile(gdriveFileId);
+        }
+
+        if (!gdriveFileId) {
+            updateCloudStatusInterfaceDisplay("☁ Cloud File Missing");
+            return;
+        }
+
+        let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, { 
+            headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
+        });
+
+        if (response.ok) {
+            let cloudDb = await response.json();
             if (cloudDb) {
                 localStorage.setItem('household_expenses', JSON.stringify(cloudDb.expenses || []));
                 localStorage.setItem('household_templates', JSON.stringify(cloudDb.templates || []));
                 localStorage.setItem('household_meta', JSON.stringify(cloudDb.meta || { lastUpdated: Date.now() }));
                 updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
                 location.reload();
-            } else {
-                updateCloudStatusInterfaceDisplay("☁ Extract Action Failed");
             }
+        } else {
+            updateCloudStatusInterfaceDisplay("☁ Extract Action Failed");
+        }
+    } catch (err) {
+        console.error("Cloud Pull Stack Error:", err);
+        updateCloudStatusInterfaceDisplay("☁ Extract Action Failed");
+    }
+}
+
+async function performCloudWriteExecutionSequence(isInitialInstantiation = false) {
+    if (!activeAccessToken) return;
+    updateCloudStatusInterfaceDisplay("☁ Synchronizing...");
+
+    // Ensure metadata timestamp is accurate right before saving
+    meta.lastUpdated = Date.now();
+    saveStateToLocalStorage();
+
+    const payload = {
+        expenses: JSON.parse(localStorage.getItem('household_expenses')) || [],
+        templates: JSON.parse(localStorage.getItem('household_templates')) || [],
+        meta: JSON.parse(localStorage.getItem('household_meta')) || { lastUpdated: Date.now() }
+    };
+
+    try {
+        let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+        let method = 'POST';
+
+        if (gdriveFileId) {
+            url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`;
+            method = 'PATCH';
         }
 
-        async function performCloudWriteExecutionSequence() {
-            updateCloudStatusInterfaceDisplay("☁ Synchronizing...");
-            const payload = {
-                expenses: JSON.parse(localStorage.getItem('household_expenses')) || [],
-                templates: JSON.parse(localStorage.getItem('household_templates')) || [],
-                meta: JSON.parse(localStorage.getItem('household_meta')) || { lastUpdated: Date.now() }
-            };
-        
-            const response = await uploadPayloadDataIntoCloudStorage(gdriveFileId, payload);
-            if (response.ok) {
-                updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
-            } else {
-                updateCloudStatusInterfaceDisplay("☁ Write Action Failed");
-            }
+        const metadata = {
+            name: DEDICATED_FILE_NAME,
+            mimeType: 'application/json'
+        };
+
+        const boundary = '32626_v46_boundary_sync';
+        const delimiter = `\r\n--${boundary}\r\n`;
+        const closeDelimiter = `\r\n--${boundary}--`;
+
+        let body = delimiter +
+            'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+            JSON.stringify(metadata) +
+            delimiter +
+            'Content-Type: application/json\r\n\r\n' +
+            JSON.stringify(payload) +
+            closeDelimiter;
+
+        let response = await fetch(url, {
+            method: method,
+            headers: {
+                'Authorization': `Bearer ${activeAccessToken}`,
+                'Content-Type': `multipart/related; boundary=${boundary}`
+            },
+            body: body
+        });
+
+        if (response.ok) {
+            let resData = await response.json();
+            if (resData.id) gdriveFileId = resData.id;
+            updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
+        } else {
+            updateCloudStatusInterfaceDisplay("☁ Write Action Failed");
         }
+    } catch (err) {
+        console.error("Cloud Write Stack Error:", err);
+        updateCloudStatusInterfaceDisplay("☁ Write Action Failed");
+    }
+}
 
         // ==========================================
         // DYNAMIC DOM RENDERING PIPELINE CONTROLLER
