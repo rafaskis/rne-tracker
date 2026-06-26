@@ -427,7 +427,7 @@
                 <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
                 <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
             `;
-            // Re-bind global elements so expense actions don't break after a sync check
+            // Ensure the main entry form elements still have access to these references
             document.getElementById('choiceLeftActionBtn').style.display = "inline-block";
             document.getElementById('choiceRightActionBtn').style.display = "inline-block";
         }
