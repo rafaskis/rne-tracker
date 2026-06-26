@@ -1364,54 +1364,69 @@
             }
         }
 
-        async function manuallyTriggerCloudBackup() {
-            if (!activeAccessToken) {
-                updateCloudStatusInterfaceDisplay("☁ Access Token Missing");
-                return;
-            }
-            updateCloudStatusInterfaceDisplay("☁ Fetching State...");
-            try {
-                if (!gdriveFileId) {
-                    gdriveFileId = await locateDedicatedDatabaseFileOnCloudStorage();
-                }
-                
-                let cloudDb = null;
-                if (gdriveFileId) {
-                    cloudDb = await downloadDataPayloadFromCloudStorageFile(gdriveFileId);
-                }
-        
-                const localMeta = JSON.parse(localStorage.getItem('household_meta')) || { lastUpdated: 0 };
-                const localUpdateTimestamp = localMeta.lastUpdated || 0;
-                const cloudUpdateTimestamp = (cloudDb && cloudDb.meta) ? (cloudDb.meta.lastUpdated || 0) : 0;
-        
-                const localDateStr = localUpdateTimestamp ? new Date(localUpdateTimestamp).toLocaleString() : "Never";
-                const cloudDateStr = cloudUpdateTimestamp ? new Date(cloudUpdateTimestamp).toLocaleString() : "Empty Storage";
-        
-                let syncState = 'match';
-                let statusHeadline = 'Your offline storage is perfectly matching cloud copies.';
-        
-                if (localUpdateTimestamp > cloudUpdateTimestamp) {
-                    syncState = 'local-newer';
-                    statusHeadline = 'Your Local Cache is newer than the Cloud Backup.';
-                } else if (cloudUpdateTimestamp > localUpdateTimestamp) {
-                    syncState = 'cloud-newer';
-                    statusHeadline = 'The Cloud Backup is newer than your Local Cache.';
-                } else if (!cloudDb && localUpdateTimestamp > 0) {
-                    syncState = 'local-newer';
-                    statusHeadline = 'No file found in the cloud. Local cache is ready to back up.';
-                }
-        
-                const decision = await presentCloudSyncCrossroadsPrompt(syncState, statusHeadline, localDateStr, cloudDateStr);
-                if (decision === 'push') {
-                    await performCloudWriteExecutionSequence();
-                } else if (decision === 'pull') {
-                    await performCloudPullExtractionSequence();
-                }
-            } catch (err) {
-                console.error(err);
-                updateCloudStatusInterfaceDisplay("☁ Dynamic Sync Error");
-            }
+async function manuallyTriggerCloudBackup() {
+    if (!activeAccessToken) {
+        updateCloudStatusInterfaceDisplay("☁ Access Token Missing");
+        return;
+    }
+    updateCloudStatusInterfaceDisplay("☁ Fetching State...");
+    try {
+        if (!gdriveFileId) {
+            gdriveFileId = await locateDedicatedDatabaseFileOnCloudStorage();
         }
+        
+        let cloudDb = null;
+        if (gdriveFileId) {
+            cloudDb = await downloadDataPayloadFromCloudStorageFile(gdriveFileId);
+        }
+
+        // 1. Fully defend local database parsing against an empty cache
+        let localMeta = { lastUpdated: 0 };
+        try {
+            const rawMeta = localStorage.getItem('household_meta');
+            if (rawMeta) {
+                localMeta = JSON.parse(rawMeta) || { lastUpdated: 0 };
+            }
+        } catch (e) {
+            console.warn("Local metadata missing or unreadable, defaulting.", e);
+        }
+
+        const localUpdateTimestamp = localMeta && localMeta.lastUpdated ? localMeta.lastUpdated : 0;
+        const cloudUpdateTimestamp = (cloudDb && cloudDb.meta) ? (cloudDb.meta.lastUpdated || 0) : 0;
+
+        const localDateStr = localUpdateTimestamp ? new Date(localUpdateTimestamp).toLocaleString() : "Never (Empty Local Cache)";
+        const cloudDateStr = cloudUpdateTimestamp ? new Date(cloudUpdateTimestamp).toLocaleString() : "Empty Cloud Storage";
+
+        let syncState = 'match';
+        let statusHeadline = 'Your offline storage is perfectly matching cloud copies.';
+
+        // 2. Clear state logic mapping
+        if (!cloudDb && localUpdateTimestamp === 0) {
+            // Both are completely fresh
+            syncState = 'match';
+            statusHeadline = 'Both local storage and cloud storage are currently uninitialized.';
+        } else if (localUpdateTimestamp > cloudUpdateTimestamp) {
+            syncState = 'local-newer';
+            statusHeadline = 'Your Local Cache is newer than the Cloud Backup.';
+        } else if (cloudUpdateTimestamp > localUpdateTimestamp) {
+            syncState = 'cloud-newer';
+            statusHeadline = 'The Cloud Backup is newer than your Local Cache.';
+        } else if (!cloudDb && localUpdateTimestamp > 0) {
+            syncState = 'local-newer';
+            statusHeadline = 'No file found in the cloud. Local cache is ready to back up.';
+        }
+
+        const decision = await presentCloudSyncCrossroadsPrompt(syncState, statusHeadline, localDateStr, cloudDateStr);
+        if (decision === 'push') {
+            await performCloudWriteExecutionSequence();
+        } else if (decision === 'pull') {
+            await performCloudPullExtractionSequence();
+        }
+    } catch (err) {
+        console.error("Sync Crossroads Failure Details:", err);
+        updateCloudStatusInterfaceDisplay("☁ Dynamic Sync Error");
+    }
+}
 
         async function manuallyTriggerCloudRestore() {
             if (!activeAccessToken) {
