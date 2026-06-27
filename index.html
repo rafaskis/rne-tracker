@@ -219,11 +219,13 @@
             <select id="monthViewFilter" onchange="render()"></select>
         </div>
         
-        <button class="btn-nav-arrow" onclick="exportToPDF()" title="Export PDF" style="display: inline-flex; align-items: center; justify-content: center; padding: 4px; width: 48px; height: 48px;">
-            <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor;">
-                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/>
-            </svg>
-        </button>
+<button class="btn-nav-arrow" onclick="exportPDFReport()" title="Export PDF" style="display: inline-flex; align-items: center; justify-content: center; padding: 4px; width: 48px; height: 48px;">
+    <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor;">
+        <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/>
+    </svg>
+</button>
+
+
 
         <button class="btn-nav-arrow" onclick="stepMonth(1)" title="Next Month">▶</button>
     </div>
@@ -295,12 +297,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v46.6</div>
+    <div class="version-watermark">RNE Tracker • v46.7</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260627_v46.6
+        // VERSION TRACKER REFERENCE: 260627_v46.7
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1097,7 +1099,7 @@
         }
 
         // ==========================================
-        // LOCAL PDF GENERATION SUBENGINE LAYER (v46.6)
+        // LOCAL PDF GENERATION SUBENGINE LAYER (v46.7)
         // ==========================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1691,6 +1693,164 @@ async function performCloudWriteExecutionSequence(isInitialInstantiation = false
                 container.appendChild(groupContainer);
             });
         }
+
+function exportPDFReport() {
+    // 1. Open a isolated window frame that the browser's view layout can't warp
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) {
+        alert("Please allow popups to export the PDF report.");
+        return;
+    }
+
+    // 2. Fetch the data containers cleanly from your DOM labels
+    const currentMonthLabel = document.getElementById('monthViewFilter')?.options[document.getElementById('monthViewFilter').selectedIndex]?.text || "Report";
+    const expensesHtml = document.getElementById('listContainer')?.innerHTML || "";
+
+    // 3. Populate it with an immutable snapshot containing your dots and layout styles
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>RNE Tracker - ${currentMonthLabel}</title>
+            <style>
+                * {
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                    box-sizing: border-box;
+                }
+                
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    background: #ffffff !important;
+                    color: #111827 !important;
+                    padding: 40px;
+                    margin: 0;
+                }
+
+                h2 {
+                    font-size: 24px;
+                    color: #1f2937;
+                    border-bottom: 3px solid #2563eb;
+                    padding-bottom: 10px;
+                    margin-top: 0;
+                    margin-bottom: 25px;
+                }
+
+                /* Container Restructuring */
+                .group-container {
+                    margin-bottom: 20px;
+                    background: #ffffff;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    page-break-inside: avoid;
+                }
+
+                .group-header {
+                    background: #f1f5f9 !important;
+                    padding: 12px 16px;
+                    font-weight: bold;
+                    font-size: 14px;
+                    color: #1e293b;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    border-bottom: 1px solid #e5e7eb;
+                }
+
+                /* Force rows to flow inline without layout wrapping drop-downs */
+                .group-content {
+                    display: flex !important;
+                    flex-direction: column !important;
+                    gap: 0 !important;
+                    margin-top: 0 !important;
+                    padding: 0 !important;
+                }
+
+                .expense-item {
+                    display: flex !important;
+                    flex-direction: row !important;
+                    justify-content: space-between !important;
+                    align-items: center !important;
+                    padding: 12px 16px !important;
+                    background: #ffffff !important;
+                    border: none !important;
+                    border-bottom: 1px solid #f1f5f9 !important;
+                    opacity: 1 !important;
+                }
+
+                .expense-item:last-child {
+                    border-bottom: none !important;
+                }
+
+                /* Retain dot structure alignment */
+                .info {
+                    display: flex !important;
+                    flex-direction: row !important;
+                    align-items: center !important;
+                    gap: 12px !important;
+                    width: auto !important;
+                }
+
+                .name-wrapper {
+                    display: flex !important;
+                    flex-direction: column !important;
+                    align-items: flex-start !important;
+                    gap: 2px !important;
+                }
+
+                .name {
+                    font-size: 15px !important;
+                    font-weight: 600 !important;
+                    color: #0f172a !important;
+                }
+
+                .cost-row {
+                    margin-top: 0 !important;
+                }
+
+                .cost {
+                    font-size: 16px !important;
+                    font-weight: 700 !important;
+                    color: #0f172a !important;
+                }
+
+                .origin-label {
+                    font-size: 11px !important;
+                    color: #64748b !important;
+                    background: #f8fafc !important;
+                    padding: 2px 6px !important;
+                    border-radius: 4px !important;
+                    border: 1px solid #e2e8f0 !important;
+                }
+
+                /* Complete removal of the functional interface buttons */
+                .actions, button, .group-badges-container {
+                    display: none !important;
+                }
+            </style>
+        </head>
+        <body>
+            <h2>RNE Tracker Report — ${currentMonthLabel}</h2>
+            <div class="expense-list">
+                ${expensesHtml}
+            </div>
+            <script>
+                window.onload = function() {
+                    setTimeout(function() {
+                        window.print();
+                        window.close();
+                    }, 350);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+}
+
+
     </script>
 </body>
 </html>
