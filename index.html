@@ -297,12 +297,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v46.7</div>
+    <div class="version-watermark">RNE Tracker • v46.8</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260627_v46.7
+        // VERSION TRACKER REFERENCE: 260627_v46.8
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1099,7 +1099,7 @@
         }
 
         // ==========================================
-        // LOCAL PDF GENERATION SUBENGINE LAYER (v46.7)
+        // LOCAL PDF GENERATION SUBENGINE LAYER (v46.8)
         // ==========================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1695,22 +1695,24 @@ async function performCloudWriteExecutionSequence(isInitialInstantiation = false
         }
 
 function exportPDFReport() {
-    // 1. Open a isolated window frame that the browser's view layout can't warp
+    // 1. Open the clean template window sandbox
     const printWindow = window.open('', '_blank', 'width=900,height=700');
     if (!printWindow) {
         alert("Please allow popups to export the PDF report.");
         return;
     }
 
-    // 2. Fetch the data containers cleanly from your DOM labels
-    const currentMonthLabel = document.getElementById('monthViewFilter')?.options[document.getElementById('monthViewFilter').selectedIndex]?.text || "Report";
+    // 2. Safely grab the current display month and lists
+    const monthFilter = document.getElementById('monthViewFilter');
+    const currentMonthLabel = monthFilter ? monthFilter.options[monthFilter.selectedIndex].text : "Report";
     const expensesHtml = document.getElementById('listContainer')?.innerHTML || "";
 
-    // 3. Populate it with an immutable snapshot containing your dots and layout styles
+    // 3. Rebuild the printing template document with a staggered render loop
     printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
+            <meta charset="UTF-8">
             <title>RNE Tracker - ${currentMonthLabel}</title>
             <style>
                 * {
@@ -1723,20 +1725,19 @@ function exportPDFReport() {
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                     background: #ffffff !important;
                     color: #111827 !important;
-                    padding: 40px;
+                    padding: 30px;
                     margin: 0;
                 }
 
                 h2 {
-                    font-size: 24px;
+                    font-size: 22px;
                     color: #1f2937;
                     border-bottom: 3px solid #2563eb;
-                    padding-bottom: 10px;
+                    padding-bottom: 8px;
                     margin-top: 0;
-                    margin-bottom: 25px;
+                    margin-bottom: 20px;
                 }
 
-                /* Container Restructuring */
                 .group-container {
                     margin-bottom: 20px;
                     background: #ffffff;
@@ -1758,12 +1759,10 @@ function exportPDFReport() {
                     border-bottom: 1px solid #e5e7eb;
                 }
 
-                /* Force rows to flow inline without layout wrapping drop-downs */
                 .group-content {
                     display: flex !important;
                     flex-direction: column !important;
                     gap: 0 !important;
-                    margin-top: 0 !important;
                     padding: 0 !important;
                 }
 
@@ -1774,39 +1773,29 @@ function exportPDFReport() {
                     align-items: center !important;
                     padding: 12px 16px !important;
                     background: #ffffff !important;
-                    border: none !important;
                     border-bottom: 1px solid #f1f5f9 !important;
-                    opacity: 1 !important;
                 }
 
                 .expense-item:last-child {
                     border-bottom: none !important;
                 }
 
-                /* Retain dot structure alignment */
                 .info {
                     display: flex !important;
                     flex-direction: row !important;
                     align-items: center !important;
                     gap: 12px !important;
-                    width: auto !important;
                 }
 
                 .name-wrapper {
                     display: flex !important;
                     flex-direction: column !important;
-                    align-items: flex-start !important;
-                    gap: 2px !important;
                 }
 
                 .name {
                     font-size: 15px !important;
                     font-weight: 600 !important;
                     color: #0f172a !important;
-                }
-
-                .cost-row {
-                    margin-top: 0 !important;
                 }
 
                 .cost {
@@ -1822,9 +1811,10 @@ function exportPDFReport() {
                     padding: 2px 6px !important;
                     border-radius: 4px !important;
                     border: 1px solid #e2e8f0 !important;
+                    width: fit-content;
                 }
 
-                /* Complete removal of the functional interface buttons */
+                /* Strip interface elements out */
                 .actions, button, .group-badges-container {
                     display: none !important;
                 }
@@ -1835,14 +1825,31 @@ function exportPDFReport() {
             <div class="expense-list">
                 ${expensesHtml}
             </div>
+            
             <script>
-                window.onload = function() {
+                // This sequence ensures the DOM trees are fully established before firing print engines
+                function runSecurePrintSequence() {
                     setTimeout(function() {
                         window.print();
-                        window.close();
-                    }, 350);
-                };
+                        // Give the print preview modal time to open before terminating the frame context
+                        setTimeout(function() { window.close(); }, 500);
+                    }, 500);
+                }
+                
+                if (document.readyState === 'complete') {
+                    runSecurePrintSequence();
+                } else {
+                    window.addEventListener('load', runSecurePrintSequence);
+                }
             <\/script>
+        </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+}
+
+            </script>
         </body>
         </html>
     `);
