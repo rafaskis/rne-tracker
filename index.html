@@ -31,6 +31,32 @@
             --banner-border: #fcd34d;
         }
 
+@media print {
+    /* Force the browser to render your custom colors, dots, and layouts */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Hide the top navbar, manual backup/restore buttons, and utility inputs */
+    .header-bar,
+    .utility-card,
+    .floating-action-container,
+    #customChoiceOverlay,
+    .actions,
+    button {
+        display: none !important;
+    }
+
+    /* Unroll any screen wrappers so the list spans nicely over the full PDF page */
+    body {
+        background: #ffffff !important;
+        margin: 0;
+        padding: 0;
+    }
+}
+
+
         /* Dark Theme Variables Layer Override */
         [data-theme="dark"] {
             --bg-color: #121212;
@@ -269,12 +295,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v46.5</div>
+    <div class="version-watermark">RNE Tracker • v46.6</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260626_v46.5
+        // VERSION TRACKER REFERENCE: 260627_v46.6
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1071,7 +1097,7 @@
         }
 
         // ==========================================
-        // LOCAL PDF GENERATION SUBENGINE LAYER (v46.5)
+        // LOCAL PDF GENERATION SUBENGINE LAYER (v46.6)
         // ==========================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
