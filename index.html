@@ -269,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v46.5</div>
+    <div class="version-watermark">RNE Tracker • v47</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260626_v46.5
+        // VERSION TRACKER REFERENCE: 260628_v47
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -427,7 +427,6 @@
                 <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
                 <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
             `;
-            // Ensure the main entry form elements still have access to these references
             document.getElementById('choiceLeftActionBtn').style.display = "inline-block";
             document.getElementById('choiceRightActionBtn').style.display = "inline-block";
         }
@@ -1071,7 +1070,7 @@
         }
 
         // ==========================================
-        // LOCAL PDF GENERATION SUBENGINE LAYER (v46.5)
+        // DYNAMIC NATIVE PDF EXPORT ENGINE CORE (v47)
         // ==========================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1080,25 +1079,51 @@
             const rawValue = selectEl.value; 
             const [yearStr, monthStr] = rawValue.split('-');
             const bMonthYearText = `${monthStr}/${yearStr}`;
+            const formattedMonthParam = `${yearStr}_${monthStr}`;
             
             const monthFilteredItems = expenses.filter(e => e.month === rawValue);
             
             let totalUnpaidSum = 0;
+            let totalOverallSum = 0;
             monthFilteredItems.forEach(item => {
+                const cost = parseFloat(item.cost || 0);
+                totalOverallSum += cost;
                 if (item.status === 'unpaid') {
-                    totalUnpaidSum += parseFloat(item.cost || 0);
+                    totalUnpaidSum += cost;
                 }
             });
 
-            const timestamp = new Date();
-            const zPad = (num) => num.toString().padStart(2, '0');
-            const generatedClockStampStr = `${zPad(timestamp.getDate())}/${zPad(timestamp.getMonth() + 1)}/${timestamp.getFullYear()} - ${zPad(timestamp.getHours())}:${zPad(timestamp.getMinutes())}`;
+            const now = new Date();
+            const pad = (num) => num.toString().padStart(2, '0');
+            
+            const yy = now.getFullYear().toString().slice(-2);
+            const mm = pad(now.getMonth() + 1);
+            const dd = pad(now.getDate());
+            const hh = pad(now.getHours());
+            const min = pad(now.getMinutes());
+            
+            const fileNameString = `rne_report_${formattedMonthParam}-${yy}${mm}${dd}_${hh}${min}.pdf`;
+            const displayTimestampStr = `${dd}/${mm}/${now.getFullYear()} - ${hh}:${min}`;
 
             let htmlReportContent = `
-                <h1 class="print-title">RNE Tracker - ${bMonthYearText} Report</h1>
-                <div class="print-meta">Total unpaid: <strong>€${totalUnpaidSum.toFixed(2)}</strong></div>
-                <div class="print-meta">${generatedClockStampStr}</div>
-                <div class="print-spacer"></div>
+                <div class="pdf-wrapper">
+                    <div class="pdf-main-header">
+                        <div class="pdf-title-block">
+                            <h1>RNE Tracker Report</h1>
+                            <div class="pdf-timestamp">${displayTimestampStr}</div>
+                        </div>
+                        <div class="pdf-summary-card">
+                            <div class="pdf-summary-row text-danger">
+                                <span>TOTAL UNPAID:</span>
+                                <strong>€${totalUnpaidSum.toFixed(2)}</strong>
+                            </div>
+                            <div class="pdf-summary-row text-muted" style="margin-top: 4px; font-size: 12px; border-top: 1px solid #eee; padding-top: 4px;">
+                                <span>TOTAL OVERALL:</span>
+                                <span>€${totalOverallSum.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pdf-divider-line"></div>
             `;
 
             const sectionIconsLookupMap = { 0: '🏷️', 1: '🔄', 2: '📅', 3: '📊', 6: '📆', 12: '🏢' };
@@ -1121,15 +1146,15 @@
                             <div class="print-cat-title">
                                 <div class="print-cat-left">
                                     <span class="print-cat-icon">${iconDisplaySymbol}</span>
-                                    ${cfg.label}
+                                    <span>${cfg.label}</span>
                                 </div>
-                                <div class="print-cat-total-badge">€${categoryUnpaidSum.toFixed(2)}</div>
+                                <div class="print-cat-total-badge">Unpaid: €${categoryUnpaidSum.toFixed(2)}</div>
                             </div>
                     `;
                     
                     groupSpecificSubset.forEach(e => {
-                        const markerDotClass = e.status === 'paid' ? 'dot-paid' : 'dot-unpaid';
-                        const costPaidClass = e.status === 'paid' ? 'cost-paid' : '';
+                        const markerDotStyle = e.status === 'paid' ? 'background-color: #16a34a;' : 'background-color: #dc2626;';
+                        const itemTextStyle = e.status === 'paid' ? 'color: #888; text-decoration: line-through;' : 'color: #111; font-weight: 500;';
                         
                         let originLabelHtml = '';
                         if (e.originMonth && e.originMonth !== rawValue) {
@@ -1140,10 +1165,10 @@
                         htmlReportContent += `
                             <div class="print-expense-item">
                                 <div class="print-expense-left">
-                                    <span class="print-status-dot ${markerDotClass}">•</span>
-                                    <span>${e.name}${originLabelHtml}</span>
+                                    <span class="print-status-dot" style="${markerDotStyle}"></span>
+                                    <span style="${itemTextStyle}">${e.name}${originLabelHtml}</span>
                                 </div>
-                                <div class="print-expense-cost ${costPaidClass}">€${parseFloat(e.cost || 0).toFixed(2)}</div>
+                                <div class="print-expense-cost" style="${itemTextStyle}">€${parseFloat(e.cost || 0).toFixed(2)}</div>
                             </div>
                         `;
                     });
@@ -1152,7 +1177,7 @@
                 }
             });
 
-            const isWindowPrintSupported = (typeof window.print === 'function');
+            htmlReportContent += `</div>`;
 
             const iframe = document.createElement('iframe');
             iframe.style.position = 'fixed';
@@ -1168,24 +1193,29 @@
             iframeDoc.write(`
                 <html>
                 <head>
+                    <title>${fileNameString}</title>
                     <style>
-                        body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 20px; color: #000; background: #fff; }
-                        .print-title { font-size: 24px; margin: 0 0 4px 0; }
-                        .print-meta { font-size: 14px; margin: 2px 0; color: #333; }
-                        .print-spacer { height: 24px; }
-                        .print-cat-section { margin-bottom: 24px; page-break-inside: avoid; }
-                        .print-cat-title { font-size: 18px; font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 6px 0; margin-top: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; }
-                        .print-cat-left { display: flex; align-items: center; }
-                        .print-cat-icon { margin-right: 8px; }
-                        .print-cat-total-badge { font-weight: bold; }
-                        .print-expense-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px dashed #ccc; }
-                        .print-expense-left { display: flex; align-items: center; }
-                        .print-status-dot { font-size: 24px; line-height: 14px; vertical-align: middle; margin-right: 8px; display: inline-block; }
-                        .dot-paid { color: #16a34a !important; }
-                        .dot-unpaid { color: #dc2626 !important; }
-                        .print-originated-tag { font-size: 11px; color: #666; margin-left: 8px; font-style: italic; }
-                        .print-expense-cost { font-weight: 600; }
-                        .print-expense-cost.cost-paid { text-decoration: line-through; color: #666; }
+                        @page { size: A4; margin: 20mm; }
+                        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; color: #333; background: #fff; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        .pdf-wrapper { max-width: 100%; margin: 0 auto; }
+                        .pdf-main-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; }
+                        .pdf-title-block h1 { font-size: 26px; color: #111; margin: 0 0 4px 0; font-weight: 700; letter-spacing: -0.5px; }
+                        .pdf-timestamp { font-size: 12px; color: #666; font-weight: 500; }
+                        .pdf-summary-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; min-width: 200px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+                        .pdf-summary-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; }
+                        .text-danger { color: #dc2626; }
+                        .text-muted { color: #666; }
+                        .pdf-divider-line { height: 2px; background: #2563eb; margin: 14px 0 20px 0; border-radius: 1px; }
+                        .print-cat-section { margin-bottom: 22px; page-break-inside: avoid; }
+                        .print-cat-title { font-size: 14px; font-weight: 700; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px 12px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+                        .print-cat-left { display: flex; align-items: center; gap: 6px; }
+                        .print-cat-icon { font-size: 14px; display: inline-block; }
+                        .print-cat-total-badge { font-weight: 700; color: #475569; font-size: 12px; }
+                        .print-expense-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 8px; font-size: 14px; border-bottom: 1px solid #f1f5f9; page-break-inside: avoid; }
+                        .print-expense-left { display: flex; align-items: center; gap: 10px; }
+                        .print-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+                        .print-originated-tag { font-size: 11px; color: #666; margin-left: 6px; font-style: italic; font-weight: normal !important; text-decoration: none !important; display: inline-block; }
+                        .print-expense-cost { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
                     </style>
                 </head>
                 <body>
@@ -1196,9 +1226,10 @@
             iframeDoc.close();
 
             setTimeout(() => {
-                if (isWindowPrintSupported) {
+                if (typeof window.print === 'function') {
                     try {
                         iframe.contentWindow.focus();
+                        iframe.contentWindow.document.title = fileNameString;
                         iframe.contentWindow.print();
                     } catch (e) {
                         executeOperaFallbackAlert(bMonthYearText);
@@ -1206,10 +1237,7 @@
                 } else {
                     executeOperaFallbackAlert(bMonthYearText);
                 }
-                
-                setTimeout(() => {
-                    document.body.removeChild(iframe);
-                }, 2000);
+                setTimeout(() => { document.body.removeChild(iframe); }, 2000);
             }, 500);
         }
 
@@ -1364,190 +1392,188 @@
             }
         }
 
-async function manuallyTriggerCloudBackup() {
-    if (!activeAccessToken) {
-        updateCloudStatusInterfaceDisplay("☁ Access Token Missing");
-        return;
-    }
-    updateCloudStatusInterfaceDisplay("☁ Fetching State...");
-    try {
-        if (!gdriveFileId) {
-            let response = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, { 
-                headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-            });
-            let result = await response.json();
-            if (result.files && result.files.length > 0) {
-                gdriveFileId = result.files[0].id;
+        async function manuallyTriggerCloudBackup() {
+            if (!activeAccessToken) {
+                updateCloudStatusInterfaceDisplay("☁ Access Token Missing");
+                return;
+            }
+            updateCloudStatusInterfaceDisplay("☁ Fetching State...");
+            try {
+                if (!gdriveFileId) {
+                    let response = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, { 
+                        headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
+                    });
+                    let result = await response.json();
+                    if (result.files && result.files.length > 0) {
+                        gdriveFileId = result.files[0].id;
+                    }
+                }
+                
+                let cloudDb = null;
+                if (gdriveFileId) {
+                    let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, { 
+                        headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
+                    });
+                    if (response.ok) {
+                        cloudDb = await response.json();
+                    }
+                }
+
+                let localMeta = { lastUpdated: 0 };
+                try {
+                    const rawMeta = localStorage.getItem('household_meta');
+                    if (rawMeta) {
+                        localMeta = JSON.parse(rawMeta) || { lastUpdated: 0 };
+                    }
+                } catch (e) {
+                    console.warn("Local metadata missing, defaulting.", e);
+                }
+
+                const localUpdateTimestamp = localMeta && localMeta.lastUpdated ? localMeta.lastUpdated : 0;
+                const cloudUpdateTimestamp = (cloudDb && cloudDb.meta) ? (cloudDb.meta.lastUpdated || 0) : 0;
+
+                const localDateStr = localUpdateTimestamp ? new Date(localUpdateTimestamp).toLocaleString() : "Never (Empty Local Cache)";
+                const cloudDateStr = cloudUpdateTimestamp ? new Date(cloudUpdateTimestamp).toLocaleString() : "Empty Cloud Storage";
+
+                let syncState = 'match';
+                let statusHeadline = '<span style="color: #d4af37; font-weight: bold;">Your offline storage is perfectly matching cloud copies.</span>';
+                
+                if (!cloudDb && localUpdateTimestamp === 0) {
+                    syncState = 'match';
+                    statusHeadline = 'Both local storage and cloud storage are currently uninitialized.';
+                } else if (localUpdateTimestamp > cloudUpdateTimestamp) {
+                    syncState = 'local-newer';
+                    statusHeadline = '<span style="color: #2563eb; font-weight: bold;">Your Local Cache is newer than the Cloud Backup.</span>';
+                } else if (cloudUpdateTimestamp > localUpdateTimestamp) {
+                    syncState = 'cloud-newer';
+                    statusHeadline = '<span style="color: #16a34a; font-weight: bold;">The Cloud Backup is newer than your Local Cache.</span>';
+                } else if (!cloudDb && localUpdateTimestamp > 0) {
+                    syncState = 'local-newer';
+                    statusHeadline = 'No file found in the cloud. Local cache is ready to back up.';
+                }
+
+                const decision = await presentCloudSyncCrossroadsPrompt(syncState, statusHeadline, localDateStr, cloudDateStr);
+                if (decision === 'push') {
+                    await performCloudWriteExecutionSequence();
+                } else if (decision === 'pull') {
+                    await performCloudPullExtractionSequence();
+                }
+            } catch (err) {
+                console.error("Sync Crossroads Failure Details:", err);
+                updateCloudStatusInterfaceDisplay("☁ Dynamic Sync Error");
             }
         }
-        
-        let cloudDb = null;
-        if (gdriveFileId) {
-            let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, { 
-                headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-            });
-            if (response.ok) {
-                cloudDb = await response.json();
-            }
-        }
-
-        let localMeta = { lastUpdated: 0 };
-        try {
-            const rawMeta = localStorage.getItem('household_meta');
-            if (rawMeta) {
-                localMeta = JSON.parse(rawMeta) || { lastUpdated: 0 };
-            }
-        } catch (e) {
-            console.warn("Local metadata missing, defaulting.", e);
-        }
-
-        const localUpdateTimestamp = localMeta && localMeta.lastUpdated ? localMeta.lastUpdated : 0;
-        const cloudUpdateTimestamp = (cloudDb && cloudDb.meta) ? (cloudDb.meta.lastUpdated || 0) : 0;
-
-        const localDateStr = localUpdateTimestamp ? new Date(localUpdateTimestamp).toLocaleString() : "Never (Empty Local Cache)";
-        const cloudDateStr = cloudUpdateTimestamp ? new Date(cloudUpdateTimestamp).toLocaleString() : "Empty Cloud Storage";
-
-        let syncState = 'match';
-let statusHeadline = '<span style="color: #d4af37; font-weight: bold;">Your offline storage is perfectly matching cloud copies.</span>';
-        
-        if (!cloudDb && localUpdateTimestamp === 0) {
-            syncState = 'match';
-            statusHeadline = 'Both local storage and cloud storage are currently uninitialized.';
-        } else if (localUpdateTimestamp > cloudUpdateTimestamp) {
-            syncState = 'local-newer';
-statusHeadline = '<span style="color: #2563eb; font-weight: bold;">Your Local Cache is newer than the Cloud Backup.</span>';
-        } else if (cloudUpdateTimestamp > localUpdateTimestamp) {
-            syncState = 'cloud-newer';
-statusHeadline = '<span style="color: #16a34a; font-weight: bold;">The Cloud Backup is newer than your Local Cache.</span>';
-        } else if (!cloudDb && localUpdateTimestamp > 0) {
-            syncState = 'local-newer';
-            statusHeadline = 'No file found in the cloud. Local cache is ready to back up.';
-        }
-
-        const decision = await presentCloudSyncCrossroadsPrompt(syncState, statusHeadline, localDateStr, cloudDateStr);
-        if (decision === 'push') {
-            await performCloudWriteExecutionSequence();
-        } else if (decision === 'pull') {
-            await performCloudPullExtractionSequence();
-        }
-    } catch (err) {
-        console.error("Sync Crossroads Failure Details:", err);
-        updateCloudStatusInterfaceDisplay("☁ Dynamic Sync Error");
-    }
-}
 
         async function manuallyTriggerCloudRestore() {
             if (!activeAccessToken) {
                 updateCloudStatusInterfaceDisplay("☁ Access Token Missing");
                 return;
             }
-            // Reuse the exact same comparison modal logic for a unified structure
             await manuallyTriggerCloudBackup();
         }
 
-async function performCloudPullExtractionSequence() {
-    if (!activeAccessToken) return;
-    updateCloudStatusInterfaceDisplay("☁ Downloading...");
+        async function performCloudPullExtractionSequence() {
+            if (!activeAccessToken) return;
+            updateCloudStatusInterfaceDisplay("☁ Downloading...");
 
-    try {
-        if (!gdriveFileId) {
-            let fileSearchResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, { 
-                headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-            });
-            let searchResult = await fileSearchResponse.json();
-            if (searchResult.files && searchResult.files.length > 0) {
-                gdriveFileId = searchResult.files[0].id;
+            try {
+                if (!gdriveFileId) {
+                    let fileSearchResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, { 
+                        headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
+                    });
+                    let searchResult = await fileSearchResponse.json();
+                    if (searchResult.files && searchResult.files.length > 0) {
+                        gdriveFileId = searchResult.files[0].id;
+                    }
+                }
+
+                if (!gdriveFileId) {
+                    updateCloudStatusInterfaceDisplay("☁ Cloud File Missing");
+                    return;
+                }
+
+                let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, { 
+                    headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
+                });
+
+                if (response.ok) {
+                    let cloudDb = await response.json();
+                    if (cloudDb) {
+                        localStorage.setItem('household_expenses', JSON.stringify(cloudDb.expenses || []));
+                        localStorage.setItem('household_templates', JSON.stringify(cloudDb.templates || []));
+                        localStorage.setItem('household_meta', JSON.stringify(cloudDb.meta || { lastUpdated: Date.now() }));
+                        updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
+                        location.reload();
+                    }
+                } else {
+                    updateCloudStatusInterfaceDisplay("☁ Extract Action Failed");
+                }
+            } catch (err) {
+                console.error("Cloud Pull Stack Error:", err);
+                updateCloudStatusInterfaceDisplay("☁ Extract Action Failed");
             }
         }
 
-        if (!gdriveFileId) {
-            updateCloudStatusInterfaceDisplay("☁ Cloud File Missing");
-            return;
-        }
+        async function performCloudWriteExecutionSequence(isInitialInstantiation = false) {
+            if (!activeAccessToken) return;
+            updateCloudStatusInterfaceDisplay("☁ Synchronizing...");
 
-        let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, { 
-            headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-        });
+            meta.lastUpdated = Date.now();
+            saveStateToLocalStorage();
 
-        if (response.ok) {
-            let cloudDb = await response.json();
-            if (cloudDb) {
-                localStorage.setItem('household_expenses', JSON.stringify(cloudDb.expenses || []));
-                localStorage.setItem('household_templates', JSON.stringify(cloudDb.templates || []));
-                localStorage.setItem('household_meta', JSON.stringify(cloudDb.meta || { lastUpdated: Date.now() }));
-                updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
-                location.reload();
+            const payload = {
+                expenses: JSON.parse(localStorage.getItem('household_expenses')) || [],
+                templates: JSON.parse(localStorage.getItem('household_templates')) || [],
+                meta: JSON.parse(localStorage.getItem('household_meta')) || { lastUpdated: Date.now() }
+            };
+
+            try {
+                let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+                let method = 'POST';
+
+                if (gdriveFileId) {
+                    url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`;
+                    method = 'PATCH';
+                }
+
+                const metadata = {
+                    name: DEDICATED_FILE_NAME,
+                    mimeType: 'application/json'
+                };
+
+                const boundary = '32626_v46_boundary_sync';
+                const delimiter = `\r\n--${boundary}\r\n`;
+                const closeDelimiter = `\r\n--${boundary}--`;
+
+                let body = delimiter +
+                    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+                    JSON.stringify(metadata) +
+                    delimiter +
+                    'Content-Type: application/json\r\n\r\n' +
+                    JSON.stringify(payload) +
+                    closeDelimiter;
+
+                let response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${activeAccessToken}`,
+                        'Content-Type': `multipart/related; boundary=${boundary}`
+                    },
+                    body: body
+                });
+
+                if (response.ok) {
+                    let resData = await response.json();
+                    if (resData.id) gdriveFileId = resData.id;
+                    updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
+                } else {
+                    updateCloudStatusInterfaceDisplay("☁ Write Action Failed");
+                }
+            } catch (err) {
+                console.error("Cloud Write Stack Error:", err);
+                updateCloudStatusInterfaceDisplay("☁ Write Action Failed");
             }
-        } else {
-            updateCloudStatusInterfaceDisplay("☁ Extract Action Failed");
         }
-    } catch (err) {
-        console.error("Cloud Pull Stack Error:", err);
-        updateCloudStatusInterfaceDisplay("☁ Extract Action Failed");
-    }
-}
-
-async function performCloudWriteExecutionSequence(isInitialInstantiation = false) {
-    if (!activeAccessToken) return;
-    updateCloudStatusInterfaceDisplay("☁ Synchronizing...");
-
-    // Ensure metadata timestamp is accurate right before saving
-    meta.lastUpdated = Date.now();
-    saveStateToLocalStorage();
-
-    const payload = {
-        expenses: JSON.parse(localStorage.getItem('household_expenses')) || [],
-        templates: JSON.parse(localStorage.getItem('household_templates')) || [],
-        meta: JSON.parse(localStorage.getItem('household_meta')) || { lastUpdated: Date.now() }
-    };
-
-    try {
-        let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-        let method = 'POST';
-
-        if (gdriveFileId) {
-            url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`;
-            method = 'PATCH';
-        }
-
-        const metadata = {
-            name: DEDICATED_FILE_NAME,
-            mimeType: 'application/json'
-        };
-
-        const boundary = '32626_v46_boundary_sync';
-        const delimiter = `\r\n--${boundary}\r\n`;
-        const closeDelimiter = `\r\n--${boundary}--`;
-
-        let body = delimiter +
-            'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-            JSON.stringify(metadata) +
-            delimiter +
-            'Content-Type: application/json\r\n\r\n' +
-            JSON.stringify(payload) +
-            closeDelimiter;
-
-        let response = await fetch(url, {
-            method: method,
-            headers: {
-                'Authorization': `Bearer ${activeAccessToken}`,
-                'Content-Type': `multipart/related; boundary=${boundary}`
-            },
-            body: body
-        });
-
-        if (response.ok) {
-            let resData = await response.json();
-            if (resData.id) gdriveFileId = resData.id;
-            updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
-        } else {
-            updateCloudStatusInterfaceDisplay("☁ Write Action Failed");
-        }
-    } catch (err) {
-        console.error("Cloud Write Stack Error:", err);
-        updateCloudStatusInterfaceDisplay("☁ Write Action Failed");
-    }
-}
 
         // ==========================================
         // DYNAMIC DOM RENDERING PIPELINE CONTROLLER
