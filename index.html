@@ -196,6 +196,14 @@
             margin-top: 4px;
         }
 
+        .vertical-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
         .btn-choice {
             flex: 1;
             padding: 12px;
@@ -219,14 +227,6 @@
             border-color: var(--utility);
             background-color: #f3f4f6;
             color: var(--utility);
-        }
-
-        .vertical-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            width: 100%;
-            margin-top: 10px;
         }
 
         .btn-choice-full {
@@ -565,7 +565,7 @@
     <div class="header-bar">
         <div class="header-title-version-container">
             <h1 class="header-title">RNE Tracker</h1>
-            <span class="header-version">v46.8</span>
+            <span class="header-version">v46.9</span>
         </div>
         <div class="cloud-integration-status-pill-bar" id="cloudStatusLabel" onclick="manuallyTriggerCloudBackup()">
             ☁ Offline Mode
@@ -1124,6 +1124,7 @@
                 const container = document.getElementById('modalButtonsContainer');
 
                 if (syncState === 'match') {
+                    container.className = "choice-buttons-row";
                     textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
                         ${statusHeadline}<br><br>
                         <span style=\"font-size:12px; color:var(--text-muted);\">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
@@ -1620,24 +1621,19 @@
         }
 
         function exportPDFReport() {
-            // 1. Fetch current month selection and list snapshot elements safely from live DOM
             const monthFilter = document.getElementById('monthViewFilter');
             const currentMonthLabel = monthFilter ? monthFilter.options[monthFilter.selectedIndex].text : "Report";
             const expensesHtml = document.getElementById('listContainer')?.innerHTML || "";
 
-            // 2. Create a temporary, sandbox print view container layer
             const printContainer = document.createElement('div');
             printContainer.id = 'app-native-print-view';
             
-            // 3. Inject explicit structural rules to enforce layout integrity across all devices
             printContainer.innerHTML = `
                 <style>
                     @media print {
-                        /* Target and fully hide primary interface wrappers */
                         body > *:not(#app-native-print-view) {
                             display: none !important;
                         }
-                        
                         #app-native-print-view {
                             display: block !important;
                             width: 100% !important;
@@ -1647,7 +1643,6 @@
                         }
                     }
 
-                    /* Absolute Document Style Layout Contracts */
                     #app-native-print-view {
                         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                         background: #ffffff !important;
@@ -1746,7 +1741,6 @@
                         width: fit-content;
                     }
 
-                    /* Unconditionally strip interface operational utilities */
                     #app-native-print-view .actions, 
                     #app-native-print-view button, 
                     #app-native-print-view .group-badges-container {
@@ -1759,14 +1753,10 @@
                 </div>
             `;
 
-            // 4. Attach temporary layout elements directly onto the active document tree
             document.body.appendChild(printContainer);
 
-            // 5. Fire print trigger sequence once layout bindings register smoothly
             setTimeout(() => {
                 window.print();
-                
-                // 6. Clean up custom DOM injections completely post sequence termination
                 setTimeout(() => {
                     printContainer.remove();
                 }, 1000);
