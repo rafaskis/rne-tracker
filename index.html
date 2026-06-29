@@ -1072,9 +1072,8 @@
         // 
 
 // =========================================================================
-// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v53)
+// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v53 CORRECTED)
 // =========================================================================
-
 function exportToPDF() {
     const selectEl = document.getElementById('monthViewFilter');
     if (!selectEl) return;
@@ -1162,7 +1161,7 @@ function exportToPDF() {
                         badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">EDITED</span>`;
                     }
                     
-                    // Robust check for original month variations across data frames
+                    // Correct key tracking alignment patch for e.originated property match
                     const targetOrigin = e.originated || e.originatedMonth || e.origin;
                     if (targetOrigin && String(targetOrigin).trim() !== "" && String(targetOrigin).substring(0, 7) !== rawValue) {
                         const cleanOriginStr = String(targetOrigin).substring(0, 7); // Safe extraction of YYYY-MM
