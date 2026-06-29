@@ -269,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v53</div>
+    <div class="version-watermark">RNE Tracker • v54</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260628_v53
+        // VERSION TRACKER REFERENCE: 260628_v54
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1072,7 +1072,7 @@
         // 
 
 // =========================================================================
-// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v53 CORRECTED)
+// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v54)
 // =========================================================================
 function exportToPDF() {
     const selectEl = document.getElementById('monthViewFilter');
@@ -1161,31 +1161,34 @@ function exportToPDF() {
                         badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">EDITED</span>`;
                     }
                     
-                    // UNIVERSAL DATA-TYPE SAFE ORIGINATED RESOLVER
-                    if (e.originated) {
+                    // UNIVERSAL SMART DATE RESOLVER
+                    const rawOrigin = e.originated || e.originatedMonth || e.origin;
+                    if (rawOrigin) {
                         let parsedYear = "";
                         let parsedMonth = "";
-                        
-                        // Scenario A: It is an active Date object configuration instance
-                        if (e.originated instanceof Date) {
-                            parsedYear = String(e.originated.getFullYear());
-                            parsedMonth = String(e.originated.getMonth() + 1).padStart(2, '0');
+                        const strOrigin = String(rawOrigin).trim();
+
+                        // Match DD/MM/YYYY standard formatted items
+                        if (strOrigin.includes('/')) {
+                            const parts = strOrigin.split('/');
+                            if (parts.length >= 3) {
+                                parsedMonth = parts[1].padStart(2, '0');
+                                parsedYear = parts[2].substring(0, 4);
+                            }
                         } 
-                        // Scenario B: It is a String context instance
-                        else if (typeof e.originated === 'string') {
-                            const match = e.originated.match(/^(\d{4})-(\d{2})/);
-                            if (match) {
-                                parsedYear = match[1];
-                                parsedMonth = match[2];
+                        // Match YYYY-MM-DD or YYYY-MM dash formatted items
+                        else if (strOrigin.includes('-')) {
+                            const parts = strOrigin.split('-');
+                            if (parts[0].length === 4) {
+                                parsedYear = parts[0];
+                                parsedMonth = parts[1].padStart(2, '0');
                             }
                         }
-                        
-                        // If we successfully derived a valid year/month timeline combo
+
+                        // Verify it doesn't match the current active view timeline
                         if (parsedYear && parsedMonth) {
-                            const checkCompKey = `${parsedYear}-${parsedMonth}`;
-                            
-                            // Only output badge if origin context month differs from current selection frame
-                            if (checkCompKey !== rawValue) {
+                            const itemOriginKey = `${parsedYear}-${parsedMonth}`;
+                            if (itemOriginKey !== rawValue) {
                                 badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">ORIGINATED: ${parsedMonth}/${parsedYear}</span>`;
                             }
                         }
@@ -1624,7 +1627,7 @@ function exportToPDF() {
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v53_boundary_sync';
+                const boundary = '32626_v54_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
