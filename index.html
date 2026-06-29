@@ -269,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v50</div>
+    <div class="version-watermark">RNE Tracker • v51</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260628_v50
+        // VERSION TRACKER REFERENCE: 260628_v51
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1072,7 +1072,7 @@
         // 
 
 // =========================================================================
-// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v50)
+// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v51)
 // =========================================================================
 function exportToPDF() {
     const selectEl = document.getElementById('monthViewFilter');
@@ -1082,16 +1082,20 @@ function exportToPDF() {
     // Exact month/year label resolution from the select box text
     const reportDateString = selectEl.options[selectEl.selectedIndex].text;
 
+    // Build Current Generated Timestamp: "as of DD/MM/YYYY HH:MM"
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
-    const timestamp = `${String(now.getFullYear()).slice(-2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+    const liveDateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+    const liveTimeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const asOfTimestampString = `as of ${liveDateStr} ${liveTimeStr}`;
 
-    // Safely cache original tab title to prevent permanent changes to the live web application context
+    // Document Title metadata timestamp definition
+    const timestamp = `${String(now.getFullYear()).slice(-2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
     const originalTitle = document.title;
     const parsedFileDate = rawValue.replace('-', '_');
     document.title = `rne_report_${parsedFileDate}-${timestamp}`;
 
-    // Compute metrics arrays
+    // Compute Summary Card aggregates
     const monthFilteredItems = expenses.filter(e => e.month === rawValue);
     let totalUnpaidSum = 0;
     let totalOverallSum = 0;
@@ -1116,20 +1120,34 @@ function exportToPDF() {
             });
 
             if (grpItems.length > 0) {
-                const groupSum = grpItems.reduce((sum, e) => sum + parseFloat(e.cost || 0), 0);
+                // Adjustment 4: Category sum tracks ONLY unpaid expenses
+                const groupUnpaidSum = grpItems.reduce((sum, e) => {
+                    return sum + (e.status === 'unpaid' ? parseFloat(e.cost || 0) : 0);
+                }, 0);
+
+                // Define Category Badge appearance state
+                let groupBadgeHtml = '';
+                if (groupUnpaidSum === 0) {
+                    groupBadgeHtml = `<span style="background: #dcfce7; color: #16a34a; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 800; border: 1px solid #bbf7d0;">PAID</span>`;
+                } else {
+                    groupBadgeHtml = `<span style="background: #94a3b8; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700;">€${groupUnpaidSum.toFixed(2)}</span>`;
+                }
 
                 expensesHtml += `
                     <div style="margin-bottom: 22px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #ffffff;">
                         <div style="background: #e2e8f0; padding: 10px 15px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e1;">
                             <span style="color: #334155; text-transform: uppercase; letter-spacing: 0.5px;">${grp.label}</span>
-                            <span style="background: #94a3b8; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700;">${groupSum.toFixed(2)} €</span>
+                            ${groupBadgeHtml}
                         </div>
                         <div>
                 `;
 
                 grpItems.forEach(e => {
-                    const itemColor = e.status === 'unpaid' ? '#dc2626' : '#16a34a';
-                    const originLabelHtml = e.isEdited ? ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px;">EDITED</span>` : '';
+                    const isUnpaid = e.status === 'unpaid';
+                    const itemColor = isUnpaid ? '#dc2626' : '#16a34a';
+                    // Adjustment 3: Inject line-through rendering configuration onto text objects for paid entries
+                    const costDecorationStyle = isUnpaid ? '' : 'text-decoration: line-through;';
+                    const originLabelHtml = e.isEdited ? ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block;">EDITED</span>` : '';
                     
                     expensesHtml += `
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e5e7eb;">
@@ -1137,7 +1155,7 @@ function exportToPDF() {
                                 <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: ${itemColor}; flex-shrink: 0;"></span>
                                 <span style="font-weight: 600; font-size: 14px; color: ${itemColor};">${e.name}${originLabelHtml}</span>
                             </div>
-                            <div style="font-weight: 700; font-size: 14px; color: ${itemColor}; text-align: right;">${parseFloat(e.cost || 0).toFixed(2)} €</div>
+                            <div style="font-weight: 700; font-size: 14px; color: ${itemColor}; ${costDecorationStyle} text-align: right;">€${parseFloat(e.cost || 0).toFixed(2)}</div>
                         </div>
                     `;
                 });
@@ -1147,7 +1165,7 @@ function exportToPDF() {
         });
     }
 
-    // 2. Open an isolated new document content workspace frame context
+    // 2. Open isolated frame window context descriptor 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
         alert("Please allow popups to export PDFs.");
@@ -1155,7 +1173,7 @@ function exportToPDF() {
         return;
     }
 
-    // 3. Complete Stream Transmission into the new context layout tree
+    // 3. Complete Document Context Write Buffer Stream
     printWindow.document.write(`
         <!DOCTYPE html>
         <html>
@@ -1174,7 +1192,7 @@ function exportToPDF() {
                 }
                 .report-header-container {
                     border-bottom: 2px solid #e5e7eb;
-                    padding-bottom: 12px;
+                    padding-bottom: 14px;
                     margin-bottom: 20px;
                     text-align: center;
                 }
@@ -1223,16 +1241,17 @@ function exportToPDF() {
             <div class="report-header-container">
                 <h2 class="report-title-main">RNE Tracker Report</h2>
                 <div class="report-subtitle-period">${reportDateString}</div>
+                <div class="report-subtitle-period" style="font-size: 14px; color: #6b7280; font-weight: 500; margin-top: 2px;">${asOfTimestampString}</div>
             </div>
             
             <div class="summary-grid-layout">
                 <div class="summary-card-box">
                     <span class="summary-card-label">Total Allocated Expenses</span>
-                    <span class="summary-card-value">${totalOverallSum.toFixed(2)} €</span>
+                    <span class="summary-card-value">€${totalOverallSum.toFixed(2)}</span>
                 </div>
                 <div class="summary-card-box">
                     <span class="summary-card-label">Outstanding Unpaid Arrears</span>
-                    <span class="summary-card-value" style="color: #dc2626;">${totalUnpaidSum.toFixed(2)} €</span>
+                    <span class="summary-card-value" style="color: #dc2626;">€${totalUnpaidSum.toFixed(2)}</span>
                 </div>
             </div>
 
@@ -1244,7 +1263,6 @@ function exportToPDF() {
                 function executeSecurePrintProcess() {
                     setTimeout(function() {
                         window.print();
-                        // REMOVED window.close() to completely fix mobile browser cancellation errors
                     }, 300);
                 }
                 if (document.readyState === 'complete') {
@@ -1259,11 +1277,12 @@ function exportToPDF() {
 
     printWindow.document.close();
     
-    // Safely reinstate previous main application tab titles
+    // Reinstate target main title properties to view
     setTimeout(() => {
         document.title = originalTitle;
     }, 1000);
 }
+
 
 
         // ==========================================
@@ -1562,7 +1581,7 @@ function exportToPDF() {
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v46_boundary_sync';
+                const boundary = '32626_v51_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
