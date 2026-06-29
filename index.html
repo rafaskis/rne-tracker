@@ -269,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v51</div>
+    <div class="version-watermark">RNE Tracker • v52</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260628_v51
+        // VERSION TRACKER REFERENCE: 260628_v52
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1072,12 +1072,12 @@
         // 
 
 // =========================================================================
-// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v51)
+// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v52)
 // =========================================================================
 function exportToPDF() {
     const selectEl = document.getElementById('monthViewFilter');
     if (!selectEl) return;
-    const rawValue = selectEl.value;
+    const rawValue = selectEl.value; // Format: YYYY-MM
     
     // Exact month/year label resolution from the select box text
     const reportDateString = selectEl.options[selectEl.selectedIndex].text;
@@ -1120,7 +1120,7 @@ function exportToPDF() {
             });
 
             if (grpItems.length > 0) {
-                // Adjustment 4: Category sum tracks ONLY unpaid expenses
+                // Category sum tracks ONLY unpaid expenses
                 const groupUnpaidSum = grpItems.reduce((sum, e) => {
                     return sum + (e.status === 'unpaid' ? parseFloat(e.cost || 0) : 0);
                 }, 0);
@@ -1142,18 +1142,37 @@ function exportToPDF() {
                         <div>
                 `;
 
-                grpItems.forEach(e => {
+                // Adjustment 1: Sort items so 'unpaid' entries appear first before 'paid' entries
+                const sortedGrpItems = [...grpItems].sort((a, b) => {
+                    if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
+                    if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
+                    return 0;
+                });
+
+                sortedGrpItems.forEach(e => {
                     const isUnpaid = e.status === 'unpaid';
                     const itemColor = isUnpaid ? '#dc2626' : '#16a34a';
-                    // Adjustment 3: Inject line-through rendering configuration onto text objects for paid entries
                     const costDecorationStyle = isUnpaid ? '' : 'text-decoration: line-through;';
-                    const originLabelHtml = e.isEdited ? ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block;">EDITED</span>` : '';
+                    
+                    // Build Badges Container
+                    let badgeGroupHtml = '';
+                    
+                    if (e.isEdited) {
+                        badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block;">EDITED</span>`;
+                    }
+                    
+                    // Adjustment 2: Append Originated Label if different than the viewed report month
+                    if (e.originated && e.originated !== rawValue) {
+                        const [origYear, origMonth] = e.originated.split('-');
+                        const formattedOriginated = `${origMonth}/${origYear}`;
+                        badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block;">ORIGINATED: ${formattedOriginated}</span>`;
+                    }
                     
                     expensesHtml += `
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e5e7eb;">
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: ${itemColor}; flex-shrink: 0;"></span>
-                                <span style="font-weight: 600; font-size: 14px; color: ${itemColor};">${e.name}${originLabelHtml}</span>
+                                <span style="font-weight: 600; font-size: 14px; color: ${itemColor};">${e.name}${badgeGroupHtml}</span>
                             </div>
                             <div style="font-weight: 700; font-size: 14px; color: ${itemColor}; ${costDecorationStyle} text-align: right;">€${parseFloat(e.cost || 0).toFixed(2)}</div>
                         </div>
@@ -1282,7 +1301,6 @@ function exportToPDF() {
         document.title = originalTitle;
     }, 1000);
 }
-
 
 
         // ==========================================
@@ -1581,7 +1599,7 @@ function exportToPDF() {
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v51_boundary_sync';
+                const boundary = '32626_v52_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
