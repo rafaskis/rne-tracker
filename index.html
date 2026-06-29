@@ -1069,181 +1069,151 @@
             reader.readAsText(file);
         }
 
-        // ==========================================
-        // DYNAMIC NATIVE PDF EXPORT ENGINE CORE (v47)
-        // ==========================================
-        function exportToPDF() {
-            const selectEl = document.getElementById('monthViewFilter');
-            if (!selectEl) return;
-            
-            const rawValue = selectEl.value; 
-            const [yearStr, monthStr] = rawValue.split('-');
-            const bMonthYearText = `${monthStr}/${yearStr}`;
-            const formattedMonthParam = `${yearStr}_${monthStr}`;
-            
-            const monthFilteredItems = expenses.filter(e => e.month === rawValue);
-            
-            let totalUnpaidSum = 0;
-            let totalOverallSum = 0;
-            monthFilteredItems.forEach(item => {
-                const cost = parseFloat(item.cost || 0);
-                totalOverallSum += cost;
-                if (item.status === 'unpaid') {
-                    totalUnpaidSum += cost;
-                }
-            });
+        // 
 
-            const now = new Date();
-            const pad = (num) => num.toString().padStart(2, '0');
-            
-            const yy = now.getFullYear().toString().slice(-2);
-            const mm = pad(now.getMonth() + 1);
-            const dd = pad(now.getDate());
-            const hh = pad(now.getHours());
-            const min = pad(now.getMinutes());
-            
-            const fileNameString = `rne_report_${formattedMonthParam}-${yy}${mm}${dd}_${hh}${min}.pdf`;
-            const displayTimestampStr = `${dd}/${mm}/${now.getFullYear()} - ${hh}:${min}`;
+// ==========================================
+// DYNAMIC NATIVE PDF EXPORT ENGINE CORE (v47 - STABLE)
+// ==========================================
+function exportToPDF() {
+    const selectEl = document.getElementById('monthViewFilter');
+    if (!selectEl) return;
+    const rawValue = selectEl.value;
+    const [yearStr, monthStr] = rawValue.split('-');
+    const bMonthYearText = `${monthStr}/${yearStr}`;
+    const formattedMonthParam = `${yearStr}_${monthStr}`;
 
-            let htmlReportContent = `
-                <div class="pdf-wrapper">
-                    <div class="pdf-main-header">
-                        <div class="pdf-title-block">
-                            <h1>RNE Tracker Report</h1>
-                            <div class="pdf-timestamp">${displayTimestampStr}</div>
-                        </div>
-                        <div class="pdf-summary-card">
-                            <div class="pdf-summary-row text-danger">
-                                <span>TOTAL UNPAID:</span>
-                                <strong>€${totalUnpaidSum.toFixed(2)}</strong>
-                            </div>
-                            <div class="pdf-summary-row text-muted" style="margin-top: 4px; font-size: 12px; border-top: 1px solid #eee; padding-top: 4px;">
-                                <span>TOTAL OVERALL:</span>
-                                <span>€${totalOverallSum.toFixed(2)}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="pdf-divider-line"></div>
+    const monthFilteredItems = expenses.filter(e => e.month === rawValue);
+    let totalUnpaidSum = 0;
+    let totalOverallSum = 0;
+
+    monthFilteredItems.forEach(e => {
+        const val = parseFloat(e.cost || 0);
+        totalOverallSum += val;
+        if (e.status === 'unpaid') {
+            totalUnpaidSum += val;
+        }
+    });
+
+    const optionsText = selectEl.options[selectEl.selectedIndex].text;
+    const reportDateString = optionsText;
+    const fileNameString = `RNE-Report-${formattedMonthParam}`;
+
+    // 1. Compile Report HTML Structure
+    let htmlReportContent = `
+        <div class="pdf-wrapper">
+            <div class="pdf-main-header">
+                <div class="pdf-title-main">RNE Tracker — ${reportDateString}</div>
+                <div class="pdf-meta-date">Exported: ${new Date().toLocaleDateString()}</div>
+            </div>
+            
+            <div class="pdf-summary-grid">
+                <div class="pdf-summary-card">
+                    <span class="pdf-summary-label">Total Allocated Expenses</span>
+                    <span class="pdf-summary-val-bold">€${totalOverallSum.toFixed(2)}</span>
+                </div>
+                <div class="pdf-summary-card">
+                    <span class="pdf-summary-label">Outstanding Unpaid Arrears</span>
+                    <span class="pdf-summary-val-bold" style="color: #dc2626;">€${totalUnpaidSum.toFixed(2)}</span>
+                </div>
+            </div>
+    `;
+
+    recurrenceGroupsConfig.forEach((grp) => {
+        const grpItems = monthFilteredItems.filter(e => {
+            if (grp.key === 0) return !e.recur || e.recur === 0;
+            return e.recur === grp.key;
+        });
+
+        if (grpItems.length > 0) {
+            htmlReportContent += `
+                <div class="pdf-group-section">
+                    <div class="pdf-group-title">${grp.label}</div>
             `;
-
-            const sectionIconsLookupMap = { 0: '🏷️', 1: '🔄', 2: '📅', 3: '📊', 6: '📆', 12: '🏢' };
-
-            recurrenceGroupsConfig.forEach(cfg => {
-                const groupSpecificSubset = monthFilteredItems.filter(e => e.recur === cfg.key);
-                
-                if (groupSpecificSubset.length > 0) {
-                    const iconDisplaySymbol = sectionIconsLookupMap[cfg.key] || '📁';
-                    
-                    let categoryUnpaidSum = 0;
-                    groupSpecificSubset.forEach(e => {
-                        if (e.status === 'unpaid') {
-                            categoryUnpaidSum += parseFloat(e.cost || 0);
-                        }
-                    });
-                    
-                    htmlReportContent += `
-                        <div class="print-cat-section">
-                            <div class="print-cat-title">
-                                <div class="print-cat-left">
-                                    <span class="print-cat-icon">${iconDisplaySymbol}</span>
-                                    <span>${cfg.label}</span>
-                                </div>
-                                <div class="print-cat-total-badge">Unpaid: €${categoryUnpaidSum.toFixed(2)}</div>
-                            </div>
-                    `;
-                    
-                    groupSpecificSubset.forEach(e => {
-                        const markerDotStyle = e.status === 'paid' ? 'background-color: #16a34a;' : 'background-color: #dc2626;';
-                        const itemTextStyle = e.status === 'paid' ? 'color: #888; text-decoration: line-through;' : 'color: #111; font-weight: 500;';
-                        
-                        let originLabelHtml = '';
-                        if (e.originMonth && e.originMonth !== rawValue) {
-                            const [oYear, oMonth] = e.originMonth.split('-');
-                            originLabelHtml = `<span class="print-originated-tag">(Originated: ${oMonth}/${oYear})</span>`;
-                        }
-
-                        htmlReportContent += `
-                            <div class="print-expense-item">
-                                <div class="print-expense-left">
-                                    <span class="print-status-dot" style="${markerDotStyle}"></span>
-                                    <span style="${itemTextStyle}">${e.name}${originLabelHtml}</span>
-                                </div>
-                                <div class="print-expense-cost" style="${itemTextStyle}">€${parseFloat(e.cost || 0).toFixed(2)}</div>
-                            </div>
-                        `;
-                    });
-                    
-                    htmlReportContent += `</div>`;
-                }
-            });
-
-            htmlReportContent += `</div>`;
-
-            const iframe = document.createElement('iframe');
-            iframe.style.position = 'fixed';
-            iframe.style.right = '0';
-            iframe.style.bottom = '0';
-            iframe.style.width = '0';
-            iframe.style.height = '0';
-            iframe.style.border = 'none';
-            document.body.appendChild(iframe);
-
-            const iframeDoc = iframe.contentWindow.document;
             
-            iframeDoc.write(`
-                <html>
-                <head>
-                    <title>${fileNameString}</title>
-                    <style>
-                        @page { size: A4; margin: 20mm; }
-                        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; color: #333; background: #fff; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                        .pdf-wrapper { max-width: 100%; margin: 0 auto; }
-                        .pdf-main-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; }
-                        .pdf-title-block h1 { font-size: 26px; color: #111; margin: 0 0 4px 0; font-weight: 700; letter-spacing: -0.5px; }
-                        .pdf-timestamp { font-size: 12px; color: #666; font-weight: 500; }
-                        .pdf-summary-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; min-width: 200px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-                        .pdf-summary-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; }
-                        .text-danger { color: #dc2626; }
-                        .text-muted { color: #666; }
-                        .pdf-divider-line { height: 2px; background: #2563eb; margin: 14px 0 20px 0; border-radius: 1px; }
-                        .print-cat-section { margin-bottom: 22px; page-break-inside: avoid; }
-                        .print-cat-title { font-size: 14px; font-weight: 700; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px 12px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-                        .print-cat-left { display: flex; align-items: center; gap: 6px; }
-                        .print-cat-icon { font-size: 14px; display: inline-block; }
-                        .print-cat-total-badge { font-weight: 700; color: #475569; font-size: 12px; }
-                        .print-expense-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 8px; font-size: 14px; border-bottom: 1px solid #f1f5f9; page-break-inside: avoid; }
-                        .print-expense-left { display: flex; align-items: center; gap: 10px; }
-                        .print-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-                        .print-originated-tag { font-size: 11px; color: #666; margin-left: 6px; font-style: italic; font-weight: normal !important; text-decoration: none !important; display: inline-block; }
-                        .print-expense-cost { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
-                    </style>
-                </head>
-                <body>
-                    ${htmlReportContent}
-                </body>
-                </html>
-            `);
-            iframeDoc.close();
+            grpItems.forEach(e => {
+                const itemTextStyle = e.status === 'unpaid' ? 'color: #dc2626;' : 'color: #16a34a;';
+                const originLabelHtml = e.isEdited ? ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 6px;">EDITED</span>` : '';
+                
+                htmlReportContent += `
+                    <div class="pdf-expense-row">
+                        <div class="print-expense-info">
+                            <span class="print-expense-name" style="${itemTextStyle}">${e.name}${originLabelHtml}</span>
+                        </div>
+                        <div class="print-expense-cost" style="${itemTextStyle}">€${parseFloat(e.cost || 0).toFixed(2)}</div>
+                    </div>
+                `;
+            });
+            htmlReportContent += `</div>`;
+        }
+    });
+    htmlReportContent += `</div>`;
 
-            setTimeout(() => {
-                if (typeof window.print === 'function') {
-                    try {
-                        iframe.contentWindow.focus();
-                        iframe.contentWindow.document.title = fileNameString;
-                        iframe.contentWindow.print();
-                    } catch (e) {
-                        executeOperaFallbackAlert(bMonthYearText);
+    try {
+        // 2. Create an isolated, explicit Print View Element on the parent body tree
+        const printContainer = document.createElement('div');
+        printContainer.id = 'app-native-print-view';
+        
+        // 3. Inject explicit scoped style configurations alongside data elements
+        printContainer.innerHTML = `
+            <style>
+                @media print {
+                    /* Completely shield away the parent application layout from print view context */
+                    body > *:not(#app-native-print-view) {
+                        display: none !important;
                     }
-                } else {
-                    executeOperaFallbackAlert(bMonthYearText);
+                    body {
+                        background: #ffffff !important;
+                        color: #333333 !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                    }
+                    #app-native-print-view {
+                        display: block !important;
+                        width: 100% !important;
+                    }
                 }
-                setTimeout(() => { document.body.removeChild(iframe); }, 2000);
-            }, 500);
-        }
+                
+                #app-native-print-view {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+                    color: #333;
+                    background: #fff;
+                    padding: 20mm;
+                }
+                .pdf-wrapper { max-width: 100%; margin: 0 auto; }
+                .pdf-main-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 20px; }
+                .pdf-title-main { font-size: 22px; font-weight: 800; color: #1e293b; letter-spacing: -0.5px; }
+                .pdf-meta-date { font-size: 12px; color: #64748b; font-weight: 500; }
+                .pdf-summary-grid { display: flex; gap: 16px; margin-bottom: 24px; }
+                .pdf-summary-card { flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: 8px; display: flex; flex-direction: column; gap: 4px; }
+                .pdf-summary-label { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.5px; }
+                .pdf-summary-val-bold { font-size: 20px; font-weight: 800; color: #0f172a; }
+                .pdf-group-section { margin-bottom: 22px; page-break-inside: avoid; }
+                .pdf-group-title { font-size: 13px; font-weight: 700; text-transform: uppercase; color: #475569; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; margin-bottom: 8px; letter-spacing: 0.5px; border: 1px solid #e2e8f0; }
+                .pdf-expense-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid #f1f5f9; }
+                .print-expense-name { font-weight: 600; font-size: 14px; }
+                .print-expense-cost { font-weight: 700; font-size: 14px; text-align: right; }
+            </style>
+            ${htmlReportContent}
+        `;
 
-        function executeOperaFallbackAlert(reportDateString) {
-            alert(`💡 Mobile Printing Notice (${reportDateString}):\n\nYour current browser variant does not allow automatic print launching. \n\nPlease use your browser's menu option: \nSettings / Share -> Choose "Print" to export this view manually.`);
-        }
+        // 4. Mount container setup to layout tree
+        document.body.appendChild(printContainer);
+
+        // 5. Fire window subsystem printer hook safely
+        setTimeout(() => {
+            window.print();
+            
+            // 6. Clean out layout footprints completely post user terminal interaction closure
+            setTimeout(() => {
+                printContainer.remove();
+            }, 1000);
+        }, 50);
+
+    } catch (mobileErr) {
+        alert(`Mobile Printing Notice (${reportDateString}):\n\nYour current browser variant does not allow automatic print launching.\n\nPlease use your browser's menu option: \nSettings / Share -> Choose "Print" to export this view manually.`);
+    }
+}
+
 
         // ==========================================
         // GOOGLE DRIVE SYNC PIPELINE ARCHITECTURE LAYER
