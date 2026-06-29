@@ -6,7 +6,6 @@
     <title>RNE Tracker</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-        /* Color Palette Themes Engine Base Configuration */
         :root {
             --bg-color: #f4f6f9;
             --card-bg: #ffffff;
@@ -42,7 +41,6 @@
             align-items: center;
         }
 
-        /* Banner Notification Layout Engine Styles */
         .banner-notification {
             width: 100%;
             max-width: 500px;
@@ -129,7 +127,6 @@
             outline: none;
         }
 
-        /* Summary Cards Stack Matrix Grid Styles */
         .summary-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -165,7 +162,6 @@
         .summary-value.paid { color: var(--success); }
         .summary-value.unpaid { color: var(--danger); }
 
-        /* Expense Group Component Containers Struct */
         .group-container {
             background: var(--card-bg);
             border-radius: 8px;
@@ -334,7 +330,6 @@
             justify-content: center;
         }
 
-        /* Modal Overlay Interfaces Component View Styles */
         .modal {
             display: none;
             position: fixed;
@@ -414,7 +409,6 @@
         .btn-cancel { background: #e5e7eb; color: #374151; }
         .btn-submit { background: var(--primary); color: white; }
 
-        /* Cloud Synchronization Verification Overlay Layout Styles */
         .sync-info-bar {
             width: 100%;
             max-width: 500px;
@@ -453,7 +447,6 @@
             background-color: var(--btn-action-bg);
         }
 
-        /* Modal UI Component Ordering Logic Specs */
         .sync-modal-btn-container {
             display: flex;
             gap: 10px;
@@ -479,27 +472,6 @@
             background-color: #e5e7eb;
             color: #374151;
             order: 1;
-        }
-
-        /* Structural print container visibility configurations */
-        #app-native-print-view {
-            display: none;
-        }
-
-        @media print {
-            body * {
-                display: none !important;
-            }
-            #app-native-print-view, #app-native-print-view * {
-                display: block !important;
-            }
-            #app-native-print-view {
-                display: flex !important;
-                flex-direction: column !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 10px !important;
-            }
         }
     </style>
 </head>
@@ -540,7 +512,7 @@
         <div class="month-picker-container">
             <button class="btn-nav-arrow" onclick="changeMonth(-1)">◀</button>
             <select id="monthPickerSelect" class="month-picker" onchange="handleMonthSelectChange()">
-                </select>
+            </select>
             <button class="btn-nav-arrow" onclick="changeMonth(1)">▶</button>
         </div>
 
@@ -564,7 +536,7 @@
         </div>
 
         <div id="expensesContainer">
-            </div>
+        </div>
     </div>
 
     <button class="fab" onclick="openAddModal()">+</button>
@@ -603,7 +575,7 @@
                 <div class="form-group">
                     <label for="recurringUntilMonth">Repeat Until</label>
                     <select id="recurringUntilMonth">
-                        </select>
+                    </select>
                 </div>
             </div>
             
@@ -632,7 +604,7 @@
                     <span id="syncModalCloudCount" style="font-weight: 600; color: var(--text-main);">0 records</span>
                 </div>
                 <div id="syncModalComparisonStatusRow" style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); text-align: center; font-weight: bold;">
-                    </div>
+                </div>
             </div>
 
             <div class="sync-modal-btn-container">
@@ -647,21 +619,17 @@
     </div>
 
     <script>
-        // Core Internal Application Environment Registry Constants
         const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         let expenses = [];
         let groupStates = {};
 
-        // Track running index scopes
         let targetSelectedYear = 2026;
-        let targetSelectedMonth = 5; // Default June calendar focus tracking indices base
+        let targetSelectedMonth = 5;
 
-        // Google Cloud Ecosystem Connection Metadata Hooks
         let googleTokenClient = null;
         let activeCloudAccessToken = null;
         const GDRIVE_TARGET_FILENAME = "rne_tracker_backup_data.json";
 
-        // Application Lifecycles Entry Initialization Processing Framework
         window.addEventListener('DOMContentLoaded', () => {
             initializeYearMonthPickerOptions();
             loadStateFromLocalStorage();
@@ -696,7 +664,6 @@
             const picker = document.getElementById('monthPickerSelect');
             picker.innerHTML = '';
             
-            // Build calendar selection grid scope indices explicitly spanning 2026 through 2027
             for (let year = 2026; year <= 2027; year++) {
                 for (let m = 0; m < 12; m++) {
                     const opt = document.createElement('option');
@@ -737,7 +704,6 @@
             targetSelectedYear = Math.floor(totalMonths / 12);
             targetSelectedMonth = totalMonths % 12;
             
-            // Bounds clamp checks matching system boundaries limits
             if (targetSelectedYear < 2026) { targetSelectedYear = 2026; targetSelectedMonth = 0; }
             if (targetSelectedYear > 2027) { targetSelectedYear = 2027; targetSelectedMonth = 11; }
             
@@ -867,7 +833,6 @@
             });
         }
 
-        // Operational Mutation Mechanics Engine Layout Methods
         function openAddModal() {
             document.getElementById('modalTitle').textContent = "Add Expense";
             document.getElementById('expenseId').value = "";
@@ -922,7 +887,6 @@
             const isRecurring = document.getElementById('expenseIsRecurring').checked;
 
             if (!id) {
-                // Creation logic sequence routing tracks
                 if (isRecurring) {
                     const groupUUID = 'g-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
                     const [untilY, untilM] = document.getElementById('recurringUntilMonth').value.split('-').map(Number);
@@ -948,13 +912,11 @@
                     });
                 }
             } else {
-                // Data property mutations mapping updates safely
                 const existingIndex = expenses.findIndex(x => x.id === id);
                 if (existingIndex > -1) {
                     const oldItem = expenses[existingIndex];
                     
                     if (oldItem.recurringGroupId) {
-                        // Cascading atomic property propagation operations rule setup
                         expenses = expenses.map(x => {
                             if (x.recurringGroupId === oldItem.recurringGroupId) {
                                 return { ...x, title, amount, category };
@@ -1083,106 +1045,131 @@
         }
 
         // =========================================================================
-        // FIXED NATIVE PRINT SPOOLING EXPORT PIPELINE
+        // FIXED EXPORT TO PDF
         // =========================================================================
         function exportToPDF() {
-            try {
-                // Clean context variables extraction to prevent runtime thread crashing
-                const currentMonthName = months[targetSelectedMonth];
-                const displayPeriod = `${currentMonthName} ${targetSelectedYear}`;
+            // Safe variable lookup directly from running configuration context arrays
+            const currentMonthLabel = `${months[targetSelectedMonth]} ${targetSelectedYear}`;
 
-                const now = new Date();
-                const pad = (n) => String(n).padStart(2, '0');
-                const timestamp = `${String(now.getFullYear()).slice(-2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const timestamp = `${String(now.getFullYear()).slice(-2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
 
-                // Set application runtime stream layout metadata title attributes
-                const originalTitle = document.title;
-                document.title = `rne_report_${targetSelectedYear}_${pad(targetSelectedMonth + 1)}-${timestamp}`;
+            const originalTitle = document.title;
+            document.title = `rne_report_${targetSelectedYear}_${pad(targetSelectedMonth + 1)}-${timestamp}`;
 
-                const printContainer = document.createElement('div');
-                printContainer.id = 'app-native-print-view';
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                alert("Please allow popups to export PDFs.");
+                document.title = originalTitle;
+                return;
+            }
 
-                const filteredExpenses = expenses.filter(e => e.year === targetSelectedYear && e.month === targetSelectedMonth);
+            const filteredExpenses = expenses.filter(e => e.year === targetSelectedYear && e.month === targetSelectedMonth);
 
-                let expensesHtml = '';
-                if (filteredExpenses.length === 0) {
-                    expensesHtml = '<p style="text-align: center; color: #64748b; padding: 20px;">No records found for this period.</p>';
-                } else {
-                    const groups = {};
-                    filteredExpenses.forEach(e => {
-                        if (!groups[e.category]) groups[e.category] = [];
-                        groups[e.category].push(e);
+            let expensesHtml = '';
+            if (filteredExpenses.length === 0) {
+                expensesHtml = '<p style="text-align: center; color: #666;">No records found for this period.</p>';
+            } else {
+                const categories = ["Fixed Commitments", "Living Expenses", "Utilities", "Discretionary"];
+                categories.forEach(category => {
+                    const groupItems = filteredExpenses.filter(e => e.category === category);
+                    if (groupItems.length === 0) return;
+
+                    const groupSum = groupItems.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+                    expensesHtml += `
+                        <div class="group-container" style="margin-bottom: 20px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                            <div class="group-header" style="background: #e2e8f0; padding: 10px 15px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between;">
+                                <span>${category}</span>
+                                <span style="background: #94a3b8; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">${groupSum.toFixed(2)} €</span>
+                            </div>
+                            <div class="group-content">
+                    `;
+
+                    groupItems.forEach(e => {
+                        const statusDotColor = e.status === 'paid' ? '#16a34a' : '#dc2626';
+                        expensesHtml += `
+                            <div class="expense-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e5e7eb;">
+                                <div class="expense-info" style="display: flex; flex-direction: column; gap: 2px;">
+                                    <div class="expense-title-row" style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="status-dot" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: ${statusDotColor};"></span>
+                                        <span class="expense-title" style="font-weight: 500;">${e.title}</span>
+                                    </div>
+                                    <div class="expense-meta-row" style="font-size: 11px; color: #666; margin-left: 16px;">
+                                        <span class="expense-amount" style="font-weight: bold; color: #111827;">${Number(e.amount).toFixed(2)} €</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
                     });
 
-                    for (const category in groups) {
-                        expensesHtml += `
-                            <div style="margin-bottom: 20px; page-break-inside: avoid;">
-                                <h3 style="margin: 0 0 8px 0; font-size: 14px; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">${category}</h3>
-                        `;
-                        
-                        groups[category].forEach(e => {
-                            const statusDotColor = e.status === 'paid' ? '#16a34a' : '#dc2626';
-                            expensesHtml += `
-                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #f1f5f9; font-size: 13px;">
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <span style="height: 8px; width: 8px; background-color: ${statusDotColor}; border-radius: 50%; display: inline-block;"></span>
-                                        <span style="font-weight: 500; color: #334155;">${e.title}</span>
-                                    </div>
-                                    <span style="font-weight: 600; color: #0f172a;">${Number(e.amount).toFixed(2)} €</span>
-                                </div>
-                            `;
-                        });
-                        
-                        expensesHtml += `</div>`;
-                    }
-                }
+                    expensesHtml += `</div></div>`;
+                });
+            }
 
-                // Inject markup blocks alongside style overrides 
-                printContainer.innerHTML = `
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${document.title}</title>
                     <style>
-                        #app-native-print-view h2 {
-                            margin: 0 0 2px 0 !important;
-                            font-size: 22px !important;
-                            color: #0f172a !important;
-                            font-family: system-ui, -apple-system, sans-serif !important;
-                            text-align: center !important;
+                        body {
+                            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                            color: #333;
+                            padding: 20px;
+                            max-width: 600px;
+                            margin: 0 auto;
                         }
-                        #app-native-print-view .report-subtitle {
-                            margin: 0 0 25px 0 !important;
-                            font-size: 18px !important;
-                            color: #334155 !important;
-                            font-family: system-ui, -apple-system, sans-serif !important;
-                            font-weight: 600 !important;
-                            text-align: center !important;
+                        h2 {
+                            text-align: center;
+                            margin-bottom: 2px;
+                            font-size: 24px;
+                        }
+                        .report-subtitle {
+                            text-align: center;
+                            font-size: 18px;
+                            font-weight: 600;
+                            color: #4b5563;
+                            margin-bottom: 25px;
+                        }
+                        .expense-list {
+                            width: 100%;
                         }
                     </style>
+                </head>
+                <body>
                     <h2>RNE Tracker Report</h2>
-                    <div class="report-subtitle">${displayPeriod}</div>
-                    <div class="expense-list" style="width: 100%;">
+                    <div class="report-subtitle">${currentMonthLabel}</div>
+                    <div class="expense-list">
                         ${expensesHtml}
                     </div>
-                `;
+                    <script>
+                        function runSecurePrintSequence() {
+                            setTimeout(function() {
+                                window.print();
+                                setTimeout(function() { window.close(); }, 500);
+                            }, 500);
+                        }
+                        if (document.readyState === 'complete') {
+                            runSecurePrintSequence();
+                        } else {
+                            window.addEventListener('load', runSecurePrintSequence);
+                        }
+                    <\/script>
+                </body>
+                </html>
+            `);
 
-                document.body.appendChild(printContainer);
-
-                // Run execution threads
-                setTimeout(() => {
-                    window.print();
-                    document.title = originalTitle; // Restore browser titles
-                    
-                    setTimeout(() => {
-                        printContainer.remove();
-                    }, 1000);
-                }, 100);
-
-            } catch (error) {
-                alert("Export failed: " + error.message);
-                console.error(error);
-            }
+            printWindow.document.close();
+            
+            setTimeout(() => {
+                document.title = originalTitle;
+            }, 1000);
         }
 
         // =========================================================================
-        // GOOGLE IDENTITY AND CLOUD INVENTORY ROUTINES
+        // GOOGLE LOGISTICS
         // =========================================================================
         function initializeGoogleIdentityAbstractionLayer() {
             if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
@@ -1190,7 +1177,6 @@
                 return;
             }
             
-            // Dynamic generation configuration blocks tracking endpoint bindings
             googleTokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: '43372228795-n9eugglc4skpt4epsteb246veor9b3ep.apps.googleusercontent.com',
                 scope: 'https://www.googleapis.com/auth/drive.file',
@@ -1225,7 +1211,7 @@
                     };
                     googleTokenClient.requestAccessToken({ prompt: 'consent' });
                 } else {
-                    alert("Google Client initialization incomplete. Verification sequence stopped.");
+                    alert("Google Client initialization incomplete.");
                 }
             } else {
                 if (successCallback) successCallback();
@@ -1306,7 +1292,6 @@
                     const localBlob = new Blob([JSON.stringify(expenses)], { type: 'application/json' });
                     
                     if (data.files && data.files.length > 0) {
-                        // File exists -> Patch Update sequence
                         const fileId = data.files[0].id;
                         return fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
                             method: 'PATCH',
@@ -1317,7 +1302,6 @@
                             body: localBlob
                         });
                     } else {
-                        // File missing -> Post Multipart initialization sequence 
                         const metadata = { name: GDRIVE_TARGET_FILENAME, mimeType: 'application/json' };
                         const formData = new FormData();
                         formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
