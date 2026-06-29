@@ -1077,7 +1077,7 @@
 function exportToPDF() {
     const selectEl = document.getElementById('monthViewFilter');
     if (!selectEl) return;
-    const rawValue = selectEl.value; // e.g., "2026-07"
+    const rawValue = selectEl.value; // e.g., "2026-08"
     
     // Exact month/year label resolution from the select box text
     const reportDateString = selectEl.options[selectEl.selectedIndex].text;
@@ -1161,14 +1161,33 @@ function exportToPDF() {
                         badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">EDITED</span>`;
                     }
                     
-                    // Correct key tracking alignment patch for e.originated property match
-                    const targetOrigin = e.originated || e.originatedMonth || e.origin;
-                    if (targetOrigin && String(targetOrigin).trim() !== "" && String(targetOrigin).substring(0, 7) !== rawValue) {
-                        const cleanOriginStr = String(targetOrigin).substring(0, 7); // Safe extraction of YYYY-MM
-                        if (cleanOriginStr.includes('-')) {
-                            const [origYear, origMonth] = cleanOriginStr.split('-');
-                            const formattedOriginated = `${origMonth}/${origYear}`;
-                            badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">ORIGINATED: ${formattedOriginated}</span>`;
+                    // UNIVERSAL DATA-TYPE SAFE ORIGINATED RESOLVER
+                    if (e.originated) {
+                        let parsedYear = "";
+                        let parsedMonth = "";
+                        
+                        // Scenario A: It is an active Date object configuration instance
+                        if (e.originated instanceof Date) {
+                            parsedYear = String(e.originated.getFullYear());
+                            parsedMonth = String(e.originated.getMonth() + 1).padStart(2, '0');
+                        } 
+                        // Scenario B: It is a String context instance
+                        else if (typeof e.originated === 'string') {
+                            const match = e.originated.match(/^(\d{4})-(\d{2})/);
+                            if (match) {
+                                parsedYear = match[1];
+                                parsedMonth = match[2];
+                            }
+                        }
+                        
+                        // If we successfully derived a valid year/month timeline combo
+                        if (parsedYear && parsedMonth) {
+                            const checkCompKey = `${parsedYear}-${parsedMonth}`;
+                            
+                            // Only output badge if origin context month differs from current selection frame
+                            if (checkCompKey !== rawValue) {
+                                badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">ORIGINATED: ${parsedMonth}/${parsedYear}</span>`;
+                            }
                         }
                     }
                     
