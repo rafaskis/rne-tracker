@@ -269,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v47</div>
+    <div class="version-watermark">RNE Tracker • v49</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260628_v47
+        // VERSION TRACKER REFERENCE: 260628_v49
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1071,17 +1071,27 @@
 
         // 
 
-// ==========================================
-// DYNAMIC NATIVE PDF EXPORT ENGINE CORE (v47 - STABLE)
-// ==========================================
+// =========================================================================
+// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v49)
+// =========================================================================
 function exportToPDF() {
     const selectEl = document.getElementById('monthViewFilter');
     if (!selectEl) return;
     const rawValue = selectEl.value;
-    const [yearStr, monthStr] = rawValue.split('-');
-    const bMonthYearText = `${monthStr}/${yearStr}`;
-    const formattedMonthParam = `${yearStr}_${monthStr}`;
+    
+    // Exact month/year label resolution from the select box text
+    const reportDateString = selectEl.options[selectEl.selectedIndex].text;
 
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const timestamp = `${String(now.getFullYear()).slice(-2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+
+    // Safely cache original tab title to prevent permanent changes to the live web application context
+    const originalTitle = document.title;
+    const parsedFileDate = rawValue.replace('-', '_');
+    document.title = `rne_report_${parsedFileDate}-${timestamp}`;
+
+    // Compute metrics arrays
     const monthFilteredItems = expenses.filter(e => e.month === rawValue);
     let totalUnpaidSum = 0;
     let totalOverallSum = 0;
@@ -1094,125 +1104,167 @@ function exportToPDF() {
         }
     });
 
-    const optionsText = selectEl.options[selectEl.selectedIndex].text;
-    const reportDateString = optionsText;
-    const fileNameString = `RNE-Report-${formattedMonthParam}`;
-
-    // 1. Compile Report HTML Structure
-    let htmlReportContent = `
-        <div class="pdf-wrapper">
-            <div class="pdf-main-header">
-                <div class="pdf-title-main">RNE Tracker — ${reportDateString}</div>
-                <div class="pdf-meta-date">Exported: ${new Date().toLocaleDateString()}</div>
-            </div>
-            
-            <div class="pdf-summary-grid">
-                <div class="pdf-summary-card">
-                    <span class="pdf-summary-label">Total Allocated Expenses</span>
-                    <span class="pdf-summary-val-bold">€${totalOverallSum.toFixed(2)}</span>
-                </div>
-                <div class="pdf-summary-card">
-                    <span class="pdf-summary-label">Outstanding Unpaid Arrears</span>
-                    <span class="pdf-summary-val-bold" style="color: #dc2626;">€${totalUnpaidSum.toFixed(2)}</span>
-                </div>
-            </div>
-    `;
-
-    recurrenceGroupsConfig.forEach((grp) => {
-        const grpItems = monthFilteredItems.filter(e => {
-            if (grp.key === 0) return !e.recur || e.recur === 0;
-            return e.recur === grp.key;
-        });
-
-        if (grpItems.length > 0) {
-            htmlReportContent += `
-                <div class="pdf-group-section">
-                    <div class="pdf-group-title">${grp.label}</div>
-            `;
-            
-            grpItems.forEach(e => {
-                const itemTextStyle = e.status === 'unpaid' ? 'color: #dc2626;' : 'color: #16a34a;';
-                const originLabelHtml = e.isEdited ? ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 6px;">EDITED</span>` : '';
-                
-                htmlReportContent += `
-                    <div class="pdf-expense-row">
-                        <div class="print-expense-info">
-                            <span class="print-expense-name" style="${itemTextStyle}">${e.name}${originLabelHtml}</span>
-                        </div>
-                        <div class="print-expense-cost" style="${itemTextStyle}">€${parseFloat(e.cost || 0).toFixed(2)}</div>
-                    </div>
-                `;
+    // 1. Generate Clean Document Data Stream HTML
+    let expensesHtml = '';
+    if (monthFilteredItems.length === 0) {
+        expensesHtml = '<p style="text-align: center; color: #666; font-size: 14px; margin-top: 30px;">No records logged for this period.</p>';
+    } else {
+        recurrenceGroupsConfig.forEach((grp) => {
+            const grpItems = monthFilteredItems.filter(e => {
+                if (grp.key === 0) return !e.recur || e.recur === 0;
+                return e.recur === grp.key;
             });
-            htmlReportContent += `</div>`;
-        }
-    });
-    htmlReportContent += `</div>`;
 
-    try {
-        // 2. Create an isolated, explicit Print View Element on the parent body tree
-        const printContainer = document.createElement('div');
-        printContainer.id = 'app-native-print-view';
-        
-        // 3. Inject explicit scoped style configurations alongside data elements
-        printContainer.innerHTML = `
-            <style>
-                @media print {
-                    /* Completely shield away the parent application layout from print view context */
-                    body > *:not(#app-native-print-view) {
-                        display: none !important;
-                    }
-                    body {
-                        background: #ffffff !important;
-                        color: #333333 !important;
-                        padding: 0 !important;
-                        margin: 0 !important;
-                    }
-                    #app-native-print-view {
-                        display: block !important;
-                        width: 100% !important;
-                    }
-                }
-                
-                #app-native-print-view {
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-                    color: #333;
-                    background: #fff;
-                    padding: 20mm;
-                }
-                .pdf-wrapper { max-width: 100%; margin: 0 auto; }
-                .pdf-main-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 20px; }
-                .pdf-title-main { font-size: 22px; font-weight: 800; color: #1e293b; letter-spacing: -0.5px; }
-                .pdf-meta-date { font-size: 12px; color: #64748b; font-weight: 500; }
-                .pdf-summary-grid { display: flex; gap: 16px; margin-bottom: 24px; }
-                .pdf-summary-card { flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: 8px; display: flex; flex-direction: column; gap: 4px; }
-                .pdf-summary-label { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.5px; }
-                .pdf-summary-val-bold { font-size: 20px; font-weight: 800; color: #0f172a; }
-                .pdf-group-section { margin-bottom: 22px; page-break-inside: avoid; }
-                .pdf-group-title { font-size: 13px; font-weight: 700; text-transform: uppercase; color: #475569; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; margin-bottom: 8px; letter-spacing: 0.5px; border: 1px solid #e2e8f0; }
-                .pdf-expense-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid #f1f5f9; }
-                .print-expense-name { font-weight: 600; font-size: 14px; }
-                .print-expense-cost { font-weight: 700; font-size: 14px; text-align: right; }
-            </style>
-            ${htmlReportContent}
-        `;
+            if (grpItems.length > 0) {
+                const groupSum = grpItems.reduce((sum, e) => sum + parseFloat(e.cost || 0), 0);
 
-        // 4. Mount container setup to layout tree
-        document.body.appendChild(printContainer);
+                expensesHtml += `
+                    <div style="margin-bottom: 22px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #ffffff;">
+                        <div style="background: #e2e8f0; padding: 10px 15px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e1;">
+                            <span style="color: #334155; text-transform: uppercase; letter-spacing: 0.5px;">${grp.label}</span>
+                            <span style="background: #94a3b8; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700;">${groupSum.toFixed(2)} €</span>
+                        </div>
+                        <div>
+                `;
 
-        // 5. Fire window subsystem printer hook safely
-        setTimeout(() => {
-            window.print();
-            
-            // 6. Clean out layout footprints completely post user terminal interaction closure
-            setTimeout(() => {
-                printContainer.remove();
-            }, 1000);
-        }, 50);
+                grpItems.forEach(e => {
+                    const itemColor = e.status === 'unpaid' ? '#dc2626' : '#16a34a';
+                    const originLabelHtml = e.isEdited ? ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px;">EDITED</span>` : '';
+                    
+                    expensesHtml += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e5e7eb;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: ${itemColor}; flex-shrink: 0;"></span>
+                                <span style="font-weight: 600; font-size: 14px; color: ${itemColor};">${e.name}${originLabelHtml}</span>
+                            </div>
+                            <div style="font-weight: 700; font-size: 14px; color: ${itemColor}; text-align: right;">${parseFloat(e.cost || 0).toFixed(2)} €</div>
+                        </div>
+                    `;
+                });
 
-    } catch (mobileErr) {
-        alert(`Mobile Printing Notice (${reportDateString}):\n\nYour current browser variant does not allow automatic print launching.\n\nPlease use your browser's menu option: \nSettings / Share -> Choose "Print" to export this view manually.`);
+                expensesHtml += `</div></div>`;
+            }
+        });
     }
+
+    // 2. Open an isolated new document content workspace frame context
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        alert("Please allow popups to export PDFs.");
+        document.title = originalTitle;
+        return;
+    }
+
+    // 3. Complete Stream Transmission into the new context layout tree
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>${document.title}</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    color: #111827;
+                    background: #ffffff;
+                    padding: 20px;
+                    max-width: 650px;
+                    margin: 0 auto;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                .report-header-container {
+                    border-bottom: 2px solid #e5e7eb;
+                    padding-bottom: 12px;
+                    margin-bottom: 20px;
+                    text-align: center;
+                }
+                .report-title-main {
+                    margin: 0;
+                    font-size: 24px;
+                    font-weight: 800;
+                    color: #111827;
+                }
+                .report-subtitle-period {
+                    margin: 4px 0 0 0;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #4b5563;
+                }
+                .summary-grid-layout {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 15px;
+                    margin-bottom: 25px;
+                }
+                .summary-card-box {
+                    border: 1px solid #e5e7eb;
+                    padding: 14px;
+                    border-radius: 8px;
+                    text-align: center;
+                    background: #f9fafb;
+                }
+                .summary-card-label {
+                    font-size: 11px;
+                    color: #6b7280;
+                    text-transform: uppercase;
+                    font-weight: 700;
+                    letter-spacing: 0.5px;
+                    margin-bottom: 4px;
+                    display: block;
+                }
+                .summary-card-value {
+                    font-size: 20px;
+                    font-weight: 800;
+                    color: #111827;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="report-header-container">
+                <h2 class="report-title-main">RNE Tracker Report</h2>
+                <div class="report-subtitle-period">${reportDateString}</div>
+            </div>
+            
+            <div class="summary-grid-layout">
+                <div class="summary-card-box">
+                    <span class="summary-card-label">Total Allocated Expenses</span>
+                    <span class="summary-card-value">${totalOverallSum.toFixed(2)} €</span>
+                </div>
+                <div class="summary-card-box">
+                    <span class="summary-card-label">Outstanding Unpaid Arrears</span>
+                    <span class="summary-card-value" style="color: #dc2626;">${totalUnpaidSum.toFixed(2)} €</span>
+                </div>
+            </div>
+
+            <div class="expense-list-wrapper">
+                ${expensesHtml}
+            </div>
+
+            <script>
+                function executeSecurePrintProcess() {
+                    setTimeout(function() {
+                        window.print();
+                        setTimeout(function() { window.close(); }, 500);
+                    }, 300);
+                }
+                if (document.readyState === 'complete') {
+                    executeSecurePrintProcess();
+                } else {
+                    window.addEventListener('load', executeSecurePrintProcess);
+                }
+            <\/script>
+        </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+    
+    // Safely reinstate previous main application tab titles
+    setTimeout(() => {
+        document.title = originalTitle;
+    }, 1000);
 }
+
 
 
         // ==========================================
