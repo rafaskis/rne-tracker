@@ -1144,7 +1144,12 @@ function exportToPDF() {
                 `;
 
                 // Sort items so 'unpaid' entries appear first before 'paid' entries
-                
+                const sortedGrpItems = [...grpItems].sort((a, b) => {
+                    if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
+                    if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
+                    return 0;
+                });
+
 sortedGrpItems.forEach(e => {
     const isUnpaid = e.status === 'unpaid';
     const itemColor = isUnpaid ? '#dc2626' : '#16a34a';
@@ -1157,7 +1162,7 @@ sortedGrpItems.forEach(e => {
         badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">EDITED</span>`;
     }
     
-    // 1. COLLECT ANY POTENTIAL DATE OR ORIGIN SOURCE VALUE
+// 1. COLLECT ANY POTENTIAL DATE OR ORIGIN SOURCE VALUE
 const rawOrigin = e.originated || e.originatedMonth || e.origin || "";
 
 if (rawOrigin && String(rawOrigin).trim() !== "") {
@@ -1196,7 +1201,7 @@ if (rawOrigin && String(rawOrigin).trim() !== "") {
     }
 }
 
-    
+
     expensesHtml += `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e5e7eb;">
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -1211,6 +1216,10 @@ if (rawOrigin && String(rawOrigin).trim() !== "") {
 });
 
 
+                expensesHtml += `</div></div>`;
+            }
+        });
+    }
 
     // 2. Open isolated window context
     const printWindow = window.open('', '_blank');
