@@ -269,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v49</div>
+    <div class="version-watermark">RNE Tracker • v50</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260628_v49
+        // VERSION TRACKER REFERENCE: 260628_v50
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1072,7 +1072,7 @@
         // 
 
 // =========================================================================
-// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v49)
+// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v50)
 // =========================================================================
 function exportToPDF() {
     const selectEl = document.getElementById('monthViewFilter');
@@ -1244,7 +1244,7 @@ function exportToPDF() {
                 function executeSecurePrintProcess() {
                     setTimeout(function() {
                         window.print();
-                        setTimeout(function() { window.close(); }, 500);
+                        // REMOVED window.close() to completely fix mobile browser cancellation errors
                     }, 300);
                 }
                 if (document.readyState === 'complete') {
@@ -1264,7 +1264,6 @@ function exportToPDF() {
         document.title = originalTitle;
     }, 1000);
 }
-
 
 
         // ==========================================
