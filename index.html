@@ -1211,107 +1211,51 @@ function exportToPDF() {
     }
 
     // 3. Document Stream Transmission Injection
-    printWindow.document.write(`
+printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
-            <title>${document.title}</title>
+            <title>${reportTitle}</title>
             <style>
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                    color: #111827;
-                    background: #ffffff;
-                    padding: 20px;
-                    max-width: 650px;
-                    margin: 0 auto;
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                }
-                .report-header-container {
-                    border-bottom: 2px solid #e5e7eb;
-                    padding-bottom: 14px;
-                    margin-bottom: 20px;
-                    text-align: center;
-                }
-                .report-title-main {
-                    margin: 0;
-                    font-size: 24px;
-                    font-weight: 800;
-                    color: #111827;
-                }
-                .report-subtitle-period {
-                    margin: 4px 0 0 0;
-                    font-size: 18px;
-                    font-weight: 600;
-                    color: #4b5563;
-                }
-                .summary-grid-layout {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 15px;
-                    margin-bottom: 25px;
-                }
-                .summary-card-box {
-                    border: 1px solid #e5e7eb;
-                    padding: 14px;
-                    border-radius: 8px;
-                    text-align: center;
-                    background: #f9fafb;
-                }
-                .summary-card-label {
-                    font-size: 11px;
-                    color: #6b7280;
-                    text-transform: uppercase;
-                    font-weight: 700;
-                    letter-spacing: 0.5px;
-                    margin-bottom: 4px;
-                    display: block;
-                }
-                .summary-card-value {
-                    font-size: 20px;
-                    font-weight: 800;
-                    color: #111827;
-                }
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #111827; background: #ffffff; padding: 20px; max-width: 650px; margin: 0 auto; }
+                @media print { .no-print { display: none !important; } body { padding: 0; } }
             </style>
         </head>
         <body>
-            <div class="report-header-container">
-                <h2 class="report-title-main">RNE Tracker Report</h2>
-                <div class="report-subtitle-period">${reportDateString}</div>
-                <div class="report-subtitle-period" style="font-size: 14px; color: #6b7280; font-weight: 500; margin-top: 2px;">${asOfTimestampString}</div>
+            <div class="no-print" style="display: flex; gap: 10px; margin-bottom: 20px; background: #f3f4f6; padding: 10px; border-radius: 8px;">
+                <button onclick="window.print()" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Print / Save PDF</button>
+                <button id="shareBtn" style="padding: 8px 16px; background: #16a34a; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Share Report</button>
+                <button onclick="window.close()" style="padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Close</button>
             </div>
-            
-            <div class="summary-grid-layout">
-                <div class="summary-card-box">
-                    <span class="summary-card-label">Total Allocated Expenses</span>
-                    <span class="summary-card-value">€${totalOverallSum.toFixed(2)}</span>
-                </div>
-                <div class="summary-card-box">
-                    <span class="summary-card-label">Outstanding Unpaid Arrears</span>
-                    <span class="summary-card-value" style="color: #dc2626;">€${totalUnpaidSum.toFixed(2)}</span>
-                </div>
-            </div>
-
-            <div class="expense-list-wrapper">
-                ${expensesHtml}
-            </div>
-
+            ${pdfHtml}
             <script>
-                function executeSecurePrintProcess() {
-                    setTimeout(function() {
-                        window.print();
-                    }, 300);
+                function initShareInterface() {
+                    const btn = document.getElementById('shareBtn');
+                    if (!btn) return;
+                    
+                    btn.addEventListener('click', async () => {
+                        if (navigator.share) {
+                            try {
+                                await navigator.share({
+                                    title: "${reportTitle}",
+                                    text: "RNE Tracker Report Summary",
+                                    url: window.location.href
+                                });
+                            } catch (err) {
+                                console.log("Share skipped or canceled:", err);
+                            }
+                        } else {
+                            alert("Native sharing is not supported by this browser interface. Please use the Print button to save/share your PDF.");
+                        }
+                    });
                 }
-                if (document.readyState === 'complete') {
-                    executeSecurePrintProcess();
-                } else {
-                    window.addEventListener('load', executeSecurePrintProcess);
-                }
+                
+                // Delay execution slightly to ensure the window has active focus context
+                setTimeout(initShareInterface, 300);
             <\/script>
         </body>
         </html>
     `);
-
     printWindow.document.close();
     
     // Reinstate workspace properties
