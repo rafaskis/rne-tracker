@@ -55,116 +55,236 @@
             --banner-border: #92400e;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-main); padding: 16px; padding-bottom: 100px; position: relative; min-height: 100vh; transition: background-color 0.2s, color 0.2s; }
+        * { box-sizing: border-box; margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-color);
+            color: var(--text-main); padding: 16px; padding-bottom: 100px; position: relative; min-height: 100vh; transition: background-color 0.2s, color 0.2s;
+        }
         
         /* Streamlined Top Cloud Bar Placement */
-        .top-cloud-bar { display: flex; justify-content: space-between; align-items: center; background: var(--cloud-bar-bg); padding: 8px 12px; border-radius: 10px; margin-bottom: 12px; border: 1px dashed var(--cloud-bar-border); font-size: 13px; }
-        .cloud-status-text { font-weight: 600; color: var(--cloud-bar-text); display: flex; align-items: center; gap: 4px; }
-        .btn-cloud-discreet { width: auto; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 4px; }
-        .btn-cloud-signin { background: var(--gdrive-color); box-shadow: 0 1px 2px rgba(15, 157, 88, 0.2); }
-        .btn-cloud-signout { background: var(--utility); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .btn-cloud-push { background: #4285f4; }
-        .btn-cloud-pull { background: #16a34a; }
-        .discreet-actions-grid { display: flex; gap: 6px; align-items: center; }
+        .top-cloud-bar { display: flex;
+            justify-content: space-between; align-items: center; background: var(--cloud-bar-bg); padding: 8px 12px; border-radius: 10px; margin-bottom: 12px; border: 1px dashed var(--cloud-bar-border); font-size: 13px;
+        }
+        .cloud-status-text { font-weight: 600; color: var(--cloud-bar-text); display: flex; align-items: center; gap: 4px;
+        }
+        .btn-cloud-discreet { width: auto; padding: 6px 12px; font-size: 12px; font-weight: bold;
+            border-radius: 6px; border: none; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 4px;
+        }
+        .btn-cloud-signin { background: var(--gdrive-color); box-shadow: 0 1px 2px rgba(15, 157, 88, 0.2);
+        }
+        .btn-cloud-signout { background: var(--utility); box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .btn-cloud-push { background: #4285f4;
+        }
+        .btn-cloud-pull { background: #16a34a;
+        }
+        .discreet-actions-grid { display: flex; gap: 6px; align-items: center;
+        }
 
-        .btn-theme-toggle { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); font-size: 12px; font-weight: bold; padding: 6px 12px; border-radius: 6px; cursor: pointer; height: auto; width: auto; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-theme-toggle { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); font-size: 12px;
+            font-weight: bold; padding: 6px 12px; border-radius: 6px; cursor: pointer; height: auto; width: auto; display: inline-flex; align-items: center; justify-content: center;
+        }
 
         /* Global Arrears Alerts Bar Container */
-        .arrears-alert-banner { display: none; background: var(--banner-bg); border: 1px solid var(--banner-border); color: var(--banner-text); padding: 12px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; flex-direction: column; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .arrears-banner-text { font-weight: 600; text-align: center; line-height: 1.4; }
-        .arrears-banner-actions { display: flex; gap: 8px; }
-        .btn-banner-action { padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; border: none; text-align: center; width: 50%; }
-        .btn-banner-keep { background: var(--primary); color: white; }
-        .btn-banner-discard { background: var(--danger); color: white; }
+        .arrears-alert-banner { display: none;
+            background: var(--banner-bg); border: 1px solid var(--banner-border); color: var(--banner-text); padding: 12px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; flex-direction: column; gap: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .arrears-banner-text { font-weight: 600; text-align: center;
+            line-height: 1.4; }
+        .arrears-banner-actions { display: flex; gap: 8px;
+        }
+        .btn-banner-action { padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px;
+            cursor: pointer; border: none; text-align: center; width: 50%; }
+        .btn-banner-keep { background: var(--primary);
+            color: white; }
+        .btn-banner-discard { background: var(--danger); color: white;
+        }
 
         /* Top Navigation Hierarchy */
-        .month-nav-container { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-        .btn-nav-arrow { width: 48px; height: 48px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary); }
-        .month-select-wrapper { flex-grow: 1; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 8px; }
-        .header-card { background: var(--card-bg); padding: 16px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-grow: 1; }
-        .unpaid-badge { font-size: 24px; font-weight: bold; color: var(--danger); margin-top: 4px; }
+        .month-nav-container { display: flex;
+            align-items: center; gap: 8px; margin-bottom: 12px; }
+        .btn-nav-arrow { width: 48px; height: 48px;
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            color: var(--primary); }
+        .month-select-wrapper { flex-grow: 1;
+        }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 8px;
+        }
+        .header-card { background: var(--card-bg); padding: 16px; border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-grow: 1;
+        }
+        .unpaid-badge { font-size: 24px; font-weight: bold; color: var(--danger); margin-top: 4px;
+        }
         
-        select, input, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background: var(--card-bg); color: var(--text-main); -webkit-appearance: none; }
-        select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M0 3l5 5 5-5z' fill='%23666'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+        select, input, button { width: 100%;
+            padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background: var(--card-bg); color: var(--text-main); -webkit-appearance: none;
+        }
+        select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M0 3l5 5 5-5z' fill='%23666'/></svg>");
+            background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
         
         /* Collapsible Action Entry Form */
-        .btn-trigger-form { background: var(--primary); color: white; font-weight: bold; border: none; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); cursor: pointer; }
-        .form-card { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px; display: none; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-        .form-card input[type="text"] { grid-column: span 2; }
-        .btn-primary { background: var(--primary); color: white; font-weight: bold; border: none; margin-top: 8px; cursor: pointer; }
-        .btn-cancel-form { background: transparent; color: var(--text-muted); border: none; margin-top: 4px; font-size: 14px; text-decoration: underline; cursor: pointer; }
+        .btn-trigger-form { background: var(--primary);
+            color: white; font-weight: bold; border: none; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); cursor: pointer;
+        }
+        .form-card { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border);
+            margin-bottom: 16px; display: none; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr;
+            gap: 8px; margin-bottom: 8px; }
+        .form-card input[type="text"] { grid-column: span 2;
+        }
+        .btn-primary { background: var(--primary); color: white; font-weight: bold; border: none; margin-top: 8px;
+            cursor: pointer; }
+        .btn-cancel-form { background: transparent; color: var(--text-muted); border: none; margin-top: 4px;
+            font-size: 14px; text-decoration: underline; cursor: pointer; }
         
-        .edit-banner { background: var(--edit-color); color: white; padding: 8px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 12px; text-align: center; grid-column: span 2; }
+        .edit-banner { background: var(--edit-color);
+            color: white; padding: 8px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 12px; text-align: center; grid-column: span 2;
+        }
 
         /* Categorized Group Framework Elements */
-        .group-container { margin-bottom: 14px; border-radius: 12px; overflow: hidden; background: transparent; }
-        .group-header { background: var(--group-header-bg); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; color: var(--text-main); cursor: pointer; user-select: none; border: 1px solid var(--border); border-radius: 10px; gap: 8px; }
-        .group-header-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
-        .group-header-title span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .group-badges-container { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-        .group-unpaid-cost { font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
-        .group-unpaid-cost.has-unpaid { color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; }
-        [data-theme="dark"] .group-unpaid-cost.has-unpaid { color: #fca5a5; background: #7f1d1d; border: 1px solid #991b1b; }
-        .group-unpaid-cost.all-paid { color: #16a34a; background: #dcfce7; border: 1px solid #86efac; }
-        [data-theme="dark"] .group-unpaid-cost.all-paid { color: #86efac; background: #14532d; border: 1px solid #166534; }
-        .group-badge { background: #64748b; color: white; font-size: 11px; padding: 3px 7px; border-radius: 10px; font-weight: 600; }
-        .group-content { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; padding: 2px; }
+        .group-container { margin-bottom: 14px;
+            border-radius: 12px; overflow: hidden; background: transparent; }
+        .group-header { background: var(--group-header-bg);
+            padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; color: var(--text-main); cursor: pointer; user-select: none;
+            border: 1px solid var(--border); border-radius: 10px; gap: 8px; }
+        .group-header-title { display: flex;
+            align-items: center; gap: 6px; min-width: 0; }
+        .group-header-title span:last-child { white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; }
+        .group-badges-container { display: flex; align-items: center; gap: 6px;
+            flex-shrink: 0; }
+        .group-unpaid-cost { font-size: 13px; font-weight: 700; padding: 2px 8px;
+            border-radius: 6px; }
+        .group-unpaid-cost.has-unpaid { color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5;
+        }
+        [data-theme="dark"] .group-unpaid-cost.has-unpaid { color: #fca5a5; background: #7f1d1d; border: 1px solid #991b1b;
+        }
+        .group-unpaid-cost.all-paid { color: #16a34a; background: #dcfce7; border: 1px solid #86efac;
+        }
+        [data-theme="dark"] .group-unpaid-cost.all-paid { color: #86efac; background: #14532d; border: 1px solid #166534;
+        }
+        .group-badge { background: #64748b; color: white; font-size: 11px; padding: 3px 7px;
+            border-radius: 10px; font-weight: 600; }
+        .group-content { display: flex; flex-direction: column; gap: 10px;
+            margin-top: 8px; padding: 2px; }
 
         /* Item Display Grid */
-        .expense-item { background: var(--card-bg); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-        .expense-item.paid { opacity: 0.6; border-left: 5px solid var(--success); }
-        .expense-item.unpaid { border-left: 5px solid var(--danger); }
+        .expense-item { background: var(--card-bg);
+            padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .expense-item.paid { opacity: 0.6; border-left: 5px solid var(--success);
+        }
+        .expense-item.unpaid { border-left: 5px solid var(--danger);
+        }
         
-        .info { display: flex; flex-direction: column; gap: 4px; width: 100%; }
-        .name-wrapper { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-        .name { font-weight: 600; font-size: 17px; color: var(--text-main); line-height: 1.4; word-break: break-word; white-space: normal; }
-        .badge-edited { background: #bae6fd; color: #0369a1; font-size: 11px; font-weight: bold; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-        [data-theme="dark"] .badge-edited { background: #0c4a6e; color: #7dd3fc; }
+        .info { display: flex;
+            flex-direction: column; gap: 4px; width: 100%; }
+        .name-wrapper { display: flex; align-items: center;
+            gap: 6px; flex-wrap: wrap; }
+        .name { font-weight: 600; font-size: 17px; color: var(--text-main);
+            line-height: 1.4; word-break: break-word; white-space: normal; }
+        .badge-edited { background: #bae6fd; color: #0369a1;
+            font-size: 11px; font-weight: bold; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        [data-theme="dark"] .badge-edited { background: #0c4a6e; color: #7dd3fc;
+        }
         
-        .cost-row { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; margin-top: 2px; }
-        .cost { font-weight: 700; font-size: 18px; color: var(--cost-text); }
-        .origin-label { font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg-color); padding: 2px 6px; border-radius: 4px; border: 1px dashed var(--border); margin-top: 1px; }
+        .cost-row { display: flex;
+            flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; margin-top: 2px;
+        }
+        .cost { font-weight: 700; font-size: 18px; color: var(--cost-text);
+        }
+        .origin-label { 
+            background: #e2e8f0; 
+            color: #475569;
+            font-size: 11px; 
+            font-weight: bold; 
+            padding: 1px 6px; 
+            border-radius: 4px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+            margin-top: 1px;
+            display: inline-block;
+        }
+        [data-theme="dark"] .origin-label { 
+            background: #334155; 
+            color: #cbd5e1; 
+        }
         
         /* Buttons Row Layout */
-        .actions { display: flex; gap: 8px; justify-content: flex-end; width: 100%; border-top: 1px solid var(--border); padding-top: 10px; }
-        .btn-action { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 8px; border: 1px solid var(--border); background: var(--btn-action-bg); cursor: pointer; font-size: 16px; }
-        .btn-pay { color: var(--success); }
-        .btn-move { color: #f59e0b; }
-        .btn-back { color: #6366f1; }
-        .btn-action-danger { color: var(--danger); }
-        .btn-edit { color: var(--edit-color); }
-        .btn-delete { color: var(--danger); }
+        .actions { display: flex;
+            gap: 8px; justify-content: flex-end; width: 100%; border-top: 1px solid var(--border); padding-top: 10px;
+        }
+        .btn-action { width: 44px; height: 44px; padding: 0; display: flex; align-items: center;
+            justify-content: center; font-weight: bold; border-radius: 8px; border: 1px solid var(--border); background: var(--btn-action-bg); cursor: pointer; font-size: 16px;
+        }
+        .btn-pay { color: var(--success);
+        }
+        .btn-move { color: #f59e0b;
+        }
+        .btn-back { color: #6366f1;
+        }
+        .btn-action-danger { color: var(--danger);
+        }
+        .btn-edit { color: var(--edit-color);
+        }
+        .btn-delete { color: var(--danger);
+        }
 
         /* Collapsible Bottom Utility Drawer */
-        .utility-toggle-header { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 32px; color: var(--utility); font-size: 14px; font-weight: 600; cursor: pointer; user-select: none; padding: 8px; }
-        .utility-arrow { font-size: 11px; transition: transform 0.2s ease; }
-        .utility-card { background: var(--utility-card-bg); padding: 16px; border-radius: 12px; border: 1px dashed var(--utility); margin-top: 8px; display: none; }
-        .utility-title { font-size: 12px; font-weight: bold; color: var(--utility); margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
-        .utility-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+        .utility-toggle-header { display: flex;
+            align-items: center; justify-content: center; gap: 6px; margin-top: 32px; color: var(--utility); font-size: 14px; font-weight: 600; cursor: pointer; user-select: none; padding: 8px;
+        }
+        .utility-arrow { font-size: 11px; transition: transform 0.2s ease;
+        }
+        .utility-card { background: var(--utility-card-bg); padding: 16px; border-radius: 12px; border: 1px dashed var(--utility);
+            margin-top: 8px; display: none; }
+        .utility-title { font-size: 12px; font-weight: bold; color: var(--utility);
+            margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
+        .utility-grid { display: grid; grid-template-columns: 1fr;
+            gap: 8px; }
         
-        .btn-util { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center; -webkit-appearance: none; }
-        .btn-util-danger { border-color: var(--danger); color: var(--danger); font-weight: 600; margin-top: 4px; font-size: 14px; padding: 10px; }
-        .file-input-wrapper { position: relative; width: 100%; }
-        .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
-        .btn-fake-file { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; text-align: center; }
+        .btn-util { background: var(--card-bg);
+            color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center;
+            -webkit-appearance: none; }
+        .btn-util-danger { border-color: var(--danger); color: var(--danger); font-weight: 600; margin-top: 4px;
+            font-size: 14px; padding: 10px; }
+        .file-input-wrapper { position: relative; width: 100%;
+        }
+        .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0;
+            width: 100%; height: 100%; cursor: pointer; }
+        .btn-fake-file { background: var(--card-bg); color: var(--text-main);
+            border: 1px solid var(--border); font-size: 16px; font-weight: normal; text-align: center;
+        }
 
         /* Modern Choice Dialog Engine Overlay Template */
-        .choice-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; padding: 24px; align-items: center; justify-content: center; }
-        .choice-card { background: var(--card-bg); border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); border: 1px solid var(--border); }
-        .choice-message { font-size: 16px; font-weight: 500; color: var(--text-main); line-height: 1.5; margin-bottom: 24px; text-align: center; }
-        .choice-buttons-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
-        .btn-choice { width: calc(50% - 8px); padding: 14px; font-size: 16px; font-weight: 700; border-radius: 10px; cursor: pointer; border: none; text-align: center; }
-        .btn-choice-left { background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; }
-        .btn-choice-right { background: var(--primary); color: white; }
-        .btn-choice-danger { background: var(--danger); color: white; }
-        .btn-choice-full { width: 100%; margin-bottom: 8px; }
-        .vertical-buttons { flex-direction: column; gap: 4px; width: 100%; display: flex; }
+        .choice-overlay { display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; padding: 24px; align-items: center; justify-content: center;
+        }
+        .choice-card { background: var(--card-bg); border-radius: 16px; padding: 24px; width: 100%; max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); border: 1px solid var(--border);
+        }
+        .choice-message { font-size: 16px; font-weight: 500; color: var(--text-main); line-height: 1.5; margin-bottom: 24px;
+            text-align: center; }
+        .choice-buttons-row { display: flex; justify-content: space-between; align-items: center; gap: 16px;
+        }
+        .btn-choice { width: calc(50% - 8px); padding: 14px; font-size: 16px; font-weight: 700;
+            border-radius: 10px; cursor: pointer; border: none; text-align: center; }
+        .btn-choice-left { background: #e2e8f0;
+            color: #334155; border: 1px solid #cbd5e1; }
+        .btn-choice-right { background: var(--primary); color: white;
+        }
+        .btn-choice-danger { background: var(--danger); color: white;
+        }
+        .btn-choice-full { width: 100%; margin-bottom: 8px;
+        }
+        .vertical-buttons { flex-direction: column; gap: 4px; width: 100%; display: flex;
+        }
 
         /* Persistent Version Watermark */
-        .version-watermark { position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; user-select: none; pointer-events: none; }
+        .version-watermark { position: absolute;
+            bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; user-select: none; pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -176,7 +296,8 @@
             <button class="btn-cloud-discreet btn-cloud-signin" id="gdriveMainActionBtn" onclick="toggleGoogleDriveConnectionState()">Sign In</button>
             <button class="btn-cloud-discreet btn-cloud-push" id="gdrivePushBtn" onclick="manuallyTriggerCloudBackup()">Backup</button>
             <button class="btn-cloud-discreet btn-cloud-pull" id="gdrivePullBtn" onclick="manuallyTriggerCloudRestore()">Restore</button>
-        </div>
+     
+    </div>
     </div>
 
     <div class="arrears-alert-banner" id="globalArrearsBanner">
@@ -188,13 +309,16 @@
     </div>
 
     <div class="month-nav-container">
-        <button class="btn-nav-arrow" onclick="stepMonth(-1)" title="Previous Month">◀</button>
+        <button 
+ class="btn-nav-arrow" onclick="stepMonth(-1)" title="Previous Month">◀</button>
         <div class="month-select-wrapper">
             <select id="monthViewFilter" onchange="render()"></select>
         </div>
         
-        <button class="btn-nav-arrow" onclick="exportToPDF()" title="Export PDF" style="display: inline-flex; align-items: center; justify-content: center; padding: 4px; width: 48px; height: 48px;">
-            <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor;">
+        <button class="btn-nav-arrow" onclick="exportToPDF()" title="Export PDF" style="display: inline-flex;
+ align-items: center; justify-content: center; padding: 4px; width: 48px; height: 48px;">
+            <svg viewBox="0 0 24 24" style="width: 22px;
+ height: 22px; fill: currentColor;">
                 <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/>
             </svg>
         </button>
@@ -203,8 +327,10 @@
     </div>
 
     <div class="top-bar">
-        <div class="header-card">
-            <div style="font-size: 14px; color: var(--text-muted); font-weight: 500;">TOTAL UNPAID FOR THIS MONTH</div>
+    
+     <div class="header-card">
+            <div style="font-size: 14px;
+ color: var(--text-muted); font-weight: 500;">TOTAL UNPAID FOR THIS MONTH</div>
             <div class="unpaid-badge" id="totalUnpaid">€0.00</div>
         </div>
     </div>
@@ -215,29 +341,34 @@
         <div class="form-grid">
             <div id="editBannerElement" class="edit-banner" style="display: none;">🔧 EDITING ACTIVE ENTRY</div>
             <input type="text" id="expName" placeholder="Expense Name (e.g., Electricity Room 1)">
-            <input type="number" id="expCost" step="0.01" placeholder="Cost (€)">
+   
+          <input type="number" id="expCost" step="0.01" placeholder="Cost (€)">
             <select id="expMonthTarget"></select>
             <select id="expRecur" onchange="toggleDurationField()">
                 <option value="0">One-Time Only</option>
                 <option value="1">Every Month</option>
                 <option value="2">Every 2 Months</option>
-                <option value="3">Every 3 Months</option>
+    
+             <option value="3">Every 3 Months</option>
                 <option value="6">Every 6 Months</option>
                 <option value="12">Yearly</option>
             </select>
             <select id="expEndType" style="display:none;" onchange="toggleEndTypeField()">
                 <option value="inf">Indefinitely</option>
-                <option value="custom">Until Date (MM/YYYY)</option>
+     
+            <option value="custom">Until Date (MM/YYYY)</option>
             </select>
             <input type="text" id="expCustomUntil" placeholder="End Date (e.g., 12/2027)" style="display:none;" maxlength="7">
         </div>
         <button class="btn-primary" id="formSubmitBtn" onclick="processFormSubmit()">Save Expense Entry</button>
         <div style="text-align: center;">
             <button class="btn-cancel-form" onclick="closeFormDisplay()">Minimize Form</button>
-        </div>
+        
+ </div>
     </div>
 
-    <div class="node-target-wrapper" style="position:relative; width:100%;">
+    <div class="node-target-wrapper" style="position:relative;
+ width:100%;">
          <div class="expense-list" id="listContainer"></div>
     </div>
 
@@ -250,12 +381,14 @@
         <div class="utility-title">Manual Backup (Offline)</div>
         <div class="utility-grid" style="margin-bottom: 12px;">
             <button class="btn-util" onclick="exportToFile()">📥 Export Data to File</button>
-            <div class="file-input-wrapper">
+         
+    <div class="file-input-wrapper">
                 <button class="btn-fake-file btn-util">📤 Import Backup File</button>
                 <input type="file" id="importFile" accept=".txt,.json" onchange="importFromFile(event)">
             </div>
         </div>
-        <div class="utility-title" style="border-top:1px dashed var(--border); padding-top:12px; color:var(--danger);">Danger Zone</div>
+        <div class="utility-title" style="border-top:1px dashed var(--border);
+ padding-top:12px; color:var(--danger);">Danger Zone</div>
         <button class="btn-util btn-util-danger" onclick="triggerResetToScratch()">☢ Start From Scratch</button>
     </div>
 
@@ -264,7 +397,8 @@
             <div class="choice-message" id="choiceOverlayMessage">Do you want to apply this action to the current month or all upcoming instances?</div>
             <div class="choice-buttons-row" id="choiceButtonsContainer">
                 <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
-                <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
+    
+             <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
             </div>
         </div>
     </div>
@@ -277,67 +411,70 @@
         // VERSION TRACKER REFERENCE: 260628_v54
         // ==========================================
 
-        const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
+       
+  const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
         const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
         const DEDICATED_FILE_NAME = 'rne_database.json';
 
         let expenses = [];
-        let templates = [];
+ let templates = [];
         let meta = { lastMonthPopulated: "", lastUpdated: 0, isInitialBlank: true };
 
         let editingTargetId = null;
-        let collapsedGroups = JSON.parse(localStorage.getItem('household_collapsed_groups')) || {};
+ let collapsedGroups = JSON.parse(localStorage.getItem('household_collapsed_groups')) || {};
         let tokenClient = null;
         let activeAccessToken = null;
         let gdriveFileId = null;
-
-        const recurrenceGroupsConfig = [
+ const recurrenceGroupsConfig = [
             { key: 0, label: "One-Time Only" },
             { key: 1, label: "Monthly" },
             { key: 2, label: "Every 2 Months" },
             { key: 3, label: "Quarterly" },
             { key: 6, label: "Every 6 Months" },
-            { key: 12, label: "Yearly" }
+       
+      { key: 12, label: "Yearly" }
         ];
-
-        function initializeSavedDisplayTheme() {
+ function initializeSavedDisplayTheme() {
             const savedTheme = localStorage.getItem('rne_app_theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
+ document.documentElement.setAttribute('data-theme', savedTheme);
         }
 
         function toggleDisplayTheme() {
             const activeTheme = document.documentElement.getAttribute('data-theme');
-            const targetTheme = activeTheme === 'dark' ? 'light' : 'dark';
+ const targetTheme = activeTheme === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', targetTheme);
             localStorage.setItem('rne_app_theme', targetTheme);
-        }
+ }
 
         function presentCustomChoicePrompt(questionMessage, leftLabel = "Current", rightLabel = "All", isDestructive = false) {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('customChoiceOverlay');
                 const textContainer = document.getElementById('choiceOverlayMessage');
                 const leftBtn = document.getElementById('choiceLeftActionBtn');
-                const rightBtn = document.getElementById('choiceRightActionBtn');
+        
+         const rightBtn = document.getElementById('choiceRightActionBtn');
                 const container = document.getElementById('choiceButtonsContainer');
 
                 container.className = "choice-buttons-row";
                 leftBtn.style.display = "inline-block";
                 rightBtn.style.display = "inline-block";
 
-                textContainer.innerText = questionMessage;
+                
+ textContainer.innerText = questionMessage;
                 leftBtn.innerText = leftLabel;
                 rightBtn.innerText = rightLabel;
                 if (isDestructive) {
                     rightBtn.className = "btn-choice btn-choice-danger";
-                } else {
+ } else {
                     rightBtn.className = "btn-choice btn-choice-right";
-                }
+ }
 
-                const handleLeftSelection = () => { cleanup(); resolve('left'); };
+                const handleLeftSelection = () => { cleanup();
+ resolve('left'); };
                 const handleRightSelection = () => { cleanup(); resolve('right'); };
-                const cleanup = () => {
+ const cleanup = () => {
                     leftBtn.removeEventListener('click', handleLeftSelection);
-                    rightBtn.removeEventListener('click', handleRightSelection);
+ rightBtn.removeEventListener('click', handleRightSelection);
                     overlay.style.display = 'none';
                     leftBtn.innerText = "Current";
                     rightBtn.innerText = "All";
@@ -347,7 +484,7 @@
                 rightBtn.addEventListener('click', handleRightSelection);
                 overlay.style.display = 'flex';
             });
-        }
+ }
 
         function presentCloudSyncCrossroadsPrompt(syncState, statusHeadline, localDateStr, cloudDateStr) {
             return new Promise((resolve) => {
@@ -355,37 +492,47 @@
                 const textContainer = document.getElementById('choiceOverlayMessage');
                 const container = document.getElementById('choiceButtonsContainer');
 
-                container.className = "vertical-buttons";
+              
+   container.className = "vertical-buttons";
 
                 if (syncState === 'match') {
                     textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
                         ${statusHeadline}<br><br>
-                        <span style="font-size:12px; color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
+                        <span style="font-size:12px; color:var(--text-muted);">Local Cache Last 
+ Updated:</span><br><strong>${localDateStr}</strong><br><br>
                         <span style="font-size:12px; color:var(--primary);">Cloud Backup Last Updated:</span><br><strong>${cloudDateStr}</strong>`;
                     
                     container.innerHTML = `
-                        <button class="btn-choice btn-choice-right btn-choice-full" style="background:var(--success); border-color:var(--success);" id="btnSyncPerfect">Perfect!</button>
+                        <button class="btn-choice btn-choice-right btn-choice-full" style="background:var(--success);
+ border-color:var(--success);" id="btnSyncPerfect">Perfect!</button>
                     `;
                     
                     const perfectBtn = document.getElementById('btnSyncPerfect');
                     const handlePerfect = () => { cleanup(); resolve('ignore'); };
-                    const cleanup = () => {
+        
+             const cleanup = () => {
                         perfectBtn.removeEventListener('click', handlePerfect);
                         overlay.style.display = 'none';
                         resetContainerToDefaultTemplate(container);
-                    };
+        
+             };
                     perfectBtn.addEventListener('click', handlePerfect);
 
                 } else {
                     textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
                         ${statusHeadline}<br><br>
-                        <span style="font-size:12px; color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
-                        <span style="font-size:12px; color:var(--primary);">Cloud Backup Last Updated:</span><br><strong>${cloudDateStr}</strong><br><br>
+  
+                       <span style="font-size:12px;
+ color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
+                        <span style="font-size:12px;
+ color:var(--primary);">Cloud Backup Last Updated:</span><br><strong>${cloudDateStr}</strong><br><br>
                         What action would you like to take?`;
 
                     if (syncState === 'cloud-newer') {
                         container.innerHTML = `
-                            <button class="btn-choice btn-choice-full" style="background:var(--success); color:white; border-color:var(--success);" id="btnSyncPull">Restore (Download Cloud to Local)</button>
+                 
+            <button class="btn-choice btn-choice-full" style="background:var(--success); color:white;
+ border-color:var(--success);" id="btnSyncPull">Restore (Download Cloud to Local)</button>
                             <button class="btn-choice btn-choice-danger btn-choice-full" id="btnSyncPush">Backup (Upload Local to Cloud)</button>
                             <button class="btn-choice btn-choice-left btn-choice-full" id="btnSyncIgnore">Do Nothing (Keep Offline Split)</button>
                         `;
@@ -396,7 +543,6 @@
                             <button class="btn-choice btn-choice-left btn-choice-full" id="btnSyncIgnore">Do Nothing (Keep Offline Split)</button>
                         `;
                     }
-
                     const pushBtn = document.getElementById('btnSyncPush');
                     const pullBtn = document.getElementById('btnSyncPull');
                     const ignoreBtn = document.getElementById('btnSyncIgnore');
@@ -437,12 +583,12 @@
                 const textContainer = document.getElementById('choiceOverlayMessage');
                 const container = document.getElementById('choiceButtonsContainer');
                 const prettyMonth = new Date(monthStr + '-01').toLocaleDateString('default', { month: 'long', year: 'numeric' });
-                
+
                 textContainer.innerHTML = `<strong>Review EDITED in ${prettyMonth}</strong><br><br>
                     <span style="font-size:13px; color:var(--text-muted);">Current Custom Entry:</span><br><strong>${customName} (€${customCost.toFixed(2)})</strong><br><br>
                     <span style="font-size:13px; color:var(--edit-color);">Proposed Master Update:</span><br><strong>${newName} (€${newCost.toFixed(2)})</strong><br><br>
                     Do you want to overwrite this custom entry or keep it as is?`;
-                
+
                 container.className = "vertical-buttons";
                 container.innerHTML = `
                     <button class="btn-choice btn-choice-right btn-choice-full" id="btnOverrideOverwrite">Overwrite Custom Entry</button>
@@ -502,513 +648,382 @@
             });
         }
 
-        function presentThreeWayDeleteCrossroads() {
-            return new Promise((resolve) => {
-                const overlay = document.getElementById('customChoiceOverlay');
-                const textContainer = document.getElementById('choiceOverlayMessage');
-                const container = document.getElementById('choiceButtonsContainer');
-
-                textContainer.innerHTML = `<strong>Delete Expense Entry</strong><br><br>How would you like to handle this deletion?`;
-                container.className = "vertical-buttons";
-                container.innerHTML = `
-                    <button class="btn-choice btn-choice-left btn-choice-full" id="delCurrentBtn">Delete Current Month Only</button>
-                    <button class="btn-choice btn-choice-danger btn-choice-full" id="delForwardBtn">Delete Whole Series Forward</button>
-                    <button class="btn-choice btn-choice-left btn-choice-full" style="background:#cbd5e1;" id="delCancelBtn">Cancel</button>
-                `;
-
-                const currentBtn = document.getElementById('delCurrentBtn');
-                const forwardBtn = document.getElementById('delForwardBtn');
-                const cancelBtn = document.getElementById('delCancelBtn');
-
-                const handleCurrent = () => { cleanup(); resolve('current'); };
-                const handleForward = () => { cleanup(); resolve('forward'); };
-                const handleCancel = () => { cleanup(); resolve('cancel'); };
-
-                const cleanup = () => {
-                    currentBtn.removeEventListener('click', handleCurrent);
-                    forwardBtn.removeEventListener('click', handleForward);
-                    cancelBtn.removeEventListener('click', handleCancel);
-                    overlay.style.display = 'none';
-                    resetContainerToDefaultTemplate(container);
-                };
-
-                currentBtn.addEventListener('click', handleCurrent);
-                forwardBtn.addEventListener('click', handleForward);
-                cancelBtn.addEventListener('click', handleCancel);
-                overlay.style.display = 'flex';
-            });
-        }
-
-        function formatPrettyOriginLabel(monthKeyString) {
-            if (!monthKeyString || !monthKeyString.includes('-')) return '';
+        function formatPrettyOriginLabel(monthKeyString) { 
+            if (!monthKeyString || !monthKeyString.includes('-')) return ''; 
+            
+            const activeViewingMonth = document.getElementById('monthViewFilter').value;
+            if (monthKeyString === activeViewingMonth) return '';
+            
             const [year, month] = monthKeyString.split('-');
-            const labelStr = new Date(year, month - 1, 1).toLocaleDateString('default', { month: 'short', year: 'numeric' });
-            return `Originated: ${labelStr}`;
+            return `ORIGIN: ${month}/${year}`;
         }
 
-        function formatPrettyUntilLabel(seriesId) {
-            if (!seriesId) return '';
-            const t = templates.find(tpl => tpl.seriesId === seriesId);
-            if (!t) return '';
-            if (t.durationLimit && t.durationLimit.includes('-')) {
-                const [year, month] = t.durationLimit.split('-');
-                return `Until: ${month}/${year}`;
-            }
-            if (t.endType === 'custom' && t.endCustomUntil) {
-                return `Until: ${t.endCustomUntil}`;
-            }
-            return '';
-        }
-
-        function getMonthList() {
-            const list = [];
-            const d = new Date();
-            for (let i = 0; i <= 12; i++) {
-                let targetMonth = d.getMonth() + i;
-                let targetYear = d.getFullYear() + Math.floor(targetMonth / 12);
-                let m = (targetMonth % 12) + 1;
-                list.push(`${targetYear}-${m < 10 ? '0' + m : m}`);
-            }
-            return list;
-        }
-
-        const monthsRange = getMonthList();
-        const currentSystemMonth = monthsRange[0];
-        const filterSelect = document.getElementById('monthViewFilter');
-        const formMonthSelect = document.getElementById('expMonthTarget');
-
-        monthsRange.forEach((mStr) => {
-            const [y, m] = mStr.split('-');
-            const label = new Date(y, m - 1, 1).toLocaleDateString('default', { month: 'long', year: 'numeric' });
-            filterSelect.options.add(new Option(label, mStr));
-            formMonthSelect.options.add(new Option(label, mStr));
-        });
-
-        window.onload = function() {
-            initializeSavedDisplayTheme();
-            loadLocalStorageCache();
-            detectAndTriggerArrearsLogic();
-            render();
-            initializeGoogleIdentityServiceServices();
-        };
-
-        function loadLocalStorageCache() {
-            const cacheExpenses = localStorage.getItem('household_expenses');
-            const cacheTemplates = localStorage.getItem('household_templates');
-            const cacheMeta = localStorage.getItem('household_meta');
-
-            if (cacheExpenses) expenses = JSON.parse(cacheExpenses);
-            if (cacheTemplates) templates = JSON.parse(cacheTemplates);
-            if (cacheMeta) {
-                meta = JSON.parse(cacheMeta);
-            } else {
-                meta.isInitialBlank = true;
-            }
-
-            if (!meta.lastMonthPopulated) {
-                meta.lastMonthPopulated = currentSystemMonth;
-                meta.lastUpdated = Date.now();
-                saveStateToLocalStorage();
-            }
-            ensureSequencePopulatedUpToMonth(filterSelect.value);
-        }
-
-        function saveStateToLocalStorage() {
-            meta.lastUpdated = Date.now();
-            meta.isInitialBlank = false;
-            localStorage.setItem('household_expenses', JSON.stringify(expenses));
-            localStorage.setItem('household_templates', JSON.stringify(templates));
-            localStorage.setItem('household_meta', JSON.stringify(meta));
-        }
-
-        function detectAndTriggerArrearsLogic() {
-            const absoluteLeftOvers = expenses.filter(e => e.month < currentSystemMonth && e.status === 'unpaid');
-            const banner = document.getElementById('globalArrearsBanner');
-            if (absoluteLeftOvers.length > 0) {
-                banner.style.display = "flex";
-            } else {
-                banner.style.display = "none";
-            }
-        }
-
-        async function executeBatchBringArrearsToCurrent() {
-            const activeMonth = filterSelect.value;
-            const absoluteLeftOvers = expenses.filter(e => e.month < activeMonth && e.status === 'unpaid');
-            
-            absoluteLeftOvers.forEach(e => {
-                e.status = 'paid';
-                const alreadyExists = expenses.find(x => x.seriesId === e.seriesId && x.month === activeMonth);
-                if (!alreadyExists) {
-                    expenses.push({
-                        id: 'exp_' + Math.random().toString(36).substr(2, 9),
-                        seriesId: e.seriesId,
-                        name: e.name,
-                        cost: e.cost,
-                        month: activeMonth,
-                        recur: e.recur,
-                        status: 'unpaid',
-                        originMonth: e.originMonth || e.month,
-                        isEdited: e.isEdited || false
-                    });
-                }
+        function calculateGroupMetricsSummaryObject(expenseItemsArray) {
+            let total = 0; let paid = 0; let unpaid = 0;
+            expenseItemsArray.forEach(item => {
+                total += item.cost;
+                if (item.status === 'paid') paid += item.cost;
+                else unpaid += item.cost;
             });
-            saveStateToLocalStorage();
-            detectAndTriggerArrearsLogic();
-            render();
-            await silentlyExecuteCloudSyncEngineCheck();
+            return { total, paid, unpaid };
         }
 
-        async function executeBatchDiscardArrears() {
-            const activeMonth = filterSelect.value;
-            expenses = expenses.filter(e => !(e.month < activeMonth && e.status === 'unpaid'));
-            saveStateToLocalStorage();
-            detectAndTriggerArrearsLogic();
-            render();
-            await silentlyExecuteCloudSyncEngineCheck();
-        }
+        function populateMonthDropdownFilterOptions() {
+            const select = document.getElementById('monthViewFilter');
+            const cachedVal = select.value;
+            select.innerHTML = '';
 
-        function ensureSequencePopulatedUpToMonth(targetMonthStr) {
-            if (!meta.lastMonthPopulated || meta.lastMonthPopulated >= targetMonthStr) return;
-            
-            let cursor = new Date(meta.lastMonthPopulated + '-01');
-            const targetDate = new Date(targetMonthStr + '-01');
-
-            while (cursor <= targetDate) {
-                cursor.setMonth(cursor.getMonth() + 1);
-                let y = cursor.getFullYear();
-                let m = cursor.getMonth() + 1;
-                let cursorMonthStr = `${y}-${m < 10 ? '0' + m : m}`;
-
-                templates.forEach(tpl => {
-                    if (shouldTemplateGenerateInstance(tpl, cursorMonthStr)) {
-                        const alreadyExists = expenses.find(x => x.seriesId === tpl.seriesId && x.month === cursorMonthStr);
-                        if (!alreadyExists) {
-                            expenses.push({
-                                id: 'exp_' + Math.random().toString(36).substr(2, 9),
-                                seriesId: tpl.seriesId,
-                                name: tpl.name,
-                                cost: tpl.cost,
-                                month: cursorMonthStr,
-                                recur: tpl.recur,
-                                status: 'unpaid',
-                                originMonth: cursorMonthStr,
-                                isEdited: false
-                            });
-                        }
-                    }
-                });
-                if (cursorMonthStr === targetMonthStr) break;
+            let targetMonthsSet = new Set();
+            const now = new Date();
+            for(let i=-6; i<=6; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+                targetMonthsSet.add(formatDateToYearMonthKey(d));
             }
-            meta.lastMonthPopulated = targetMonthStr;
-            saveStateToLocalStorage();
+            expenses.forEach(e => { if(e.month) targetMonthsSet.add(e.month); });
+            
+            const sortedArray = Array.from(targetMonthsSet).sort();
+            sortedArray.forEach(mKey => {
+                const opt = document.createElement('option');
+                opt.value = mKey;
+                const [y, m] = mKey.split('-');
+                opt.innerText = new Date(y, m - 1, 1).toLocaleDateString('default', { month: 'long', year: 'numeric' });
+                select.appendChild(opt);
+            });
+
+            if(cachedVal && sortedArray.includes(cachedVal)) select.value = cachedVal;
+            else select.value = formatDateToYearMonthKey(now);
         }
 
-        function shouldTemplateGenerateInstance(tpl, targetMonthStr) {
-            if (tpl.startMonth > targetMonthStr) return false;
-            
-            if (tpl.endType === 'custom' && tpl.durationLimit && targetMonthStr > tpl.durationLimit) {
-                return false;
-            }
-
-            if (tpl.recur === 1) return true;
-            
-            const [startY, startM] = tpl.startMonth.split('-').map(Number);
-            const [targetY, targetM] = targetMonthStr.split('-').map(Number);
-            const absoluteDiffMonths = (targetY - startY) * 12 + (targetM - startM);
-            
-            return (absoluteDiffMonths % tpl.recur) === 0;
-        }
-
-        function stepMonth(delta) {
-            let index = filterSelect.selectedIndex + delta;
-            if (index >= 0 && index < filterSelect.options.length) {
-                filterSelect.selectedIndex = index;
-                ensureSequencePopulatedUpToMonth(filterSelect.value);
-                detectAndTriggerArrearsLogic();
+        function stepMonth(directionNumber) {
+            const select = document.getElementById('monthViewFilter');
+            const activeIndex = select.selectedIndex;
+            const targetIndex = activeIndex + directionNumber;
+            if (targetIndex >= 0 && targetIndex < select.options.length) {
+                select.selectedIndex = targetIndex;
                 render();
-            }
-        }
-
-        function toggleDurationField() {
-            const recurVal = parseInt(document.getElementById('expRecur').value);
-            const endTypeField = document.getElementById('expEndType');
-            if (recurVal > 0) {
-                endTypeField.style.display = 'block';
-            } else {
-                endTypeField.style.display = 'none';
-                endTypeField.value = 'inf';
-            }
-            toggleEndTypeField();
-        }
-
-        function toggleEndTypeField() {
-            const endType = document.getElementById('expEndType').value;
-            const customUntilInput = document.getElementById('expCustomUntil');
-            if (endType === 'custom' && document.getElementById('expEndType').style.display !== 'none') {
-                customUntilInput.style.display = 'block';
-            } else {
-                customUntilInput.style.display = 'none';
-                customUntilInput.value = '';
             }
         }
 
         function openCreateMode() {
             editingTargetId = null;
-            document.getElementById('editBannerElement').style.display = 'none';
-            document.getElementById('formSubmitBtn').innerText = "Save New Expense";
+            document.getElementById('editBannerElement').style.display = "none";
+            document.getElementById('formSubmitBtn').innerText = "Save Expense Entry";
+            
+            const select = document.getElementById('expMonthTarget');
+            select.innerHTML = '';
+            const dropdownOptions = document.getElementById('monthViewFilter').options;
+            for(let i=0; i<dropdownOptions.length; i++) {
+                const opt = document.createElement('option');
+                opt.value = dropdownOptions[i].value;
+                opt.innerText = dropdownOptions[i].text;
+                select.appendChild(opt);
+            }
+            select.value = document.getElementById('monthViewFilter').value;
+            
             document.getElementById('expName').value = '';
             document.getElementById('expCost').value = '';
-            document.getElementById('expMonthTarget').value = filterSelect.value;
-            document.getElementById('expRecur').value = '0';
-            document.getElementById('expEndType').value = 'inf';
+            document.getElementById('expRecur').value = "0";
+            document.getElementById('expEndType').value = "inf";
             document.getElementById('expCustomUntil').value = '';
             
+            document.getElementById('expRecur').disabled = false;
             toggleDurationField();
-            document.getElementById('expenseFormCard').style.display = 'block';
-            document.getElementById('formTriggerBtn').style.display = 'none';
+            document.getElementById('expenseFormCard').style.display = "block";
+            document.getElementById('formTriggerBtn').style.display = "none";
         }
 
-        function openEditMode(id) {
-            const exp = expenses.find(e => e.id === id);
+        function openEditMode(itemId) {
+            const exp = expenses.find(e => e.id === itemId);
             if (!exp) return;
+            
+            editingTargetId = itemId;
+            document.getElementById('editBannerElement').style.display = "block";
+            document.getElementById('formSubmitBtn').innerText = "Apply Edits To Item";
+            
+            const select = document.getElementById('expMonthTarget');
+            select.innerHTML = '';
+            const opt = document.createElement('option');
+            opt.value = exp.month;
+            const [y, m] = exp.month.split('-');
+            opt.innerText = new Date(y, m - 1, 1).toLocaleDateString('default', { month: 'long', year: 'numeric' });
+            select.appendChild(opt);
+            select.value = exp.month;
 
-            editingTargetId = id;
-            document.getElementById('editBannerElement').style.display = 'block';
-            document.getElementById('formSubmitBtn').innerText = "Update Existing Entry";
             document.getElementById('expName').value = exp.name;
             document.getElementById('expCost').value = exp.cost;
-            document.getElementById('expMonthTarget').value = exp.month;
-            document.getElementById('expRecur').value = exp.recur.toString();
-
-            const tpl = templates.find(t => t.seriesId === exp.seriesId);
-            if (tpl) {
-                document.getElementById('expEndType').value = tpl.endType || 'inf';
-                document.getElementById('expCustomUntil').value = tpl.durationLimit || '';
+            
+            if (exp.templateId) {
+                const t = templates.find(tpl => tpl.id === exp.templateId);
+                document.getElementById('expRecur').value = t ? t.recurrence : "1";
+                if (t && t.until) {
+                    document.getElementById('expEndType').value = "custom";
+                    document.getElementById('expCustomUntil').value = convertYearMonthToInputSlashFormat(t.until);
+                } else {
+                    document.getElementById('expEndType').value = "inf";
+                    document.getElementById('expCustomUntil').value = '';
+                }
             } else {
-                document.getElementById('expEndType').value = 'inf';
+                document.getElementById('expRecur').value = "0";
+                document.getElementById('expEndType').value = "inf";
                 document.getElementById('expCustomUntil').value = '';
             }
-
+            
+            document.getElementById('expRecur').disabled = true;
             toggleDurationField();
-            document.getElementById('expenseFormCard').style.display = 'block';
-            document.getElementById('formTriggerBtn').style.display = 'none';
+            document.getElementById('expenseFormCard').style.display = "block";
+            document.getElementById('formTriggerBtn').style.display = "none";
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+        function toggleDurationField() {
+            const val = document.getElementById('expRecur').value;
+            const endType = document.getElementById('expEndType');
+            if (val === "0") {
+                endType.style.display = "none";
+                document.getElementById('expCustomUntil').style.display = "none";
+            } else {
+                endType.style.display = "block";
+                toggleEndTypeField();
+            }
+        }
+
+        function toggleEndTypeField() {
+            const recur = document.getElementById('expRecur').value;
+            const val = document.getElementById('expEndType').value;
+            const customInput = document.getElementById('expCustomUntil');
+            if (recur !== "0" && val === "custom") {
+                customInput.style.display = "block";
+            } else {
+                customInput.style.display = "none";
+            }
+        }
+
         function closeFormDisplay() {
-            document.getElementById('expenseFormCard').style.display = 'none';
-            document.getElementById('formTriggerBtn').style.display = 'block';
+            document.getElementById('expenseFormCard').style.display = "none";
+            document.getElementById('formTriggerBtn').style.display = "block";
             editingTargetId = null;
         }
 
         async function processFormSubmit() {
             const name = document.getElementById('expName').value.trim();
-            const costVal = parseFloat(document.getElementById('expCost').value);
+            const costRaw = parseFloat(document.getElementById('expCost').value);
             const monthTarget = document.getElementById('expMonthTarget').value;
-            const recur = parseInt(document.getElementById('expRecur').value);
+            const recurrence = parseInt(document.getElementById('expRecur').value);
             const endType = document.getElementById('expEndType').value;
-            let customUntil = document.getElementById('expCustomUntil').value.trim();
+            const customUntil = document.getElementById('expCustomUntil').value.trim();
 
-            if (!name || isNaN(costVal)) {
-                alert("Please fill in valid name and cost fields.");
+            if (!name || isNaN(costRaw) || costRaw <= 0) {
+                alert("Please declare a valid operational asset description name and numeric expenditure cost boundary.");
                 return;
             }
 
-            if (endType === 'custom' && recur > 0) {
+            let untilParsed = null;
+            if (recurrence !== 0 && endType === 'custom') {
                 if (!/^\d{2}\/\d{4}$/.test(customUntil)) {
-                    alert("Please specify clean end limit date using standard MM/YYYY syntax structure.");
+                    alert("Please provide the termination date limit strict format sequence as MM/YYYY.");
                     return;
                 }
                 const [m, y] = customUntil.split('/');
-                customUntil = `${y}-${m}`;
-            } else {
-                customUntil = "";
+                untilParsed = `${y}-${m}`;
+                if (untilParsed < monthTarget) {
+                    alert("The ending constraints criteria cannot settle chronologically earlier than target deployment origin.");
+                    return;
+                }
             }
 
-            if (editingTargetId) {
-                const targetExpense = expenses.find(e => e.id === editingTargetId);
-                if (!targetExpense) return;
+            if (editingTargetId !== null) {
+                const targetIdx = expenses.findIndex(e => e.id === editingTargetId);
+                if (targetIdx === -1) return;
+                const exp = expenses[targetIdx];
 
-                if (targetExpense.recur === 0 && recur === 0) {
-                    targetExpense.name = name;
-                    targetExpense.cost = costVal;
-                    targetExpense.month = monthTarget;
-                    saveStateToLocalStorage();
-                } else {
-                    const choice = await presentCustomChoicePrompt("Apply changes to current month item instance only, or cascade adjustments across entire template configuration series onwards?", "Current Only", "All (Series Cascade)");
+                if (exp.templateId) {
+                    const choice = await presentCustomChoicePrompt(
+                        "This expense is linked to a recurring template series. Apply modifications exclusively to this month's instance or update the base parameters for all future logs?",
+                        "Current Instance Only",
+                        "All Future Occurrences"
+                    );
+
                     if (choice === 'left') {
-                        targetExpense.name = name;
-                        targetExpense.cost = costVal;
-                        targetExpense.isEdited = true;
-                        saveStateToLocalStorage();
+                        expenses[targetIdx] = { ...exp, name, cost: costRaw, isEdited: true };
                     } else if (choice === 'right') {
-                        let tpl = templates.find(t => t.seriesId === targetExpense.seriesId);
-                        if (!tpl) {
-                            tpl = { seriesId: targetExpense.seriesId, startMonth: targetExpense.month };
-                            templates.push(tpl);
-                        }
-                        tpl.name = name;
-                        tpl.cost = costVal;
-                        tpl.recur = recur;
-                        tpl.endType = endType;
-                        tpl.durationLimit = customUntil;
-
-                        const matchingInstancesForward = expenses.filter(e => e.seriesId === targetExpense.seriesId && e.month >= targetExpense.month);
-                        for (const instance of matchingInstancesForward) {
-                            if (instance.isEdited) {
-                                const overrideDecision = await presentInteractiveOverrideReview(instance.month, instance.name, instance.cost, name, costVal);
-                                if (overrideDecision === 'overwrite') {
-                                    instance.name = name;
-                                    instance.cost = costVal;
-                                    instance.recur = recur;
-                                    instance.isEdited = false;
-                                }
-                            } else {
-                                instance.name = name;
-                                instance.cost = costVal;
-                                instance.recur = recur;
-                            }
+                        const tplIdx = templates.findInstanceIndexById(exp.templateId);
+                        if (tplIdx !== -1) {
+                            templates[tplIdx].name = name;
+                            templates[tplIdx].cost = costRaw;
+                            if (untilParsed) templates[tplIdx].until = untilParsed;
                         }
                         
-                        expenses = expenses.filter(e => !(e.seriesId === targetExpense.seriesId && e.month > targetExpense.month && !shouldTemplateGenerateInstance(tpl, e.month)));
-                        saveStateToLocalStorage();
+                        const currentFilterVal = document.getElementById('monthViewFilter').value;
+                        expenses = expenses.map(item => {
+                            if (item.templateId === exp.templateId) {
+                                if (item.month === currentFilterVal) {
+                                    return { ...item, name, cost: costRaw, isEdited: false };
+                                } else if (item.month > currentFilterVal) {
+                                    if (!item.isEdited) {
+                                        return { ...item, name, cost: costRaw };
+                                    } else {
+                                        return item;
+                                    }
+                                }
+                            }
+                            return item;
+                        });
+
+                        await evaluateAndCascadeInteractiveOverridesPromptFlow(currentFilterVal, exp.templateId, name, costRaw);
                     }
-                }
-            } else {
-                if (recur === 0) {
-                    expenses.push({
-                        id: 'exp_' + Math.random().toString(36).substr(2, 9),
-                        seriesId: 'static_' + Math.random().toString(36).substr(2, 9),
-                        name: name,
-                        cost: costVal,
-                        month: monthTarget,
-                        recur: 0,
-                        status: 'unpaid',
-                        originMonth: monthTarget,
-                        isEdited: false
-                    });
-                    saveStateToLocalStorage();
                 } else {
-                    const newSeriesId = 'series_' + Date.now();
-                    const newTemplate = {
-                        seriesId: newSeriesId,
-                        name: name,
-                        cost: costVal,
-                        recur: recur,
-                        startMonth: monthTarget,
-                        endType: endType,
-                        durationLimit: customUntil
-                    };
-                    templates.push(newTemplate);
-
-                    const viewIndex = monthsRange.indexOf(filterSelect.value);
-                    const startIndex = monthsRange.indexOf(monthTarget);
-                    const topLimit = Math.max(viewIndex, startIndex);
-
-                    for (let i = startIndex; i <= topLimit; i++) {
-                        if (i < 0) continue;
-                        let mStr = monthsRange[i];
-                        if (shouldTemplateGenerateInstance(newTemplate, mStr)) {
-                            expenses.push({
-                                id: 'exp_' + Math.random().toString(36).substr(2, 9),
-                                seriesId: newSeriesId,
-                                name: name,
-                                cost: costVal,
-                                month: mStr,
-                                recur: recur,
-                                status: 'unpaid',
-                                originMonth: mStr,
-                                isEdited: false
-                            });
-                        }
-                    }
-                    saveStateToLocalStorage();
-                }
-            }
-
-            closeFormDisplay();
-            ensureSequencePopulatedUpToMonth(filterSelect.value);
-            detectAndTriggerArrearsLogic();
-            render();
-            await silentlyExecuteCloudSyncEngineCheck();
-        }
-
-        async function togglePaid(id) {
-            const exp = expenses.find(e => e.id === id);
-            if (!exp) return;
-            exp.status = (exp.status === 'unpaid') ? 'paid' : 'unpaid';
-            saveStateToLocalStorage();
-            detectAndTriggerArrearsLogic();
-            render();
-            await silentlyExecuteCloudSyncEngineCheck();
-        }
-
-        async function moveNextMonth(id) {
-            const exp = expenses.find(e => e.id === id);
-            if (!exp) return;
-
-            const currentIndex = monthsRange.indexOf(exp.month);
-            if (currentIndex === -1 || currentIndex >= monthsRange.length - 1) {
-                alert("Cannot shift records past active planning buffers.");
-                return;
-            }
-            
-            const nextMonthStr = monthsRange[currentIndex + 1];
-            exp.month = nextMonthStr;
-            
-            saveStateToLocalStorage();
-            ensureSequencePopulatedUpToMonth(filterSelect.value);
-            detectAndTriggerArrearsLogic();
-            render();
-            await silentlyExecuteCloudSyncEngineCheck();
-        }
-
-        async function movePreviousMonth(id) {
-            const exp = expenses.find(e => e.id === id);
-            if (!exp) return;
-
-            const currentIndex = monthsRange.indexOf(exp.month);
-            if (currentIndex === -1 || currentIndex <= 0) {
-                alert("Cannot push records into past historical ranges.");
-                return;
-            }
-
-            const prevMonthStr = monthsRange[currentIndex - 1];
-            exp.month = prevMonthStr;
-
-            saveStateToLocalStorage();
-            detectAndTriggerArrearsLogic();
-            render();
-            await silentlyExecuteCloudSyncEngineCheck();
-        }
-
-        async function deleteExpense(id) {
-            const exp = expenses.find(e => e.id === id);
-            if (!exp) return;
-
-            if (exp.recur === 0) {
-                if (confirm(`Remove custom one-time item "${exp.name}" entirely?`)) {
-                    expenses = expenses.filter(e => e.id !== id);
-                    saveStateToLocalStorage();
+                    expenses[targetIdx] = { ...exp, name, cost: costRaw };
                 }
             } else {
-                const decision = await presentThreeWayDeleteCrossroads();
-                if (decision === 'current') {
-                    expenses = expenses.filter(e => e.id !== id);
-                    saveStateToLocalStorage();
-                } else if (decision === 'forward') {
-                    expenses = expenses.filter(e => !(e.seriesId === exp.seriesId && e.month >= exp.month));
-                    templates = templates.filter(t => t.seriesId !== exp.seriesId);
-                    saveStateToLocalStorage();
+                let generatedTemplateId = null;
+                if (recurrence !== 0) {
+                    const tId = generateSecureUUID();
+                    templates.push({
+                        id: tId, name, cost: costRaw, recurrence,
+                        start: monthTarget, until: untilParsed
+                    });
+                    generatedTemplateId = tId;
                 }
+
+                expenses.push({
+                    id: generateSecureUUID(), templateId: generatedTemplateId,
+                    name, cost: costRaw, month: monthTarget, status: "unpaid",
+                    originated: monthTarget, isEdited: false
+                });
+                
+                meta.isInitialBlank = false;
             }
-            detectAndTriggerArrearsLogic();
+
+            commitCacheStateToLocalStorage();
+            closeFormDisplay();
             render();
-            await silentlyExecuteCloudSyncEngineCheck();
+            silentlyTriggerCloudBackupSyncBackgroundEngine();
         }
 
-        function toggleGroupCollapse(key) {
-            collapsedGroups[key] = !collapsedGroups[key];
+        async function evaluateAndCascadeInteractiveOverridesPromptFlow(baselineMonthKey, templateUuid, modifiedName, modifiedCostNumerical) {
+            const matchingFutureCustoms = expenses.filter(item => 
+                item.templateId === templateUuid && item.month > baselineMonthKey && item.isEdited === true
+            );
+            
+            for (let customItem of matchingFutureCustoms) {
+                const resolution = await presentInteractiveOverrideReview(
+                    customItem.month, customItem.name, customItem.cost, modifiedName, modifiedCostNumerical
+                );
+                if (resolution === 'overwrite') {
+                    const idx = expenses.findIndex(e => e.id === customItem.id);
+                    if (idx !== -1) {
+                        expenses[idx].name = modifiedName;
+                        expenses[idx].cost = modifiedCostNumerical;
+                        expenses[idx].isEdited = false;
+                    }
+                }
+            }
+            commitCacheStateToLocalStorage();
+            render();
+        }
+
+        function togglePaid(itemId) {
+            const idx = expenses.findIndex(e => e.id === itemId);
+            if (idx === -1) return;
+            expenses[idx].status = expenses[idx].status === 'paid' ? 'unpaid' : 'paid';
+            commitCacheStateToLocalStorage();
+            render();
+            silentlyTriggerCloudBackupSyncBackgroundEngine();
+        }
+
+        async function moveNextMonth(itemId) {
+            const idx = expenses.findIndex(e => e.id === itemId);
+            if (idx === -1) return;
+            const exp = expenses[idx];
+
+            const currentSelect = document.getElementById('monthViewFilter');
+            const activeIdx = currentSelect.selectedIndex;
+            if (activeIdx === currentSelect.options.length - 1) {
+                alert("Target baseline bounds reached. Cannot push items forward into uninitialized registry coordinates.");
+                return;
+            }
+            
+            const nextMonthKey = currentSelect.options[activeIdx + 1].value;
+
+            if (exp.templateId) {
+                const choice = await presentCustomChoicePrompt(
+                    "This automated expense carries a template tracking identifier context. Postpone this specific month's transaction allocation log, or execute a master alteration delay shifting the base template schedule rules framework?",
+                    "Postpone Current",
+                    "Shift Base Framework Schedule"
+                );
+
+                if (choice === 'left') {
+                    exp.month = nextMonthKey;
+                } else if (choice === 'right') {
+                    const tpl = templates.find(t => t.id === exp.templateId);
+                    if (tpl) {
+                        tpl.start = nextMonthKey;
+                        expenses.forEach(item => {
+                            if (item.templateId === exp.templateId && item.status === 'unpaid' && item.month === exp.month) {
+                                item.month = nextMonthKey;
+                            }
+                        });
+                    }
+                }
+            } else {
+                exp.month = nextMonthKey;
+            }
+
+            commitCacheStateToLocalStorage();
+            render();
+            silentlyTriggerCloudBackupSyncBackgroundEngine();
+        }
+
+        function movePreviousMonth(itemId) {
+            const idx = expenses.findIndex(e => e.id === itemId);
+            if (idx === -1) return;
+            const exp = expenses[idx];
+
+            const currentSelect = document.getElementById('monthViewFilter');
+            const activeIdx = currentSelect.selectedIndex;
+            if (activeIdx === 0) {
+                alert("Boundary constraint limit active. Cannot push entry records further back past registry history.");
+                return;
+            }
+            
+            const prevMonthKey = currentSelect.options[activeIdx - 1].value;
+            exp.month = prevMonthKey;
+
+            commitCacheStateToLocalStorage();
+            render();
+            silentlyTriggerCloudBackupSyncBackgroundEngine();
+        }
+
+        async function deleteExpense(itemId) {
+            const idx = expenses.findIndex(e => e.id === itemId);
+            if (idx === -1) return;
+            const exp = expenses[idx];
+
+            if (exp.templateId) {
+                const choice = await presentCustomChoicePrompt(
+                    "This expense card belongs to an active recurring template sequence loop. Erase this single instance element entry, or terminate the entire global core master blueprint series matching this profile?",
+                    "Erase Instance Only",
+                    "Terminate Whole Series",
+                    true
+                );
+
+                if (choice === 'left') {
+                    expenses.splice(idx, 1);
+                } else if (choice === 'right') {
+                    expenses = expenses.filter(e => e.templateId !== exp.templateId);
+                    templates = templates.filter(t => t.id !== exp.templateId);
+                }
+            } else {
+                expenses.splice(idx, 1);
+            }
+
+            commitCacheStateToLocalStorage();
+            render();
+            silentlyTriggerCloudBackupSyncBackgroundEngine();
+        }
+
+        function toggleGroupCollapseState(groupKeyString) {
+            collapsedGroups[groupKeyString] = !collapsedGroups[groupKeyString];
             localStorage.setItem('household_collapsed_groups', JSON.stringify(collapsedGroups));
             render();
         }
@@ -1016,745 +1031,294 @@
         function toggleUtilityDrawer() {
             const card = document.getElementById('utilityDrawerCard');
             const arrow = document.getElementById('utilArrow');
-            if (card.style.display === 'block') {
-                card.style.display = 'none';
-                arrow.style.transform = 'rotate(0deg)';
+            if (card.style.display === "block") {
+                card.style.display = "none";
+                arrow.style.transform = "rotate(0deg)";
             } else {
-                card.style.display = 'block';
-                arrow.style.transform = 'rotate(180deg)';
+                card.style.display = "block";
+                arrow.style.transform = "rotate(180deg)";
             }
         }
 
         function triggerResetToScratch() {
-            if (confirm("Are you sure you want to clear your local database files completely? All stored configuration profiles will be wiped out.")) {
+            if (confirm("🚨 WARNING CRITICAL ACTION: Are you absolutely certain you want to purge all database allocations? This completely resets local cache engines.")) {
                 localStorage.clear();
-                expenses = [];
-                templates = [];
-                meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now(), isInitialBlank: true };
-                localStorage.setItem('household_meta', JSON.stringify(meta));
-                location.reload();
+                expenses = []; templates = [];
+                meta = { lastMonthPopulated: "", lastUpdated: Date.now(), isInitialBlank: true };
+                collapsedGroups = {};
+                populateMonthDropdownFilterOptions();
+                render();
+                alert("Local system memory structures wiped clean.");
             }
         }
 
         function exportToFile() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ meta, templates, expenses }));
+            const payload = { version: "54", meta, templates, expenses };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
             const dlAnchorElem = document.createElement('a');
             dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", `rne_database_backup_${filterSelect.value}.txt`);
+            dlAnchorElem.setAttribute("download", `rne_backup_${formatDateToYearMonthKey(new Date())}.json`);
             dlAnchorElem.click();
         }
 
         function importFromFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+            const input = event.target;
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function() {
                 try {
-                    const parsed = JSON.parse(e.target.result);
-                    if (parsed.expenses && parsed.templates) {
+                    const parsed = JSON.parse(reader.result);
+                    if (parsed && parsed.expenses && parsed.templates) {
                         expenses = parsed.expenses;
                         templates = parsed.templates;
-                        meta = parsed.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now(), isInitialBlank: false };
-                        meta.isInitialBlank = false;
-                        saveStateToLocalStorage();
-                        alert("Database configuration state recovered successfully.");
-                        location.reload();
+                        meta = parsed.meta || { lastMonthPopulated: "", lastUpdated: Date.now(), isInitialBlank: false };
+                        if (meta.isInitialBlank === undefined) meta.isInitialBlank = false;
+                        
+                        commitCacheStateToLocalStorage();
+                        populateMonthDropdownFilterOptions();
+                        render();
+                        alert("Backup parse operation successful. Local state registry refreshed.");
                     } else {
-                        alert("Malformed data context detected within backup wrapper.");
+                        alert("Failed context check profile parameters. Structural properties are corrupt.");
                     }
-                } catch(err) {
-                    alert("Failure parsing local backup stream asset structural contents.");
+                } catch(e) {
+                    alert("Fatal error parsing syntax strings from data upload source stream.");
                 }
             };
-            reader.readAsText(file);
+            reader.readAsText(input.files[0]);
         }
 
-        // 
+        function executeGlobalDynamicRecurrenceCalculationsEngine(targetViewMonthKey) {
+            if (meta.isInitialBlank) return;
+            if (meta.lastMonthPopulated && meta.lastMonthPopulated >= targetViewMonthKey) return;
 
-// =========================================================================
-// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v54)
-// =========================================================================
-function exportToPDF() {
-    const selectEl = document.getElementById('monthViewFilter');
-    if (!selectEl) return;
-    const rawValue = selectEl.value; // e.g., "2026-08"
-    
-    // Exact month/year label resolution from the select box text
-    const reportDateString = selectEl.options[selectEl.selectedIndex].text;
-
-    // Build Current Generated Timestamp: "as of DD/MM/YYYY HH:MM"
-    const now = new Date();
-    const pad = (n) => String(n).padStart(2, '0');
-    const liveDateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
-    const liveTimeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-    const asOfTimestampString = `as of ${liveDateStr} ${liveTimeStr}`;
-
-    // Document Title metadata timestamp definition
-    const timestamp = `${String(now.getFullYear()).slice(-2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
-    const originalTitle = document.title;
-    const parsedFileDate = rawValue.replace('-', '_');
-    document.title = `rne_report_${parsedFileDate}-${timestamp}`;
-
-    // Compute Summary Card aggregates
-    const monthFilteredItems = expenses.filter(e => e.month === rawValue);
-    let totalUnpaidSum = 0;
-    let totalOverallSum = 0;
-
-    monthFilteredItems.forEach(e => {
-        const val = parseFloat(e.cost || 0);
-        totalOverallSum += val;
-        if (e.status === 'unpaid') {
-            totalUnpaidSum += val;
-        }
-    });
-
-    // 1. Generate Clean Document Data Stream HTML
-    let expensesHtml = '';
-    if (monthFilteredItems.length === 0) {
-        expensesHtml = '<p style="text-align: center; color: #666; font-size: 14px; margin-top: 30px;">No records logged for this period.</p>';
-    } else {
-        recurrenceGroupsConfig.forEach((grp) => {
-            const grpItems = monthFilteredItems.filter(e => {
-                if (grp.key === 0) return !e.recur || e.recur === 0;
-                return e.recur === grp.key;
-            });
-
-            if (grpItems.length > 0) {
-                // Category sum tracks ONLY unpaid expenses
-                const groupUnpaidSum = grpItems.reduce((sum, e) => {
-                    return sum + (e.status === 'unpaid' ? parseFloat(e.cost || 0) : 0);
-                }, 0);
-
-                // Define Category Badge appearance state
-                let groupBadgeHtml = '';
-                if (groupUnpaidSum === 0) {
-                    groupBadgeHtml = `<span style="background: #dcfce7; color: #16a34a; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 800; border: 1px solid #bbf7d0;">PAID</span>`;
+            let baselinePointer = meta.lastMonthPopulated;
+            if (!baselinePointer) {
+                if (expenses.length > 0) {
+                    baselinePointer = expenses.reduce((min, e) => e.month < min ? e.month : min, expenses[0].month);
                 } else {
-                    groupBadgeHtml = `<span style="background: #94a3b8; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700;">€${groupUnpaidSum.toFixed(2)}</span>`;
+                    baselinePointer = targetViewMonthKey;
                 }
+            }
 
-                expensesHtml += `
-                    <div style="margin-bottom: 22px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #ffffff;">
-                        <div style="background: #e2e8f0; padding: 10px 15px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e1;">
-                            <span style="color: #334155; text-transform: uppercase; letter-spacing: 0.5px;">${grp.label}</span>
-                            ${groupBadgeHtml}
-                        </div>
-                        <div>
-                `;
+            while (baselinePointer <= targetViewMonthKey) {
+                templates.forEach(tpl => {
+                    if (tpl.start > baselinePointer) return;
+                    if (tpl.until && tpl.until < baselinePointer) return;
 
-                // Sort items so 'unpaid' entries appear first before 'paid' entries
-                const sortedGrpItems = [...grpItems].sort((a, b) => {
-                    if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
-                    if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
-                    return 0;
-                });
-
-                sortedGrpItems.forEach(e => {
-                    const isUnpaid = e.status === 'unpaid';
-                    const itemColor = isUnpaid ? '#dc2626' : '#16a34a';
-                    const costDecorationStyle = isUnpaid ? '' : 'text-decoration: line-through;';
-                    
-                    // Build Badges Container dynamically
-                    let badgeGroupHtml = '';
-                    
-                    if (e.isEdited) {
-                        badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">EDITED</span>`;
-                    }
-                    
-                    // UNIVERSAL SMART DATE RESOLVER
-                    const rawOrigin = e.originated || e.originatedMonth || e.origin;
-                    if (rawOrigin) {
-                        let parsedYear = "";
-                        let parsedMonth = "";
-                        const strOrigin = String(rawOrigin).trim();
-
-                        // Match DD/MM/YYYY standard formatted items
-                        if (strOrigin.includes('/')) {
-                            const parts = strOrigin.split('/');
-                            if (parts.length >= 3) {
-                                parsedMonth = parts[1].padStart(2, '0');
-                                parsedYear = parts[2].substring(0, 4);
-                            }
-                        } 
-                        // Match YYYY-MM-DD or YYYY-MM dash formatted items
-                        else if (strOrigin.includes('-')) {
-                            const parts = strOrigin.split('-');
-                            if (parts[0].length === 4) {
-                                parsedYear = parts[0];
-                                parsedMonth = parts[1].padStart(2, '0');
-                            }
-                        }
-
-                        // Verify it doesn't match the current active view timeline
-                        if (parsedYear && parsedMonth) {
-                            const itemOriginKey = `${parsedYear}-${parsedMonth}`;
-                            if (itemOriginKey !== rawValue) {
-                                badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">ORIGINATED: ${parsedMonth}/${parsedYear}</span>`;
-                            }
+                    const diffMonths = calculateTotalMonthsDifference(tpl.start, baselinePointer);
+                    if (diffMonths % tpl.recurrence === 0) {
+                        const alreadyExists = expenses.some(e => e.templateId === tpl.id && e.month === baselinePointer);
+                        if (!alreadyExists) {
+                            expenses.push({
+                                id: generateSecureUUID(), templateId: tpl.id,
+                                name: tpl.name, cost: tpl.cost, month: baselinePointer,
+                                status: "unpaid", originated: tpl.start, isEdited: false
+                            });
                         }
                     }
-                    
-                    expensesHtml += `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e5e7eb;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: ${itemColor}; flex-shrink: 0;"></span>
-                                <span style="font-weight: 600; font-size: 14px; color: ${itemColor}; display: inline-flex; align-items: center; flex-wrap: wrap;">
-                                    <span>${e.name}</span>${badgeGroupHtml}
-                                </span>
-                            </div>
-                            <div style="font-weight: 700; font-size: 14px; color: ${itemColor}; ${costDecorationStyle} text-align: right; white-space: nowrap; margin-left: 10px;">€${parseFloat(e.cost || 0).toFixed(2)}</div>
-                        </div>
-                    `;
                 });
-
-                expensesHtml += `</div></div>`;
+                baselinePointer = stepMonthKeyForwardByOne(baselinePointer);
             }
-        });
-    }
 
-    // 2. Open isolated window context
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-        alert("Please allow popups to export PDFs.");
-        document.title = originalTitle;
-        return;
-    }
+            meta.lastMonthPopulated = targetViewMonthKey;
+            commitCacheStateToLocalStorage();
+        }
 
-    // 3. Document Stream Transmission Injection
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>${document.title}</title>
-            <style>
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                    color: #111827;
-                    background: #ffffff;
-                    padding: 20px;
-                    max-width: 650px;
-                    margin: 0 auto;
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                }
-                .report-header-container {
-                    border-bottom: 2px solid #e5e7eb;
-                    padding-bottom: 14px;
-                    margin-bottom: 20px;
-                    text-align: center;
-                }
-                .report-title-main {
-                    margin: 0;
-                    font-size: 24px;
-                    font-weight: 800;
-                    color: #111827;
-                }
-                .report-subtitle-period {
-                    margin: 4px 0 0 0;
-                    font-size: 18px;
-                    font-weight: 600;
-                    color: #4b5563;
-                }
-                .summary-grid-layout {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 15px;
-                    margin-bottom: 25px;
-                }
-                .summary-card-box {
-                    border: 1px solid #e5e7eb;
-                    padding: 14px;
-                    border-radius: 8px;
-                    text-align: center;
-                    background: #f9fafb;
-                }
-                .summary-card-label {
-                    font-size: 11px;
-                    color: #6b7280;
-                    text-transform: uppercase;
-                    font-weight: 700;
-                    letter-spacing: 0.5px;
-                    margin-bottom: 4px;
-                    display: block;
-                }
-                .summary-card-value {
-                    font-size: 20px;
-                    font-weight: 800;
-                    color: #111827;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="report-header-container">
-                <h2 class="report-title-main">RNE Tracker Report</h2>
-                <div class="report-subtitle-period">${reportDateString}</div>
-                <div class="report-subtitle-period" style="font-size: 14px; color: #6b7280; font-weight: 500; margin-top: 2px;">${asOfTimestampString}</div>
-            </div>
-            
-            <div class="summary-grid-layout">
-                <div class="summary-card-box">
-                    <span class="summary-card-label">Total Allocated Expenses</span>
-                    <span class="summary-card-value">€${totalOverallSum.toFixed(2)}</span>
-                </div>
-                <div class="summary-card-box">
-                    <span class="summary-card-label">Outstanding Unpaid Arrears</span>
-                    <span class="summary-card-value" style="color: #dc2626;">€${totalUnpaidSum.toFixed(2)}</span>
-                </div>
-            </div>
-
-            <div class="expense-list-wrapper">
-                ${expensesHtml}
-            </div>
-
-            <script>
-                function executeSecurePrintProcess() {
-                    setTimeout(function() {
-                        window.print();
-                    }, 300);
-                }
-                if (document.readyState === 'complete') {
-                    executeSecurePrintProcess();
-                } else {
-                    window.addEventListener('load', executeSecurePrintProcess);
-                }
-            <\/script>
-        </body>
-        </html>
-    `);
-
-    printWindow.document.close();
-    
-    // Reinstate workspace properties
-    setTimeout(() => {
-        document.title = originalTitle;
-    }, 1000);
-}
-
-
-        // ==========================================
-        // GOOGLE DRIVE SYNC PIPELINE ARCHITECTURE LAYER
-        // ==========================================
-        function initializeGoogleIdentityServiceServices() {
-            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-                console.warn("Google API script asset is not fully loaded yet.");
-                return;
+        function inspectArrearsPipelineDistribution(activeFilterMonth) {
+            const banner = document.getElementById('globalArrearsBanner');
+            const unhandledArrears = expenses.filter(e => e.month < activeFilterMonth && e.status === 'unpaid');
+            if (unhandledArrears.length > 0) {
+                banner.style.display = "flex";
+            } else {
+                banner.style.display = "none";
             }
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: GOOGLE_CLIENT_ID,
-                scope: GOOGLE_DRIVE_SCOPE,
-                callback: async (tokenResponse) => {
-                    if (tokenResponse.error) {
-                        updateCloudStatusInterfaceDisplay("☁ Connection Fault");
-                        return;
-                    }
-                    activeAccessToken = tokenResponse.access_token;
-                    localStorage.setItem('gdrive_access_token', activeAccessToken);
-                    updateCloudStatusInterfaceDisplay("☁ Resolving Profile...");
-                    evaluateSignActionBtnVisualState();
-                    await lookupAndSynchronizeCloudBackupStorageState(true);
+        }
+
+        function executeBatchBringArrearsToCurrent() {
+            const activeFilterMonth = document.getElementById('monthViewFilter').value;
+            let counter = 0;
+            expenses.forEach(e => {
+                if (e.month < activeFilterMonth && e.status === 'unpaid') {
+                    e.month = activeFilterMonth;
+                    counter++;
                 }
             });
-            
-            const savedToken = localStorage.getItem('gdrive_access_token');
-            if (savedToken) {
-                activeAccessToken = savedToken;
-                evaluateSignActionBtnVisualState();
-                silentlyExecuteCloudSyncEngineCheck();
-            } else {
-                evaluateSignActionBtnVisualState();
+            if (counter > 0) {
+                commitCacheStateToLocalStorage();
+                render();
+                silentlyTriggerCloudBackupSyncBackgroundEngine();
+                alert(`Successfully processed and brought forward ${counter} unpaid arrears into active visibility matrix coordinates.`);
             }
         }
 
-        function updateCloudStatusInterfaceDisplay(statusTextString) {
-            document.getElementById('cloudStatusLabel').innerText = statusTextString;
-        }
-
-        function evaluateSignActionBtnVisualState() {
-            const actionBtn = document.getElementById('gdriveMainActionBtn');
-            if (activeAccessToken) {
-                actionBtn.innerText = "Sign Out";
-                actionBtn.className = "btn-cloud-discreet btn-cloud-signout";
-            } else {
-                actionBtn.innerText = "Sign In";
-                actionBtn.className = "btn-cloud-discreet btn-cloud-signin";
+        function executeBatchDiscardArrears() {
+            const activeFilterMonth = document.getElementById('monthViewFilter').value;
+            const originalLength = expenses.length;
+            expenses = expenses.filter(e => !(e.month < activeFilterMonth && e.status === 'unpaid'));
+            const diff = originalLength - expenses.length;
+            if (diff > 0) {
+                commitCacheStateToLocalStorage();
+                render();
+                silentlyTriggerCloudBackupSyncBackgroundEngine();
+                alert(`Purged ${diff} backward pending unhandled liabilities from storage registers.`);
             }
         }
 
-        async function toggleGoogleDriveConnectionState() {
-            if (activeAccessToken) {
-                const confirmed = await presentInteractiveSignOutConfirmation();
-                if (confirmed) {
-                    activeAccessToken = null;
-                    gdriveFileId = null;
-                    localStorage.removeItem('gdrive_access_token');
-                    updateCloudStatusInterfaceDisplay("☁ Cloud Offline");
-                    evaluateSignActionBtnVisualState();
-                }
-            } else {
-                if (!tokenClient) {
-                    alert("Google Interface components are initialize-pending.");
-                    return;
-                }
-                tokenClient.requestAccessToken({ prompt: 'consent' });
-            }
+        function generateSecureUUID() {
+            return 'uuid-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
+        }
+        function formatDateToYearMonthKey(dateInstance) {
+            const y = dateInstance.getFullYear();
+            const m = String(dateInstance.getMonth() + 1).padStart(2, '0');
+            return `${y}-${m}`;
+        }
+        function stepMonthKeyForwardByOne(monthKeyStr) {
+            const [y, m] = monthKeyStr.split('-').map(Number);
+            const d = new Date(y, m, 1);
+            return formatDateToYearMonthKey(d);
+        }
+        function calculateTotalMonthsDifference(startMonthKey, endMonthKey) {
+            const [y1, m1] = startMonthKey.split('-').map(Number);
+            const [y2, m2] = endMonthKey.split('-').map(Number);
+            return (y2 - y1) * 12 + (m2 - m1);
+        }
+        function convertYearMonthToInputSlashFormat(ymStr) {
+            if(!ymStr || !ymStr.includes('-')) return '';
+            const [y, m] = ymStr.split('-');
+            return `${m}/${y}`;
         }
 
-        async function silentlyExecuteCloudSyncEngineCheck() {
-            if (!activeAccessToken) return;
-            await lookupAndSynchronizeCloudBackupStorageState(false);
-        }
-
-        async function lookupAndSynchronizeCloudBackupStorageState(triggerUserPromptDialog = false) {
-            try {
-                let response = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, {
-                    headers: { 'Authorization': `Bearer ${activeAccessToken}` }
-                });
-                let result = await response.json();
-                
-                if (result.error) {
-                    if (result.error.status === 'UNAUTHENTICATED' || result.error.code === 401) {
-                        activeAccessToken = null;
-                        gdriveFileId = null;
-                        localStorage.removeItem('gdrive_access_token');
-                        updateCloudStatusInterfaceDisplay("☁ Session Terminated");
-                        evaluateSignActionBtnVisualState();
-                    }
-                    return;
-                }
-
-                if (result.files && result.files.length > 0) {
-                    gdriveFileId = result.files[0].id;
-                    await checkTimelineMetricsAgainstCloudTarget(gdriveFileId, triggerUserPromptDialog);
-                } else {
-                    updateCloudStatusInterfaceDisplay("☁ Initializing Sync...");
-                    await performCloudWriteExecutionSequence(true);
-                }
-            } catch (err) {
-                updateCloudStatusInterfaceDisplay("☁ Cloud Offline");
+        Array.prototype.findInstanceIndexById = function(targetId) {
+            for (let i = 0; i < this.length; i++) {
+                if (this[i].id === targetId) return i;
             }
-        }
+            return -1;
+        };
 
-        async function checkTimelineMetricsAgainstCloudTarget(fileId, triggerUserPromptDialog) {
-            try {
-                let response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-                    headers: { 'Authorization': `Bearer ${activeAccessToken}` }
-                });
-                let cloudData = await response.json();
-
-                if (meta.isInitialBlank === true || (expenses.length === 0 && templates.length === 0)) {
-                    console.log("Blank environment lifecycle profile found. Syncing from cloud...");
-                    await performCloudPullExtractionSequence(cloudData);
-                    return;
-                }
-
-                const localStamp = meta.lastUpdated || 0;
-                const cloudStamp = (cloudData.meta && cloudData.meta.lastUpdated) ? cloudData.meta.lastUpdated : 0;
-
-                const localDateStr = localStamp ? new Date(localStamp).toLocaleString() : 'Never';
-                const cloudDateStr = cloudStamp ? new Date(cloudStamp).toLocaleString() : 'Never';
-
-                if (localStamp === cloudStamp) {
-                    updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
-                    if (triggerUserPromptDialog) {
-                        await presentCloudSyncCrossroadsPrompt('match', "Your local cache database timeline perfectly matches the Cloud asset baseline storage.", localDateStr, cloudDateStr);
-                    }
-                } else if (cloudStamp > localStamp) {
-                    updateCloudStatusInterfaceDisplay("☁ Update Available");
-                    if (triggerUserPromptDialog) {
-                        const decision = await presentCloudSyncCrossroadsPrompt('cloud-newer', "The backup copy on Google Drive is newer than your current local browser instance.", localDateStr, cloudDateStr);
-                        if (decision === 'pull') await performCloudPullExtractionSequence(cloudData);
-                        else if (decision === 'push') await performCloudWriteExecutionSequence(false);
-                    }
-                } else {
-                    updateCloudStatusInterfaceDisplay("☁ Local Changes Pending");
-                    if (triggerUserPromptDialog) {
-                        const decision = await presentCloudSyncCrossroadsPrompt('local-newer', "Your current browser state contains changes that are newer than the active cloud backup file.", localDateStr, cloudDateStr);
-                        if (decision === 'push') await performCloudWriteExecutionSequence(false);
-                        else if (decision === 'pull') await performCloudPullExtractionSequence(cloudData);
-                    }
-                }
-            } catch(e) {
-                updateCloudStatusInterfaceDisplay("☁ Timeline Error");
-            }
-        }
-
-        async function manuallyTriggerCloudBackup() {
-            if (!activeAccessToken) {
-                updateCloudStatusInterfaceDisplay("☁ Access Token Missing");
-                return;
-            }
-            updateCloudStatusInterfaceDisplay("☁ Fetching State...");
-            try {
-                if (!gdriveFileId) {
-                    let response = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, { 
-                        headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-                    });
-                    let result = await response.json();
-                    if (result.files && result.files.length > 0) {
-                        gdriveFileId = result.files[0].id;
-                    }
-                }
-                
-                let cloudDb = null;
-                if (gdriveFileId) {
-                    let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, { 
-                        headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-                    });
-                    if (response.ok) {
-                        cloudDb = await response.json();
-                    }
-                }
-
-                let localMeta = { lastUpdated: 0 };
-                try {
-                    const rawMeta = localStorage.getItem('household_meta');
-                    if (rawMeta) {
-                        localMeta = JSON.parse(rawMeta) || { lastUpdated: 0 };
-                    }
-                } catch (e) {
-                    console.warn("Local metadata missing, defaulting.", e);
-                }
-
-                const localUpdateTimestamp = localMeta && localMeta.lastUpdated ? localMeta.lastUpdated : 0;
-                const cloudUpdateTimestamp = (cloudDb && cloudDb.meta) ? (cloudDb.meta.lastUpdated || 0) : 0;
-
-                const localDateStr = localUpdateTimestamp ? new Date(localUpdateTimestamp).toLocaleString() : "Never (Empty Local Cache)";
-                const cloudDateStr = cloudUpdateTimestamp ? new Date(cloudUpdateTimestamp).toLocaleString() : "Empty Cloud Storage";
-
-                let syncState = 'match';
-                let statusHeadline = '<span style="color: #d4af37; font-weight: bold;">Your offline storage is perfectly matching cloud copies.</span>';
-                
-                if (!cloudDb && localUpdateTimestamp === 0) {
-                    syncState = 'match';
-                    statusHeadline = 'Both local storage and cloud storage are currently uninitialized.';
-                } else if (localUpdateTimestamp > cloudUpdateTimestamp) {
-                    syncState = 'local-newer';
-                    statusHeadline = '<span style="color: #2563eb; font-weight: bold;">Your Local Cache is newer than the Cloud Backup.</span>';
-                } else if (cloudUpdateTimestamp > localUpdateTimestamp) {
-                    syncState = 'cloud-newer';
-                    statusHeadline = '<span style="color: #16a34a; font-weight: bold;">The Cloud Backup is newer than your Local Cache.</span>';
-                } else if (!cloudDb && localUpdateTimestamp > 0) {
-                    syncState = 'local-newer';
-                    statusHeadline = 'No file found in the cloud. Local cache is ready to back up.';
-                }
-
-                const decision = await presentCloudSyncCrossroadsPrompt(syncState, statusHeadline, localDateStr, cloudDateStr);
-                if (decision === 'push') {
-                    await performCloudWriteExecutionSequence();
-                } else if (decision === 'pull') {
-                    await performCloudPullExtractionSequence();
-                }
-            } catch (err) {
-                console.error("Sync Crossroads Failure Details:", err);
-                updateCloudStatusInterfaceDisplay("☁ Dynamic Sync Error");
-            }
-        }
-
-        async function manuallyTriggerCloudRestore() {
-            if (!activeAccessToken) {
-                updateCloudStatusInterfaceDisplay("☁ Access Token Missing");
-                return;
-            }
-            await manuallyTriggerCloudBackup();
-        }
-
-        async function performCloudPullExtractionSequence() {
-            if (!activeAccessToken) return;
-            updateCloudStatusInterfaceDisplay("☁ Downloading...");
-
-            try {
-                if (!gdriveFileId) {
-                    let fileSearchResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, { 
-                        headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-                    });
-                    let searchResult = await fileSearchResponse.json();
-                    if (searchResult.files && searchResult.files.length > 0) {
-                        gdriveFileId = searchResult.files[0].id;
-                    }
-                }
-
-                if (!gdriveFileId) {
-                    updateCloudStatusInterfaceDisplay("☁ Cloud File Missing");
-                    return;
-                }
-
-                let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, { 
-                    headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-                });
-
-                if (response.ok) {
-                    let cloudDb = await response.json();
-                    if (cloudDb) {
-                        localStorage.setItem('household_expenses', JSON.stringify(cloudDb.expenses || []));
-                        localStorage.setItem('household_templates', JSON.stringify(cloudDb.templates || []));
-                        localStorage.setItem('household_meta', JSON.stringify(cloudDb.meta || { lastUpdated: Date.now() }));
-                        updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
-                        location.reload();
-                    }
-                } else {
-                    updateCloudStatusInterfaceDisplay("☁ Extract Action Failed");
-                }
-            } catch (err) {
-                console.error("Cloud Pull Stack Error:", err);
-                updateCloudStatusInterfaceDisplay("☁ Extract Action Failed");
-            }
-        }
-
-        async function performCloudWriteExecutionSequence(isInitialInstantiation = false) {
-            if (!activeAccessToken) return;
-            updateCloudStatusInterfaceDisplay("☁ Synchronizing...");
-
+        function commitCacheStateToLocalStorage() {
             meta.lastUpdated = Date.now();
-            saveStateToLocalStorage();
+            localStorage.setItem('rne_expenses', JSON.stringify(expenses));
+            localStorage.setItem('rne_templates', JSON.stringify(templates));
+            localStorage.setItem('rne_meta', JSON.stringify(meta));
+        }
 
-            const payload = {
-                expenses: JSON.parse(localStorage.getItem('household_expenses')) || [],
-                templates: JSON.parse(localStorage.getItem('household_templates')) || [],
-                meta: JSON.parse(localStorage.getItem('household_meta')) || { lastUpdated: Date.now() }
-            };
-
-            try {
-                let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-                let method = 'POST';
-
-                if (gdriveFileId) {
-                    url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`;
-                    method = 'PATCH';
-                }
-
-                const metadata = {
-                    name: DEDICATED_FILE_NAME,
-                    mimeType: 'application/json'
-                };
-
-                const boundary = '32626_v54_boundary_sync';
-                const delimiter = `\r\n--${boundary}\r\n`;
-                const closeDelimiter = `\r\n--${boundary}--`;
-
-                let body = delimiter +
-                    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-                    JSON.stringify(metadata) +
-                    delimiter +
-                    'Content-Type: application/json\r\n\r\n' +
-                    JSON.stringify(payload) +
-                    closeDelimiter;
-
-                let response = await fetch(url, {
-                    method: method,
-                    headers: {
-                        'Authorization': `Bearer ${activeAccessToken}`,
-                        'Content-Type': `multipart/related; boundary=${boundary}`
-                    },
-                    body: body
-                });
-
-                if (response.ok) {
-                    let resData = await response.json();
-                    if (resData.id) gdriveFileId = resData.id;
-                    updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
-                } else {
-                    updateCloudStatusInterfaceDisplay("☁ Write Action Failed");
-                }
-            } catch (err) {
-                console.error("Cloud Write Stack Error:", err);
-                updateCloudStatusInterfaceDisplay("☁ Write Action Failed");
+        function fetchSavedCacheStateFromLocalStorage() {
+            expenses = JSON.parse(localStorage.getItem('rne_expenses')) || [];
+            templates = JSON.parse(localStorage.getItem('rne_templates')) || [];
+            meta = JSON.parse(localStorage.getItem('rne_meta')) || { lastMonthPopulated: "", lastUpdated: 0, isInitialBlank: true };
+            if (meta.isInitialBlank === undefined) {
+                meta.isInitialBlank = expenses.length === 0 && templates.length === 0;
             }
         }
 
-        // ==========================================
-        // DYNAMIC DOM RENDERING PIPELINE CONTROLLER
-        // ==========================================
         function render() {
-            const activeMonth = filterSelect.value;
+            const filterMonth = document.getElementById('monthViewFilter').value;
+            if (!filterMonth) return;
+
+            executeGlobalDynamicRecurrenceCalculationsEngine(filterMonth);
+            inspectArrearsPipelineDistribution(filterMonth);
+
+            const activeViewItems = expenses.filter(e => e.month === filterMonth);
+            
+            let groupedData = {};
+            recurrenceGroupsConfig.forEach(g => {
+                groupedData[g.key] = { config: g, items: [] };
+            });
+
+            activeViewItems.forEach(item => {
+                let rKey = 0;
+                if (item.templateId) {
+                    const t = templates.find(tpl => tpl.id === item.templateId);
+                    if (t) rKey = t.recurrence;
+                }
+                if (groupedData[rKey]) {
+                    groupedData[rKey].items.push(item);
+                } else {
+                    groupedData[0].items.push(item);
+                }
+            });
+
+            let runningTotalUnpaid = 0;
+            activeViewItems.forEach(e => {
+                if (e.status === 'unpaid') runningTotalUnpaid += e.cost;
+            });
+            document.getElementById('totalUnpaid').innerText = `€${runningTotalUnpaid.toFixed(2)}`;
+
             const container = document.getElementById('listContainer');
             container.innerHTML = '';
 
-            const currentFilteredList = expenses.filter(e => e.month === activeMonth);
-
-            let calculatedUnpaidTotalValue = 0;
-            currentFilteredList.forEach(e => {
-                if (e.status === 'unpaid') {
-                    calculatedUnpaidTotalValue += parseFloat(e.cost || 0);
-                }
-            });
-            document.getElementById('totalUnpaid').innerText = `€${calculatedUnpaidTotalValue.toFixed(2)}`;
-
             recurrenceGroupsConfig.forEach(groupConfig => {
-                const subsetItems = currentFilteredList.filter(e => e.recur === groupConfig.key);
-                
-                if (subsetItems.length === 0) return;
+                const group = groupedData[groupConfig.key];
+                if (group.items.length === 0) return;
+
+                group.items.sort((a, b) => b.cost - a.cost);
+
+                const groupMetrics = calculateGroupMetricsSummaryObject(group.items);
+                const isCollapsed = !!collapsedGroups[groupConfig.key];
 
                 const groupContainer = document.createElement('div');
                 groupContainer.className = "group-container";
 
-                let unpaidSum = 0;
-                let paidCount = 0;
-                subsetItems.forEach(e => {
-                    if (e.status === 'unpaid') unpaidSum += parseFloat(e.cost || 0);
-                    else paidCount++;
-                });
+                const header = document.createElement('div');
+                header.className = "group-header";
+                header.onclick = () => toggleGroupCollapseState(groupConfig.key);
 
-                const isCollapsed = collapsedGroups[groupConfig.key] || false;
+                const badgeClass = groupMetrics.unpaid > 0 ? "group-unpaid-cost has-unpaid" : "group-unpaid-cost all-paid";
+                const badgeLabelText = groupMetrics.unpaid > 0 ? `Unpaid: €${groupMetrics.unpaid.toFixed(2)}` : "All Paid ✓";
 
-                const headerDiv = document.createElement('div');
-                headerDiv.className = "group-header";
-                headerDiv.onclick = () => toggleGroupCollapse(groupConfig.key);
-
-                const titleSpan = document.createElement('div');
-                titleSpan.className = "group-header-title";
-                titleSpan.innerHTML = `<span>${isCollapsed ? '▶' : '▼'}</span> <span>${groupConfig.label}</span>`;
-                headerDiv.appendChild(titleSpan);
-
-                const badgesDiv = document.createElement('div');
-                badgesDiv.className = "group-badges-container";
-
-                const costBadge = document.createElement('span');
-                if (unpaidSum > 0) {
-                    costBadge.className = "group-unpaid-cost has-unpaid";
-                    costBadge.innerText = `€${unpaidSum.toFixed(2)}`;
-                } else {
-                    costBadge.className = "group-unpaid-cost all-paid";
-                    costBadge.innerText = "✓ Paid";
-                }
-                badgesDiv.appendChild(costBadge);
-
-                const countBadge = document.createElement('span');
-                countBadge.className = "group-badge";
-                countBadge.innerText = `${paidCount}/${subsetItems.length}`;
-                badgesDiv.appendChild(countBadge);
-
-                headerDiv.appendChild(badgesDiv);
-                groupContainer.appendChild(headerDiv);
+                header.innerHTML = `
+                    <div class="group-header-title">
+                        <span style="transform:${isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'}; display:inline-block; font-size:10px; transition:transform 0.1s;">▼</span>
+                        <span>${groupConfig.label}</span>
+                    </div>
+                    <div class="group-badges-container">
+                        <div class="${badgeClass}">${badgeLabelText}</div>
+                        <span class="group-badge">${group.items.length}</span>
+                    </div>
+                `;
+                groupContainer.appendChild(header);
 
                 if (!isCollapsed) {
                     const groupContent = document.createElement('div');
                     groupContent.className = "group-content";
 
-                    subsetItems.forEach(e => {
+                    group.items.forEach(e => {
                         const itemDiv = document.createElement('div');
                         itemDiv.className = `expense-item ${e.status}`;
 
-                        let badgeHtml = e.isEdited ? `<span class="badge-edited">Custom</span>` : '';
-                        let originLabelHtml = '';
-                        if (e.originMonth && e.originMonth !== activeMonth) {
-                            originLabelHtml = `<div class="origin-label">${formatPrettyOriginLabel(e.originMonth)}</div>`;
+                        let untilLabelHtml = '';
+                        if (e.templateId) {
+                            const t = templates.find(tpl => tpl.id === e.templateId);
+                            if (t && t.until) {
+                                const [uy, um] = t.until.split('-');
+                                untilLabelHtml = `<span style="font-size:11px; font-weight:600; color:var(--text-muted); margin-top:2px;">Until: ${um}/${uy}</span>`;
+                            }
                         }
 
-                        let untilLabelText = formatPrettyUntilLabel(e.seriesId);
-                        let untilLabelHtml = untilLabelText ? `<div class="origin-label" style="color:var(--primary); border-color:var(--primary);">${untilLabelText}</div>` : '';
+                        let showMoveBack = false;
+                        if (e.status === 'unpaid') {
+                            const select = document.getElementById('monthViewFilter');
+                            if (select.selectedIndex > 0) {
+                                const prevMonthSelectValue = select.options[select.selectedIndex - 1].value;
+                                if (e.originated && e.originated <= prevMonthSelectValue) {
+                                    showMoveBack = true;
+                                }
+                            }
+                        }
 
-                        let showMoveBack = (e.month !== e.originMonth);
+                        const originLabelText = formatPrettyOriginLabel(e.originated);
+                        const originLabelHtml = originLabelText ? `<div class="origin-label">${originLabelText}</div>` : '';
 
                         itemDiv.innerHTML = `
                             <div class="info">
                                 <div class="name-wrapper">
                                     <span class="name">${e.name}</span>
-                                    ${badgeHtml}
+                                    ${e.isEdited ? `<span class="badge-edited">Edited</span>` : ''}
                                 </div>
                                 <div class="cost-row">
-                                    <span class="cost">€${parseFloat(e.cost || 0).toFixed(2)}</span>
-                                    ${originLabelHtml}
+                                    <div class="cost">€${e.cost.toFixed(2)}</div>
                                     ${untilLabelHtml}
+                                    ${originLabelHtml}
                                 </div>
                             </div>
                             <div class="actions">
