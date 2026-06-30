@@ -1145,36 +1145,19 @@ function exportToPDF() {
 
 // Sort items so 'unpaid' entries appear first before 'paid' entries
     const sortedGrpItems = [...grpItems].sort((a, b) => {
-        if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
-        if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
-        return 0;
-    });
 
-    sortedGrpItems.forEach(e => {
-        const isUnpaid = e.status === 'unpaid';
-        const itemColor = isUnpaid ? '#dc2626' : '#16a34a';
-        const costDecorationStyle = isUnpaid ? '' : 'text-decoration: line-through;';
-        
-        // Build Badges Container dynamically
-        let badgeGroupHtml = '';
-        
-        if (e.isEdited) {
-            badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">EDITED</span>`;
-        }
-        
         // 1. IMPROVED ORIGIN EXTRACTION ENGINE
-        // Fallback to explicit fields if present, otherwise extract natively using historical signatures
+        // First check explicit fields
         let rawOrigin = e.originated || e.originatedMonth || e.origin || "";
         
-        // Safety Fallback: If an item has been moved/forwarded to the current view month, 
-        // but its properties don't explicitly hold a birthdate value, reconstruct it dynamically.
-        if (!rawOrigin && e.id) {
-            // Check if the item ID starts with standard template format timestamps (e.g. tpl-2026-06-...)
-            if (String(e.id).startsWith('tpl-')) {
-                const parts = e.id.split('-');
-                if (parts.length >= 3 && parts[1].length === 4) {
-                    rawOrigin = `${parts[1]}-${parts[2]}`; // Reconstructs "YYYY-MM"
-                }
+        // ULTIMATE FALLBACK: If missing, look up the original expense record by its persistent name matching trace
+        if (!rawOrigin && e.name) {
+            // Find the earliest historical instance of an item with this exact same name in your data array
+            const historicalMatches = expenses.filter(item => item.name === e.name);
+            if (historicalMatches.length > 0) {
+                // Sort them chronologically by their target month strings
+                historicalMatches.sort((a, b) => String(a.month).localeCompare(String(b.month)));
+                rawOrigin = historicalMatches[0].month; // Grabs the absolute earliest month it ever appeared in!
             }
         }
 
@@ -1205,25 +1188,12 @@ function exportToPDF() {
             }
 
             // 4. VERIFY LOGICAL VIEW FILTERS
-            // Force rendering if the origin key completely fails parsing or mismatched context occurs
-            if (cleanOriginComparisonKey === "") {
-                badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #fee2e2; color: #991b1b; padding: 1px 4px; border-radius:3px; margin-left: 4px; display: inline-block; vertical-align: middle;">ORIGIN: ${displayLabel}</span>`;
-            } else if (cleanOriginComparisonKey !== rawValue) {
+            // If the item's original birth timeline doesn't match the current viewing frame, slap the badge on it!
+            if (cleanOriginComparisonKey !== "" && cleanOriginComparisonKey !== rawValue) {
                 badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; display: inline-block; vertical-align: middle;">ORIGINATED: ${displayLabel}</span>`;
             }
         }
         
-        expensesHtml += `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e5e7eb;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: ${itemColor}; flex-shrink: 0;"></span>
-                    <span style="font-weight: 600; font-size: 14px; color: ${itemColor}; display: inline-flex; align-items: center; flex-wrap: wrap;">
-                        <span>${e.name}</span>${badgeGroupHtml}
-                    </span>
-                </div>
-                <div style="font-weight: 700; font-size: 14px; color: ${itemColor}; ${costDecorationStyle} text-align: right; white-space: nowrap; margin-left: 10px;">€${parseFloat(e.cost || 0).toFixed(2)}</div>
-            </div>
-        `;
     });
 
 
