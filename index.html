@@ -269,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v55</div>
+    <div class="version-watermark">RNE Tracker • v54</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260630_v55
+        // VERSION TRACKER REFERENCE: 260628_v54
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1072,9 +1072,8 @@
         // 
 
 // =========================================================================
-// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v55)
+// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v54)
 // =========================================================================
-
 function exportToPDF() {
     const selectEl = document.getElementById('monthViewFilter');
     if (!selectEl) return;
@@ -1143,59 +1142,70 @@ function exportToPDF() {
                         <div>
                 `;
 
-// Sort items so 'unpaid' entries appear first before 'paid' entries
-    const sortedGrpItems = [...grpItems].sort((a, b) => {
+                // Sort items so 'unpaid' entries appear first before 'paid' entries
+                const sortedGrpItems = [...grpItems].sort((a, b) => {
+                    if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
+                    if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
+                    return 0;
+                });
 
-        // 1. IMPROVED ORIGIN EXTRACTION ENGINE
-        // First check explicit fields
-        let rawOrigin = e.originated || e.originatedMonth || e.origin || "";
-        
-        // ULTIMATE FALLBACK: If missing, look up the original expense record by its persistent name matching trace
-        if (!rawOrigin && e.name) {
-            // Find the earliest historical instance of an item with this exact same name in your data array
-            const historicalMatches = expenses.filter(item => item.name === e.name);
-            if (historicalMatches.length > 0) {
-                // Sort them chronologically by their target month strings
-                historicalMatches.sort((a, b) => String(a.month).localeCompare(String(b.month)));
-                rawOrigin = historicalMatches[0].month; // Grabs the absolute earliest month it ever appeared in!
-            }
-        }
+                sortedGrpItems.forEach(e => {
+                    const isUnpaid = e.status === 'unpaid';
+                    const itemColor = isUnpaid ? '#dc2626' : '#16a34a';
+                    const costDecorationStyle = isUnpaid ? '' : 'text-decoration: line-through;';
+                    
+                    // Build Badges Container dynamically
+                    let badgeGroupHtml = '';
+                    
+                    if (e.isEdited) {
+                        badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">EDITED</span>`;
+                    }
+                    
+                    // UNIVERSAL SMART DATE RESOLVER
+                    const rawOrigin = e.originated || e.originatedMonth || e.origin;
+                    if (rawOrigin) {
+                        let parsedYear = "";
+                        let parsedMonth = "";
+                        const strOrigin = String(rawOrigin).trim();
 
-        if (rawOrigin && String(rawOrigin).trim() !== "") {
-            const strOrigin = String(rawOrigin).trim();
-            let displayLabel = strOrigin; 
-            let cleanOriginComparisonKey = "";
+                        // Match DD/MM/YYYY standard formatted items
+                        if (strOrigin.includes('/')) {
+                            const parts = strOrigin.split('/');
+                            if (parts.length >= 3) {
+                                parsedMonth = parts[1].padStart(2, '0');
+                                parsedYear = parts[2].substring(0, 4);
+                            }
+                        } 
+                        // Match YYYY-MM-DD or YYYY-MM dash formatted items
+                        else if (strOrigin.includes('-')) {
+                            const parts = strOrigin.split('-');
+                            if (parts[0].length === 4) {
+                                parsedYear = parts[0];
+                                parsedMonth = parts[1].padStart(2, '0');
+                            }
+                        }
 
-            // 2. PARSE EUROPEAN STANDARD SLASH FORMATS (e.g., "29/06/2026")
-            if (strOrigin.includes('/')) {
-                const parts = strOrigin.split('/');
-                if (parts.length >= 3) {
-                    const mm = parts[1].padStart(2, '0');
-                    const yyyy = parts[2].substring(0, 4);
-                    displayLabel = `${mm}/${yyyy}`;
-                    cleanOriginComparisonKey = `${yyyy}-${mm}`;
-                }
-            } 
-            // 3. PARSE STANDARD SYSTEM DASH KEYS (e.g., "2026-06-29" or "2026-06")
-            else if (strOrigin.includes('-')) {
-                const parts = strOrigin.split('-');
-                if (parts[0].length === 4) {
-                    const yyyy = parts[0];
-                    const mm = parts[1].padStart(2, '0');
-                    displayLabel = `${mm}/${yyyy}`;
-                    cleanOriginComparisonKey = `${yyyy}-${mm}`;
-                }
-            }
-
-            // 4. VERIFY LOGICAL VIEW FILTERS
-            // If the item's original birth timeline doesn't match the current viewing frame, slap the badge on it!
-            if (cleanOriginComparisonKey !== "" && cleanOriginComparisonKey !== rawValue) {
-                badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; display: inline-block; vertical-align: middle;">ORIGINATED: ${displayLabel}</span>`;
-            }
-        }
-        
-    });
-
+                        // Verify it doesn't match the current active view timeline
+                        if (parsedYear && parsedMonth) {
+                            const itemOriginKey = `${parsedYear}-${parsedMonth}`;
+                            if (itemOriginKey !== rawValue) {
+                                badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">ORIGINATED: ${parsedMonth}/${parsedYear}</span>`;
+                            }
+                        }
+                    }
+                    
+                    expensesHtml += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e5e7eb;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: ${itemColor}; flex-shrink: 0;"></span>
+                                <span style="font-weight: 600; font-size: 14px; color: ${itemColor}; display: inline-flex; align-items: center; flex-wrap: wrap;">
+                                    <span>${e.name}</span>${badgeGroupHtml}
+                                </span>
+                            </div>
+                            <div style="font-weight: 700; font-size: 14px; color: ${itemColor}; ${costDecorationStyle} text-align: right; white-space: nowrap; margin-left: 10px;">€${parseFloat(e.cost || 0).toFixed(2)}</div>
+                        </div>
+                    `;
+                });
 
                 expensesHtml += `</div></div>`;
             }
@@ -1211,51 +1221,107 @@ function exportToPDF() {
     }
 
     // 3. Document Stream Transmission Injection
-printWindow.document.write(`
+    printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
-            <title>${reportTitle}</title>
+            <title>${document.title}</title>
             <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #111827; background: #ffffff; padding: 20px; max-width: 650px; margin: 0 auto; }
-                @media print { .no-print { display: none !important; } body { padding: 0; } }
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    color: #111827;
+                    background: #ffffff;
+                    padding: 20px;
+                    max-width: 650px;
+                    margin: 0 auto;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                .report-header-container {
+                    border-bottom: 2px solid #e5e7eb;
+                    padding-bottom: 14px;
+                    margin-bottom: 20px;
+                    text-align: center;
+                }
+                .report-title-main {
+                    margin: 0;
+                    font-size: 24px;
+                    font-weight: 800;
+                    color: #111827;
+                }
+                .report-subtitle-period {
+                    margin: 4px 0 0 0;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #4b5563;
+                }
+                .summary-grid-layout {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 15px;
+                    margin-bottom: 25px;
+                }
+                .summary-card-box {
+                    border: 1px solid #e5e7eb;
+                    padding: 14px;
+                    border-radius: 8px;
+                    text-align: center;
+                    background: #f9fafb;
+                }
+                .summary-card-label {
+                    font-size: 11px;
+                    color: #6b7280;
+                    text-transform: uppercase;
+                    font-weight: 700;
+                    letter-spacing: 0.5px;
+                    margin-bottom: 4px;
+                    display: block;
+                }
+                .summary-card-value {
+                    font-size: 20px;
+                    font-weight: 800;
+                    color: #111827;
+                }
             </style>
         </head>
         <body>
-            <div class="no-print" style="display: flex; gap: 10px; margin-bottom: 20px; background: #f3f4f6; padding: 10px; border-radius: 8px;">
-                <button onclick="window.print()" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Print / Save PDF</button>
-                <button id="shareBtn" style="padding: 8px 16px; background: #16a34a; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Share Report</button>
-                <button onclick="window.close()" style="padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Close</button>
+            <div class="report-header-container">
+                <h2 class="report-title-main">RNE Tracker Report</h2>
+                <div class="report-subtitle-period">${reportDateString}</div>
+                <div class="report-subtitle-period" style="font-size: 14px; color: #6b7280; font-weight: 500; margin-top: 2px;">${asOfTimestampString}</div>
             </div>
-            ${pdfHtml}
+            
+            <div class="summary-grid-layout">
+                <div class="summary-card-box">
+                    <span class="summary-card-label">Total Allocated Expenses</span>
+                    <span class="summary-card-value">€${totalOverallSum.toFixed(2)}</span>
+                </div>
+                <div class="summary-card-box">
+                    <span class="summary-card-label">Outstanding Unpaid Arrears</span>
+                    <span class="summary-card-value" style="color: #dc2626;">€${totalUnpaidSum.toFixed(2)}</span>
+                </div>
+            </div>
+
+            <div class="expense-list-wrapper">
+                ${expensesHtml}
+            </div>
+
             <script>
-                function initShareInterface() {
-                    const btn = document.getElementById('shareBtn');
-                    if (!btn) return;
-                    
-                    btn.addEventListener('click', async () => {
-                        if (navigator.share) {
-                            try {
-                                await navigator.share({
-                                    title: "${reportTitle}",
-                                    text: "RNE Tracker Report Summary",
-                                    url: window.location.href
-                                });
-                            } catch (err) {
-                                console.log("Share skipped or canceled:", err);
-                            }
-                        } else {
-                            alert("Native sharing is not supported by this browser interface. Please use the Print button to save/share your PDF.");
-                        }
-                    });
+                function executeSecurePrintProcess() {
+                    setTimeout(function() {
+                        window.print();
+                    }, 300);
                 }
-                
-                // Delay execution slightly to ensure the window has active focus context
-                setTimeout(initShareInterface, 300);
+                if (document.readyState === 'complete') {
+                    executeSecurePrintProcess();
+                } else {
+                    window.addEventListener('load', executeSecurePrintProcess);
+                }
             <\/script>
         </body>
         </html>
     `);
+
     printWindow.document.close();
     
     // Reinstate workspace properties
@@ -1561,7 +1627,7 @@ printWindow.document.write(`
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v55_boundary_sync';
+                const boundary = '32626_v54_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
