@@ -269,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v54</div>
+    <div class="version-watermark">RNE Tracker • v55</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260628_v54
+        // VERSION TRACKER REFERENCE: 260630_v55
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1072,7 +1072,7 @@
         // 
 
 // =========================================================================
-// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v54)
+// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v55)
 // =========================================================================
 
 function exportToPDF() {
@@ -1143,77 +1143,88 @@ function exportToPDF() {
                         <div>
                 `;
 
-                // Sort items so 'unpaid' entries appear first before 'paid' entries
-                const sortedGrpItems = [...grpItems].sort((a, b) => {
-                    if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
-                    if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
-                    return 0;
-                });
+// Sort items so 'unpaid' entries appear first before 'paid' entries
+    const sortedGrpItems = [...grpItems].sort((a, b) => {
+        if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
+        if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
+        return 0;
+    });
 
-sortedGrpItems.forEach(e => {
-    const isUnpaid = e.status === 'unpaid';
-    const itemColor = isUnpaid ? '#dc2626' : '#16a34a';
-    const costDecorationStyle = isUnpaid ? '' : 'text-decoration: line-through;';
-    
-    // Build Badges Container dynamically
-    let badgeGroupHtml = '';
-    
-    if (e.isEdited) {
-        badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">EDITED</span>`;
-    }
-    
-// 1. COLLECT ANY POTENTIAL DATE OR ORIGIN SOURCE VALUE
-const rawOrigin = e.originated || e.originatedMonth || e.origin || "";
-
-if (rawOrigin && String(rawOrigin).trim() !== "") {
-    const strOrigin = String(rawOrigin).trim();
-    let displayLabel = strOrigin; 
-    let cleanOriginComparisonKey = "";
-
-    // 2. PARSE STANDARD EUROPEAN SLASH FORMAT (e.g., "29/06/2026")
-    if (strOrigin.includes('/')) {
-        const parts = strOrigin.split('/');
-        if (parts.length >= 3) {
-            const mm = parts[1].padStart(2, '0');
-            const yyyy = parts[2].substring(0, 4);
-            displayLabel = `${mm}/${yyyy}`;
-            cleanOriginComparisonKey = `${yyyy}-${mm}`;
+    sortedGrpItems.forEach(e => {
+        const isUnpaid = e.status === 'unpaid';
+        const itemColor = isUnpaid ? '#dc2626' : '#16a34a';
+        const costDecorationStyle = isUnpaid ? '' : 'text-decoration: line-through;';
+        
+        // Build Badges Container dynamically
+        let badgeGroupHtml = '';
+        
+        if (e.isEdited) {
+            badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">EDITED</span>`;
         }
-    } 
-    // 3. PARSE STANDARD DASH SYSTEM KEYS (e.g., "2026-06-29" or "2026-06")
-    else if (strOrigin.includes('-')) {
-        const parts = strOrigin.split('-');
-        if (parts[0].length === 4) {
-            const yyyy = parts[0];
-            const mm = parts[1].padStart(2, '0');
-            displayLabel = `${mm}/${yyyy}`;
-            cleanOriginComparisonKey = `${yyyy}-${mm}`;
+        
+        // 1. IMPROVED ORIGIN EXTRACTION ENGINE
+        // Fallback to explicit fields if present, otherwise extract natively using historical signatures
+        let rawOrigin = e.originated || e.originatedMonth || e.origin || "";
+        
+        // Safety Fallback: If an item has been moved/forwarded to the current view month, 
+        // but its properties don't explicitly hold a birthdate value, reconstruct it dynamically.
+        if (!rawOrigin && e.id) {
+            // Check if the item ID starts with standard template format timestamps (e.g. tpl-2026-06-...)
+            if (String(e.id).startsWith('tpl-')) {
+                const parts = e.id.split('-');
+                if (parts.length >= 3 && parts[1].length === 4) {
+                    rawOrigin = `${parts[1]}-${parts[2]}`; // Reconstructs "YYYY-MM"
+                }
+            }
         }
-    }
 
-    // 4. STEP-BY-STEP RENDER CHECK:
-    // If we couldn't parse a valid comparison key, show the raw origin text so we can fix it.
-    // If we did parse it, show it ONLY if it belongs to a historical month context.
-    if (cleanOriginComparisonKey === "") {
-        badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #fee2e2; color: #991b1b; padding: 1px 4px; border-radius:3px; margin-left: 4px; display: inline-block; vertical-align: middle;">ORIGIN: ${displayLabel}</span>`;
-    } else if (cleanOriginComparisonKey !== rawValue) {
-        badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; display: inline-block; vertical-align: middle;">ORIGINATED: ${displayLabel}</span>`;
-    }
-}
+        if (rawOrigin && String(rawOrigin).trim() !== "") {
+            const strOrigin = String(rawOrigin).trim();
+            let displayLabel = strOrigin; 
+            let cleanOriginComparisonKey = "";
 
+            // 2. PARSE EUROPEAN STANDARD SLASH FORMATS (e.g., "29/06/2026")
+            if (strOrigin.includes('/')) {
+                const parts = strOrigin.split('/');
+                if (parts.length >= 3) {
+                    const mm = parts[1].padStart(2, '0');
+                    const yyyy = parts[2].substring(0, 4);
+                    displayLabel = `${mm}/${yyyy}`;
+                    cleanOriginComparisonKey = `${yyyy}-${mm}`;
+                }
+            } 
+            // 3. PARSE STANDARD SYSTEM DASH KEYS (e.g., "2026-06-29" or "2026-06")
+            else if (strOrigin.includes('-')) {
+                const parts = strOrigin.split('-');
+                if (parts[0].length === 4) {
+                    const yyyy = parts[0];
+                    const mm = parts[1].padStart(2, '0');
+                    displayLabel = `${mm}/${yyyy}`;
+                    cleanOriginComparisonKey = `${yyyy}-${mm}`;
+                }
+            }
 
-    expensesHtml += `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e5e7eb;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: ${itemColor}; flex-shrink: 0;"></span>
-                <span style="font-weight: 600; font-size: 14px; color: ${itemColor}; display: inline-flex; align-items: center; flex-wrap: wrap;">
-                    <span>${e.name}</span>${badgeGroupHtml}
-                </span>
+            // 4. VERIFY LOGICAL VIEW FILTERS
+            // Force rendering if the origin key completely fails parsing or mismatched context occurs
+            if (cleanOriginComparisonKey === "") {
+                badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #fee2e2; color: #991b1b; padding: 1px 4px; border-radius:3px; margin-left: 4px; display: inline-block; vertical-align: middle;">ORIGIN: ${displayLabel}</span>`;
+            } else if (cleanOriginComparisonKey !== rawValue) {
+                badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; display: inline-block; vertical-align: middle;">ORIGINATED: ${displayLabel}</span>`;
+            }
+        }
+        
+        expensesHtml += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e5e7eb;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: ${itemColor}; flex-shrink: 0;"></span>
+                    <span style="font-weight: 600; font-size: 14px; color: ${itemColor}; display: inline-flex; align-items: center; flex-wrap: wrap;">
+                        <span>${e.name}</span>${badgeGroupHtml}
+                    </span>
+                </div>
+                <div style="font-weight: 700; font-size: 14px; color: ${itemColor}; ${costDecorationStyle} text-align: right; white-space: nowrap; margin-left: 10px;">€${parseFloat(e.cost || 0).toFixed(2)}</div>
             </div>
-            <div style="font-weight: 700; font-size: 14px; color: ${itemColor}; ${costDecorationStyle} text-align: right; white-space: nowrap; margin-left: 10px;">€${parseFloat(e.cost || 0).toFixed(2)}</div>
-        </div>
-    `;
-});
+        `;
+    });
 
 
                 expensesHtml += `</div></div>`;
@@ -1636,7 +1647,7 @@ if (rawOrigin && String(rawOrigin).trim() !== "") {
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v54_boundary_sync';
+                const boundary = '32626_v55_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
