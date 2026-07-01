@@ -647,7 +647,7 @@
                         month: activeMonth,
                         recur: e.recur,
                         status: 'unpaid',
-                        originMonth: e.originMonth || e.month,
+                        originated: e.originated || e.originatedMonth || e.origin || e.month,
                         isEdited: e.isEdited || false
                     });
                 }
