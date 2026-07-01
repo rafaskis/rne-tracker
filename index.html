@@ -269,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v54</div>
+    <div class="version-watermark">RNE Tracker • v57.1</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260628_v54
+        // VERSION TRACKER REFERENCE: 260701_v57.1
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1072,7 +1072,7 @@
         // 
 
 // =========================================================================
-// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v54)
+// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v57.1)
 // =========================================================================
 function exportToPDF() {
     const selectEl = document.getElementById('monthViewFilter');
@@ -1162,8 +1162,8 @@ function exportToPDF() {
                     }
                     
                     // UNIVERSAL SMART DATE RESOLVER
-                    const rawOrigin = e.originated || e.originatedMonth || e.origin;
-                    if (rawOrigin) {
+                    const rawOrigin = e.originated || e.originatedMonth || e.origin || e.originMonth;
+                        if (rawOrigin) {
                         let parsedYear = "";
                         let parsedMonth = "";
                         const strOrigin = String(rawOrigin).trim();
@@ -1188,7 +1188,7 @@ function exportToPDF() {
                         // Verify it doesn't match the current active view timeline
                         if (parsedYear && parsedMonth) {
                             const itemOriginKey = `${parsedYear}-${parsedMonth}`;
-                            if (itemOriginKey !== rawValue) {
+                            if (itemOriginKey !== rawValue && itemOriginKey !== e.month) {
                                 badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">ORIGINATED: ${parsedMonth}/${parsedYear}</span>`;
                             }
                         }
@@ -1627,7 +1627,7 @@ function exportToPDF() {
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v54_boundary_sync';
+                const boundary = '32626_v57.1_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
