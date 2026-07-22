@@ -269,12 +269,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v57.1</div>
+    <div class="version-watermark">RNE Tracker • v57.2</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260701_v57.1
+        // VERSION TRACKER REFERENCE: 260722_v57.2
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1072,7 +1072,7 @@
         // 
 
 // =========================================================================
-// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v57.1)
+// STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v57.2)
 // =========================================================================
 function exportToPDF() {
     const selectEl = document.getElementById('monthViewFilter');
@@ -1627,7 +1627,7 @@ function exportToPDF() {
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v57.1_boundary_sync';
+                const boundary = '32626_v57.2_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
@@ -1684,6 +1684,13 @@ function exportToPDF() {
                 
                 if (subsetItems.length === 0) return;
 
+                // SORT: Unpaid expenses first, Paid expenses last
+                subsetItems.sort((a, b) => {
+                    if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
+                    if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
+                    return 0;
+                });
+                
                 const groupContainer = document.createElement('div');
                 groupContainer.className = "group-container";
 
