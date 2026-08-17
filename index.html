@@ -80,11 +80,21 @@
       border: none;
       color: var(--text-main);
       cursor: pointer;
-      padding: 0.4rem;
+      padding: 0.4rem 0.6rem;
       font-size: 1.1rem;
-      border-radius: 4px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
     }
-    .btn-icon:hover { background: rgba(0,0,0,0.05); }
+
+    header .btn-icon {
+      color: var(--header-text);
+    }
+
+    .btn-icon:hover { background: rgba(0,0,0,0.06); }
+    header .btn-icon:hover { background: rgba(255,255,255,0.15); }
     [data-theme="dark"] .btn-icon:hover { background: rgba(255,255,255,0.1); }
 
     .category-card {
@@ -96,12 +106,9 @@
     }
 
     .category-header {
-      padding: 1rem;
+      padding: 0.85rem 1rem;
       background: rgba(0,0,0,0.02);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
+      border-bottom: 1px solid var(--border-color);
       font-weight: 600;
     }
 
@@ -111,16 +118,21 @@
       justify-content: space-between;
       align-items: center;
       padding: 0.75rem 1rem;
-      border-top: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
     }
+    .transaction-item:last-child { border-bottom: none; }
 
+    .tx-info { display: flex; align-items: center; gap: 0.6rem; }
     .tx-actions { display: flex; gap: 0.5rem; align-items: center; }
+    .tx-amount { font-weight: 600; margin-right: 0.5rem; }
+
     .status-badge {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       padding: 0.2rem 0.5rem;
       border-radius: 12px;
       text-transform: uppercase;
       font-weight: bold;
+      user-select: none;
     }
     .badge-paid { background: rgba(16, 185, 129, 0.2); color: var(--success-color); }
     .badge-pending { background: rgba(239, 68, 68, 0.2); color: var(--danger-color); }
@@ -133,16 +145,16 @@
   <header>
     <h1>RNE Tracker</h1>
     <div class="header-actions">
-      <button class="btn-icon" id="themeToggle" title="Toggle Theme"><i class="fas font-icon fa-moon"></i></button>
+      <button class="btn-icon" id="themeToggle" title="Toggle Theme"><i class="fas fa-moon"></i></button>
       <button class="btn" id="exportPdfBtn"><i class="fas fa-file-pdf"></i> Export PDF</button>
     </div>
   </header>
 
   <div class="container">
     <div class="month-selector">
-      <button class="btn-icon" id="prevMonthBtn"><i class="fas fa-chevron-left"></i></button>
+      <button class="btn-icon" id="prevMonthBtn" title="Previous Month"><i class="fas fa-chevron-left"></i></button>
       <h2 id="currentMonthDisplay">Loading...</h2>
-      <button class="btn-icon" id="nextMonthBtn"><i class="fas fa-chevron-right"></i></button>
+      <button class="btn-icon" id="nextMonthBtn" title="Next Month"><i class="fas fa-chevron-right"></i></button>
     </div>
 
     <div id="categoriesContainer"></div>
@@ -170,7 +182,6 @@
     }
 
     function getMinAllowedMonthKey() {
-      // Defines current month as the minimum allowed month boundary
       return getMonthKey(new Date());
     }
 
@@ -197,7 +208,6 @@
       const targetKey = getMonthKey(targetDate);
       const minKey = getMinAllowedMonthKey();
 
-      // Prevent moving before the minimum allowed month
       if (monthDelta < 0 && targetKey < minKey) {
         return;
       }
@@ -220,7 +230,6 @@
       const currentKey = getMonthKey(currentDate);
       const minKey = getMinAllowedMonthKey();
       
-      // Check if viewing current or minimum allowed month boundary
       const isAtMinMonth = (currentKey <= minKey);
 
       const activeTx = state.transactions.filter(t => t.monthKey === currentKey);
@@ -240,27 +249,27 @@
         catCard.className = 'category-card';
 
         let itemsHtml = catItems.map(tx => {
-          // Option B Implementation: Completely hide move-back button if at or below min month boundary
+          // Option B: Hide move-back button if at or below min month boundary
           const moveBackButtonHtml = isAtMinMonth 
             ? '' 
             : `<button class="btn-icon" onclick="moveTransaction('${tx.id}', -1)" title="Move to Previous Month">
-                 <i class="fas fa-arrow-left"></i>
+                 <i class="fas fa-chevron-left"></i>
                </button>`;
 
           const moveForwardButtonHtml = `<button class="btn-icon" onclick="moveTransaction('${tx.id}', 1)" title="Move to Next Month">
-               <i class="fas fa-arrow-right"></i>
+               <i class="fas fa-chevron-right"></i>
              </button>`;
 
           return `
             <li class="transaction-item">
-              <div>
+              <div class="tx-info">
                 <strong>${tx.title}</strong>
-                <span class="status-badge ${tx.paid ? 'badge-paid' : 'badge-pending'}" onclick="togglePaid('${tx.id}')" style="cursor:pointer; margin-left:8px;">
+                <span class="status-badge ${tx.paid ? 'badge-paid' : 'badge-pending'}" onclick="togglePaid('${tx.id}')" style="cursor:pointer;">
                   ${tx.paid ? 'Paid' : 'Pending'}
                 </span>
               </div>
               <div class="tx-actions">
-                <span>${formatCurrency(tx.amount)}</span>
+                <span class="tx-amount">${formatCurrency(tx.amount)}</span>
                 ${moveBackButtonHtml}
                 ${moveForwardButtonHtml}
               </div>
