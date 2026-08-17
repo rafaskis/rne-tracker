@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RNE Tracker v58.2.2</title>
+    <title>RNE Tracker v58.2.3</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
@@ -224,6 +224,7 @@
                 <option value="1">Every Month</option>
                 <option value="2">Every 2 Months</option>
                 <option value="3">Every 3 Months</option>
+                <option value="4">Every 4 Months</option>
                 <option value="6">Every 6 Months</option>
                 <option value="12">Yearly</option>
             </select>
@@ -271,12 +272,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v58.2.2</div>
+    <div class="version-watermark">RNE Tracker • v58.2.3</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260817_v58.2.2
+        // VERSION TRACKER REFERENCE: 260817_v58.2.3
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -298,6 +299,7 @@
             { key: 1, label: "Monthly" },
             { key: 2, label: "Every 2 Months" },
             { key: 3, label: "Quarterly" },
+            { key: 4, label: "Every 4 Months" },
             { key: 6, label: "Every 6 Months" },
             { key: 12, label: "Yearly" }
         ];
@@ -666,39 +668,40 @@
         }
 
         function ensureSequencePopulatedUpToMonth(targetMonthStr) {
-            if (!meta.lastMonthPopulated || meta.lastMonthPopulated >= targetMonthStr) return;
-            
-            let cursor = new Date(meta.lastMonthPopulated + '-01');
-            const targetDate = new Date(targetMonthStr + '-01');
+            const maxPopulated = meta.lastMonthPopulated || targetMonthStr;
+            const effectiveTarget = maxPopulated > targetMonthStr ? maxPopulated : targetMonthStr;
 
-            while (cursor <= targetDate) {
-                cursor.setMonth(cursor.getMonth() + 1);
-                let y = cursor.getFullYear();
-                let m = cursor.getMonth() + 1;
-                let cursorMonthStr = `${y}-${m < 10 ? '0' + m : m}`;
+            const startIdx = monthsRange.indexOf(currentSystemMonth);
+            const endIdx = monthsRange.indexOf(effectiveTarget);
 
-                templates.forEach(tpl => {
-                    if (shouldTemplateGenerateInstance(tpl, cursorMonthStr)) {
-                        const alreadyExists = expenses.find(x => x.seriesId === tpl.seriesId && x.month === cursorMonthStr);
-                        if (!alreadyExists) {
-                            expenses.push({
-                                id: 'exp_' + Math.random().toString(36).substr(2, 9),
-                                seriesId: tpl.seriesId,
-                                name: tpl.name,
-                                cost: tpl.cost,
-                                month: cursorMonthStr,
-                                recur: tpl.recur,
-                                status: 'unpaid',
-                                originMonth: cursorMonthStr,
-                                originated: cursorMonthStr,
-                                isEdited: false
-                            });
+            if (startIdx !== -1 && endIdx !== -1) {
+                for (let i = startIdx; i <= endIdx; i++) {
+                    const cursorMonthStr = monthsRange[i];
+                    templates.forEach(tpl => {
+                        if (shouldTemplateGenerateInstance(tpl, cursorMonthStr)) {
+                            const alreadyExists = expenses.find(x => x.seriesId === tpl.seriesId && x.month === cursorMonthStr);
+                            if (!alreadyExists) {
+                                expenses.push({
+                                    id: 'exp_' + Math.random().toString(36).substr(2, 9),
+                                    seriesId: tpl.seriesId,
+                                    name: tpl.name,
+                                    cost: tpl.cost,
+                                    month: cursorMonthStr,
+                                    recur: tpl.recur,
+                                    status: 'unpaid',
+                                    originMonth: cursorMonthStr,
+                                    originated: cursorMonthStr,
+                                    isEdited: false
+                                });
+                            }
                         }
-                    }
-                });
-                if (cursorMonthStr === targetMonthStr) break;
+                    });
+                }
             }
-            meta.lastMonthPopulated = targetMonthStr;
+
+            if (!meta.lastMonthPopulated || targetMonthStr > meta.lastMonthPopulated) {
+                meta.lastMonthPopulated = targetMonthStr;
+            }
             saveStateToLocalStorage();
         }
 
@@ -900,29 +903,6 @@
                         durationLimit: customUntil
                     };
                     templates.push(newTemplate);
-
-                    const viewIndex = monthsRange.indexOf(filterSelect.value);
-                    const startIndex = monthsRange.indexOf(monthTarget);
-                    const topLimit = Math.max(viewIndex, startIndex);
-
-                    for (let i = startIndex; i <= topLimit; i++) {
-                        if (i < 0) continue;
-                        let mStr = monthsRange[i];
-                        if (shouldTemplateGenerateInstance(newTemplate, mStr)) {
-                            expenses.push({
-                                id: 'exp_' + Math.random().toString(36).substr(2, 9),
-                                seriesId: newSeriesId,
-                                name: name,
-                                cost: costVal,
-                                month: mStr,
-                                recur: recur,
-                                status: 'unpaid',
-                                originMonth: mStr,
-                                originated: mStr,
-                                isEdited: false
-                            });
-                        }
-                    }
                     saveStateToLocalStorage();
                 }
             }
@@ -1076,30 +1056,26 @@
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v58.2.2)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v58.2.3)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
             if (!selectEl) return;
-            const rawValue = selectEl.value; // e.g., "2026-08"
+            const rawValue = selectEl.value;
             
-            // Exact month/year label resolution from the select box text
             const reportDateString = selectEl.options[selectEl.selectedIndex].text;
 
-            // Build Current Generated Timestamp: "as of DD/MM/YYYY HH:MM"
             const now = new Date();
             const pad = (n) => String(n).padStart(2, '0');
             const liveDateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
             const liveTimeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
             const asOfTimestampString = `as of ${liveDateStr} ${liveTimeStr}`;
 
-            // Document Title metadata timestamp definition
             const timestamp = `${String(now.getFullYear()).slice(-2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
             const originalTitle = document.title;
             const parsedFileDate = rawValue.replace('-', '_');
             document.title = `rne_report_${parsedFileDate}-${timestamp}`;
 
-            // Compute Summary Card aggregates
             const monthFilteredItems = expenses.filter(e => e.month === rawValue);
             let totalUnpaidSum = 0;
             let totalOverallSum = 0;
@@ -1112,7 +1088,6 @@
                 }
             });
 
-            // 1. Generate Clean Document Data Stream HTML
             let expensesHtml = '';
             if (monthFilteredItems.length === 0) {
                 expensesHtml = '<p style="text-align: center; color: #666; font-size: 14px; margin-top: 30px;">No records logged for this period.</p>';
@@ -1124,12 +1099,10 @@
                     });
 
                     if (grpItems.length > 0) {
-                        // Category sum tracks ONLY unpaid expenses
                         const groupUnpaidSum = grpItems.reduce((sum, e) => {
                             return sum + (e.status === 'unpaid' ? parseFloat(e.cost || 0) : 0);
                         }, 0);
 
-                        // Define Category Badge appearance state
                         let groupBadgeHtml = '';
                         if (groupUnpaidSum === 0) {
                             groupBadgeHtml = `<span style="background: #dcfce7; color: #16a34a; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 800; border: 1px solid #bbf7d0;">PAID</span>`;
@@ -1146,7 +1119,6 @@
                                 <div>
                         `;
 
-                        // Sort items so 'unpaid' entries appear first before 'paid' entries
                         const sortedGrpItems = [...grpItems].sort((a, b) => {
                             if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
                             if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
@@ -1158,14 +1130,12 @@
                             const itemColor = isUnpaid ? '#dc2626' : '#16a34a';
                             const costDecorationStyle = isUnpaid ? '' : 'text-decoration: line-through;';
                             
-                            // Build Badges Container dynamically (Decoupled Checks)
                             let badgeGroupHtml = '';
                             
                             if (e.isEdited) {
                                 badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">EDITED</span>`;
                             }
                             
-                            // UNIVERSAL SMART DATE RESOLVER
                             const rawOrigin = e.originated || e.originatedMonth || e.origin || e.originMonth;
                             if (rawOrigin) {
                                 let parsedYear = "";
@@ -1212,7 +1182,6 @@
                 });
             }
 
-            // 2. Open isolated window context
             const printWindow = window.open('', '_blank');
             if (!printWindow) {
                 alert("Please allow popups to export PDFs.");
@@ -1220,7 +1189,6 @@
                 return;
             }
 
-            // 3. Document Stream Transmission Injection
             printWindow.document.write(`
                 <!DOCTYPE html>
                 <html>
@@ -1625,7 +1593,7 @@
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v58.2.2_boundary_sync';
+                const boundary = '32626_v58.2.3_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
@@ -1682,7 +1650,6 @@
                 
                 if (subsetItems.length === 0) return;
 
-                // SORT: Unpaid expenses first, Paid expenses last
                 subsetItems.sort((a, b) => {
                     if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
                     if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
@@ -1739,7 +1706,6 @@
                         const itemDiv = document.createElement('div');
                         itemDiv.className = `expense-item ${e.status}`;
 
-                        // Decoupled badge rendering
                         let badgeHtml = e.isEdited ? `<span class="badge-edited">Custom</span>` : '';
                         
                         let originLabelHtml = '';
@@ -1751,7 +1717,6 @@
                         let untilLabelText = formatPrettyUntilLabel(e.seriesId);
                         let untilLabelHtml = untilLabelText ? `<div class="origin-label" style="color:var(--primary); border-color:var(--primary);">${untilLabelText}</div>` : '';
 
-                        // Move-left boundary condition check (Option B: Hide move back button entirely when not allowed)
                         const baseOrigin = e.originMonth || e.originated || e.month;
                         const canMoveBack = (e.month > baseOrigin && e.month > currentSystemMonth);
 
