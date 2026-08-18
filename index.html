@@ -1,1830 +1,693 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RNE Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2pdf.js for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Google API Client Libraries -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+
     <style>
-        /* Color Palette Themes Engine Base Configuration */
-        :root {
-            --bg-color: #f4f6f9;
-            --card-bg: #ffffff;
-            --text-main: #333333;
-            --text-muted: #666666;
-            --primary: #2563eb;
-            --danger: #dc2626;
-            --success: #16a34a;
-            --border: #e5e7eb;
-            --utility: #4b5563;
-            --edit-color: #0284c7;
-            --group-header-bg: #e2e8f0;
-            --gdrive-color: #0f9d58;
-            --cost-text: #111827;
-            --cloud-bar-bg: #e2e8f0;
-            --cloud-bar-text: #475569;
-            --cloud-bar-border: #cbd5e1;
-            --btn-action-bg: #f9fafb;
-            --utility-card-bg: #eaede4;
-            --banner-bg: #fef3c7;
-            --banner-text: #92400e;
-            --banner-border: #fcd34d;
+        .dark {
+            background-color: #0f172a;
+            color: #f8fafc;
         }
-
-        /* Dark Theme Variables Layer Override */
-        [data-theme="dark"] {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-main: #e0e0e0;
-            --text-muted: #a0a0a0;
-            --primary: #3b82f6;
-            --danger: #ef4444;
-            --success: #22c55e;
-            --border: #333333;
-            --utility: #9ca3af;
-            --edit-color: #0ea5e9;
-            --group-header-bg: #2d3748;
-            --cost-text: #ffffff;
-            --cloud-bar-bg: #1a202c;
-            --cloud-bar-text: #a0aec0;
-            --cloud-bar-border: #4a5568;
-            --btn-action-bg: #2d3748;
-            --utility-card-bg: #2d3129;
-            --banner-bg: #78350f;
-            --banner-text: #fef3c7;
-            --banner-border: #92400e;
+        .dark .bg-white {
+            background-color: #1e293b !important;
+            color: #f8fafc !important;
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-main); padding: 16px; padding-bottom: 100px; position: relative; min-height: 100vh; transition: background-color 0.2s, color 0.2s; }
+        .dark .bg-gray-50 {
+            background-color: #0f172a !important;
+        }
+        .dark .bg-gray-100 {
+            background-color: #334155 !important;
+        }
+        .dark .text-gray-800, .dark .text-gray-700, .dark .text-gray-600 {
+            color: #f1f5f9 !important;
+        }
+        .dark .text-gray-500 {
+            color: #94a3b8 !important;
+        }
+        .dark .border-gray-200, .dark .border-gray-100 {
+            border-color: #334155 !important;
+        }
+        .dark input, .dark select {
+            background-color: #334155 !important;
+            color: #ffffff !important;
+            border-color: #475569 !important;
+        }
+        .dark-banner {
+            background-color: #1e293b !important;
+            border-color: #334155 !important;
+        }
         
-        /* Streamlined Top Cloud Bar Placement */
-        .top-cloud-bar { display: flex; justify-content: space-between; align-items: center; background: var(--cloud-bar-bg); padding: 8px 12px; border-radius: 10px; margin-bottom: 12px; border: 1px dashed var(--cloud-bar-border); font-size: 13px; }
-        .cloud-status-text { font-weight: 600; color: var(--cloud-bar-text); display: flex; align-items: center; gap: 4px; }
-        .btn-cloud-discreet { width: auto; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 4px; }
-        .btn-cloud-signin { background: var(--gdrive-color); box-shadow: 0 1px 2px rgba(15, 157, 88, 0.2); }
-        .btn-cloud-signout { background: var(--utility); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .btn-cloud-push { background: #4285f4; }
-        .btn-cloud-pull { background: #16a34a; }
-        .discreet-actions-grid { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-
-        .btn-theme-toggle { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); font-size: 12px; font-weight: bold; padding: 6px 12px; border-radius: 6px; cursor: pointer; height: auto; width: auto; display: inline-flex; align-items: center; justify-content: center; }
-
-        /* Global Arrears Alerts Bar Container */
-        .arrears-alert-banner { display: none; background: var(--banner-bg); border: 1px solid var(--banner-border); color: var(--banner-text); padding: 12px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; flex-direction: column; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .arrears-banner-text { font-weight: 600; text-align: center; line-height: 1.4; }
-        .arrears-banner-actions { display: flex; gap: 8px; }
-        .btn-banner-action { padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; border: none; text-align: center; width: 50%; }
-        .btn-banner-keep { background: var(--primary); color: white; }
-        .btn-banner-discard { background: var(--danger); color: white; }
-
-        /* Top Navigation Hierarchy */
-        .month-nav-container { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-        .btn-nav-arrow { width: 48px; height: 48px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary); }
-        .month-select-wrapper { flex-grow: 1; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 8px; }
-        .header-card { background: var(--card-bg); padding: 16px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-grow: 1; }
-        .unpaid-badge { font-size: 24px; font-weight: bold; color: var(--danger); margin-top: 4px; }
-        
-        select, input, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background: var(--card-bg); color: var(--text-main); -webkit-appearance: none; }
-        select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M0 3l5 5 5-5z' fill='%23666'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-        
-        /* Collapsible Action Entry Form */
-        .btn-trigger-form { background: var(--primary); color: white; font-weight: bold; border: none; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); cursor: pointer; }
-        .form-card { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px; display: none; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-        .form-card input[type="text"] { grid-column: span 2; }
-        .btn-primary { background: var(--primary); color: white; font-weight: bold; border: none; margin-top: 8px; cursor: pointer; }
-        .btn-cancel-form { background: transparent; color: var(--text-muted); border: none; margin-top: 4px; font-size: 14px; text-decoration: underline; cursor: pointer; }
-        
-        .edit-banner { background: var(--edit-color); color: white; padding: 8px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 12px; text-align: center; grid-column: span 2; }
-
-        /* Categorized Group Framework Elements */
-        .group-container { margin-bottom: 14px; border-radius: 12px; overflow: hidden; background: transparent; }
-        .group-header { background: var(--group-header-bg); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; color: var(--text-main); cursor: pointer; user-select: none; border: 1px solid var(--border); border-radius: 10px; gap: 8px; }
-        .group-header-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
-        .group-header-title span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .group-badges-container { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-        .group-unpaid-cost { font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
-        .group-unpaid-cost.has-unpaid { color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; }
-        [data-theme="dark"] .group-unpaid-cost.has-unpaid { color: #fca5a5; background: #7f1d1d; border: 1px solid #991b1b; }
-        .group-unpaid-cost.all-paid { color: #16a34a; background: #dcfce7; border: 1px solid #86efac; }
-        [data-theme="dark"] .group-unpaid-cost.all-paid { color: #86efac; background: #14532d; border: 1px solid #166534; }
-        .group-badge { background: #64748b; color: white; font-size: 11px; padding: 3px 7px; border-radius: 10px; font-weight: 600; }
-        .group-content { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; padding: 2px; }
-
-        /* Item Display Grid */
-        .expense-item { background: var(--card-bg); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-        .expense-item.paid { opacity: 0.6; border-left: 5px solid var(--success); }
-        .expense-item.unpaid { border-left: 5px solid var(--danger); }
-        
-        .info { display: flex; flex-direction: column; gap: 4px; width: 100%; }
-        .name-wrapper { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-        .name { font-weight: 600; font-size: 17px; color: var(--text-main); line-height: 1.4; word-break: break-word; white-space: normal; }
-        .badge-edited { background: #bae6fd; color: #0369a1; font-size: 11px; font-weight: bold; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-        [data-theme="dark"] .badge-edited { background: #0c4a6e; color: #7dd3fc; }
-        
-        .cost-row { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; margin-top: 2px; }
-        .cost { font-weight: 700; font-size: 18px; color: var(--cost-text); }
-        .origin-label { font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg-color); padding: 2px 6px; border-radius: 4px; border: 1px dashed var(--border); margin-top: 1px; }
-        
-        /* Buttons Row Layout */
-        .actions { display: flex; gap: 8px; justify-content: flex-end; width: 100%; border-top: 1px solid var(--border); padding-top: 10px; }
-        .btn-action { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 8px; border: 1px solid var(--border); background: var(--btn-action-bg); cursor: pointer; font-size: 16px; }
-        .btn-action.disabled,
-        .btn-action:disabled { opacity: 0.3 !important; cursor: not-allowed !important; pointer-events: none !important; }
-        .btn-pay { color: var(--success); }
-        .btn-move { color: #f59e0b; }
-        .btn-back { color: #6366f1; }
-        .btn-action-danger { color: var(--danger); }
-        .btn-edit { color: var(--edit-color); }
-        .btn-delete { color: var(--danger); }
-
-        /* Collapsible Bottom Utility Drawer */
-        .utility-toggle-header { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 32px; color: var(--utility); font-size: 14px; font-weight: 600; cursor: pointer; user-select: none; padding: 8px; }
-        .utility-arrow { font-size: 11px; transition: transform 0.2s ease; }
-        .utility-card { background: var(--utility-card-bg); padding: 16px; border-radius: 12px; border: 1px dashed var(--utility); margin-top: 8px; display: none; }
-        .utility-title { font-size: 12px; font-weight: bold; color: var(--utility); margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
-        .utility-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
-        
-        .btn-util { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center; -webkit-appearance: none; }
-        .btn-util-danger { border-color: var(--danger); color: var(--danger); font-weight: 600; margin-top: 4px; font-size: 14px; padding: 10px; }
-        .file-input-wrapper { position: relative; width: 100%; }
-        .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
-        .btn-fake-file { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; text-align: center; }
-
-        /* Modern Choice Dialog Engine Overlay Template */
-        .choice-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; padding: 24px; align-items: center; justify-content: center; }
-        .choice-card { background: var(--card-bg); border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); border: 1px solid var(--border); }
-        .choice-message { font-size: 16px; font-weight: 500; color: var(--text-main); line-height: 1.5; margin-bottom: 24px; text-align: center; }
-        .choice-buttons-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
-        .btn-choice { width: calc(50% - 8px); padding: 14px; font-size: 16px; font-weight: 700; border-radius: 10px; cursor: pointer; border: none; text-align: center; }
-        .btn-choice-left { background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; }
-        .btn-choice-right { background: var(--primary); color: white; }
-        .btn-choice-danger { background: var(--danger); color: white; }
-        .btn-choice-full { width: 100%; margin-bottom: 8px; }
-        .vertical-buttons { flex-direction: column; gap: 4px; width: 100%; display: flex; }
-
-        /* Persistent Version Watermark */
-        .version-watermark { position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; user-select: none; pointer-events: none; }
+        /* Fixed Footer for Mobile Sync Status */
+        .sync-footer-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 40;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border-top: 1px solid #e2e8f0;
+        }
+        .dark .sync-footer-bar {
+            background: rgba(30, 41, 59, 0.95);
+            border-top: 1px solid #334155;
+        }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 text-gray-800 min-h-screen pb-16 font-sans antialiased transition-colors duration-200">
 
-    <div class="top-cloud-bar">
-        <div class="cloud-status-text" id="cloudStatusLabel">☁ Cloud Offline</div>
-        <div class="discreet-actions-grid">
-            <button class="btn-theme-toggle" id="themeToggleBtn" onclick="toggleDisplayTheme()">Toggle Theme</button>
-            <button class="btn-cloud-discreet btn-cloud-signin" id="gdriveMainActionBtn" onclick="toggleGoogleDriveConnectionState()">Sign In</button>
-            <button class="btn-cloud-discreet btn-cloud-push" id="gdrivePushBtn" onclick="manuallyTriggerCloudBackup()">Backup</button>
-            <button class="btn-cloud-discreet btn-cloud-pull" id="gdrivePullBtn" onclick="manuallyTriggerCloudRestore()">Restore</button>
-        </div>
-    </div>
-
-    <div class="arrears-alert-banner" id="globalArrearsBanner">
-        <div class="arrears-banner-text" id="arrearsBannerMessage">⚠️ Warning: You have unhandled unpaid expenses left behind in previous months.</div>
-        <div class="arrears-banner-actions">
-            <button class="btn-banner-action btn-banner-keep" onclick="executeBatchBringArrearsToCurrent()">Bring Forward</button>
-            <button class="btn-banner-action btn-banner-discard" onclick="executeBatchDiscardArrears()">Discard</button>
-        </div>
-    </div>
-
-    <div class="month-nav-container">
-        <button class="btn-nav-arrow" onclick="stepMonth(-1)" title="Previous Month">◀</button>
-        <div class="month-select-wrapper">
-            <select id="monthViewFilter" onchange="render()"></select>
-        </div>
-        
-        <button class="btn-nav-arrow" onclick="exportToPDF()" title="Export PDF" style="display: inline-flex; align-items: center; justify-content: center; padding: 4px; width: 48px; height: 48px;">
-            <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor;">
-                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/>
-            </svg>
-        </button>
-
-        <button class="btn-nav-arrow" onclick="stepMonth(1)" title="Next Month">▶</button>
-    </div>
-
-    <div class="top-bar">
-        <div class="header-card">
-            <div style="font-size: 14px; color: var(--text-muted); font-weight: 500;">TOTAL UNPAID FOR THIS MONTH</div>
-            <div class="unpaid-badge" id="totalUnpaid">€0.00</div>
-        </div>
-    </div>
-
-    <button id="formTriggerBtn" class="btn-trigger-form" onclick="openCreateMode()">+ Add New Expense</button>
-
-    <div class="form-card" id="expenseFormCard">
-        <div class="form-grid">
-            <div id="editBannerElement" class="edit-banner" style="display: none;">🔧 EDITING ACTIVE ENTRY</div>
-            <input type="text" id="expName" placeholder="Expense Name (e.g., Electricity Room 1)">
-            <input type="number" id="expCost" step="0.01" placeholder="Cost (€)">
-            <select id="expMonthTarget"></select>
-            <select id="expRecur" onchange="toggleDurationField()">
-                <option value="0">One-Time Only</option>
-                <option value="1">Every Month</option>
-                <option value="2">Every 2 Months</option>
-                <option value="3">Every 3 Months</option>
-                <option value="6">Every 6 Months</option>
-                <option value="12">Yearly</option>
-            </select>
-            <select id="expEndType" style="display:none;" onchange="toggleEndTypeField()">
-                <option value="inf">Indefinitely</option>
-                <option value="custom">Until Date (MM/YYYY)</option>
-            </select>
-            <input type="text" id="expCustomUntil" placeholder="End Date (e.g., 12/2027)" style="display:none;" maxlength="7">
-        </div>
-        <button class="btn-primary" id="formSubmitBtn" onclick="processFormSubmit()">Save Expense Entry</button>
-        <div style="text-align: center;">
-            <button class="btn-cancel-form" onclick="closeFormDisplay()">Minimize Form</button>
-        </div>
-    </div>
-
-    <div class="node-target-wrapper" style="position:relative; width:100%;">
-         <div class="expense-list" id="listContainer"></div>
-    </div>
-
-    <div class="utility-toggle-header" onclick="toggleUtilityDrawer()">
-        <span>Offline Data Options</span>
-        <span class="utility-arrow" id="utilArrow">▼</span>
-    </div>
-
-    <div class="utility-card" id="utilityDrawerCard">
-        <div class="utility-title">Manual Backup (Offline)</div>
-        <div class="utility-grid" style="margin-bottom: 12px;">
-            <button class="btn-util" onclick="exportToFile()">📥 Export Data to File</button>
-            <div class="file-input-wrapper">
-                <button class="btn-fake-file btn-util">📤 Import Backup File</button>
-                <input type="file" id="importFile" accept=".txt,.json" onchange="importFromFile(event)">
+    <!-- Top Navigation Bar -->
+    <header class="bg-blue-700 text-white shadow-md">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-wallet text-2xl"></i>
+                <h1 class="text-xl font-bold tracking-wide">rne-tracker <span class="text-xs bg-blue-800 px-2 py-0.5 rounded-full border border-blue-500">v61</span></h1>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleDisplayTheme()" id="themeToggleBtn" class="p-2 rounded-lg bg-blue-800 hover:bg-blue-600 text-white transition" title="Toggle Dark/Light Mode">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+                <button onclick="openFormModal()" class="bg-green-600 hover:bg-green-500 text-white font-semibold px-3 py-1.5 rounded-lg text-sm shadow flex items-center space-x-1 transition">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Νέο</span>
+                </button>
             </div>
         </div>
-        <div class="utility-title" style="border-top:1px dashed var(--border); padding-top:12px; color:var(--danger);">Danger Zone</div>
-        <button class="btn-util btn-util-danger" onclick="triggerResetToScratch()">☢ Start From Scratch</button>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-4xl mx-auto px-4 py-4 space-y-4">
+
+        <!-- Month Navigation Bar -->
+        <div class="flex items-center justify-between bg-white dark-banner rounded-xl p-3 shadow-sm border border-gray-200">
+            <button onclick="navigateMonth(-1)" class="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition">
+                <i class="fa-solid fa-chevron-left text-lg"></i>
+            </button>
+            <div class="text-center">
+                <h2 id="currentMonthYearDisplay" class="text-lg font-bold text-gray-800"></h2>
+            </div>
+            <button onclick="navigateMonth(1)" class="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition">
+                <i class="fa-solid fa-chevron-right text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Arrears Warning Banner (Hidden if 0) -->
+        <div id="arrearsAlertBanner" class="hidden bg-amber-50 border-l-4 border-amber-500 p-4 rounded-xl shadow-sm">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-600 text-xl"></i>
+                    <div>
+                        <h4 class="font-bold text-amber-800 text-sm">Εκκρεμότητες Προηγούμενων Μηνών</h4>
+                        <p id="arrearsSummaryText" class="text-xs text-amber-700"></p>
+                    </div>
+                </div>
+                <button onclick="executeBatchBringArrearsToCurrent()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow transition">
+                    Μεταφορά Όλων
+                </button>
+            </div>
+        </div>
+
+        <!-- Monthly Unpaid Summary Banner -->
+        <div class="bg-white dark-banner rounded-xl p-4 shadow-sm border border-gray-200 text-center">
+            <span class="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1">Συνολικό Ανεξόφλητο Υπόλοιπο Μήνα</span>
+            <div id="monthlyUnpaidAmountDisplay" class="text-3xl font-extrabold tracking-tight">€0.00 / €0.00</div>
+        </div>
+
+        <!-- Cloud Action Controls -->
+        <div class="flex flex-wrap gap-2 justify-between items-center bg-white dark-banner p-3 rounded-xl border border-gray-200 shadow-sm text-xs">
+            <div class="flex items-center space-x-2">
+                <button id="googleAuthBtn" onclick="handleAuthClick()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition">
+                    <i class="fa-brands fa-google"></i>
+                    <span id="googleAuthBtnText">Σύνδεση Google</span>
+                </button>
+                <button id="cloudSyncBtn" onclick="performCloudWriteExecutionSequence()" disabled class="bg-gray-300 text-gray-500 font-medium px-3 py-1.5 rounded-lg flex items-center space-x-1 transition cursor-not-allowed">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Συγχρονισμός</span>
+                </button>
+                <button id="cloudPullBtn" onclick="performCloudPullExtractionSequence()" disabled class="bg-gray-300 text-gray-500 font-medium px-3 py-1.5 rounded-lg flex items-center space-x-1 transition cursor-not-allowed">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                    <span>Λήψη</span>
+                </button>
+            </div>
+
+            <div class="flex items-center space-x-2 mt-2 sm:mt-0">
+                <button onclick="exportToFile()" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 font-medium px-2.5 py-1.5 rounded-lg transition" title="Export Backup JSON">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+                <label class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 font-medium px-2.5 py-1.5 rounded-lg cursor-pointer transition" title="Import Backup JSON">
+                    <i class="fa-solid fa-upload"></i>
+                    <input type="file" id="importJsonFileInput" onchange="importFromFile(event)" accept=".json" class="hidden">
+                </label>
+                <button onclick="exportToPDF()" class="bg-red-600 hover:bg-red-700 text-white font-medium px-3 py-1.5 rounded-lg flex items-center space-x-1 transition shadow-sm">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span>PDF</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Categorized Expense Cards Section -->
+        <div id="expenseCategoryListContainer" class="space-y-4"></div>
+
+    </main>
+
+    <!-- Bottom Sync Indicator Bar -->
+    <div class="sync-footer-bar px-4 py-2 flex justify-between items-center text-xs">
+        <div class="flex items-center space-x-2">
+            <span id="syncStatusIndicatorDot" class="h-2 w-2 rounded-full bg-gray-400"></span>
+            <span id="syncStatusMessageText" class="text-gray-500 font-medium">Εκτός σύνδεσης (Τοπική Αποθήκευση)</span>
+        </div>
+        <span id="lastSyncTimestampDisplay" class="text-gray-400"></span>
     </div>
 
-    <div class="choice-overlay" id="customChoiceOverlay">
-        <div class="choice-card">
-            <div class="choice-message" id="choiceOverlayMessage">Do you want to apply this action to the current month or all upcoming instances?</div>
-            <div class="choice-buttons-row" id="choiceButtonsContainer">
-                <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
-                <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
-            </div>
+    <!-- Modal Form (Add/Edit) -->
+    <div id="expenseFormModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark-banner rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-200 relative">
+            <button onclick="closeFormModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 id="modalFormTitleText" class="text-lg font-bold text-gray-800 mb-4">Προσθήκη Υποχρέωσης</h3>
+            
+            <form id="expenseDataInputForm" onsubmit="processFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="fieldExpenseId">
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Τίτλος / Περιγραφή</label>
+                    <input type="text" id="fieldTitle" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Ποσό (€)</label>
+                        <input type="number" step="0.01" id="fieldAmount" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Κατηγορία</label>
+                        <select id="fieldCategory" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="Σπίτι / Λογαριασμοί">Σπίτι / Λογαριασμοί</option>
+                            <option value="Δάνεια / Κάρτες">Δάνεια / Κάρτες</option>
+                            <option value="Συνδρομές / Υπηρεσίες">Συνδρομές / Υπηρεσίες</option>
+                            <option value="Ασφάλειες / Φόροι">Ασφάλειες / Φόροι</option>
+                            <option value="Διάφορα">Διάφορα</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Μήνας</label>
+                        <input type="month" id="fieldTargetMonth" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Ημέρα Λήξης</label>
+                        <input type="number" min="1" max="31" id="fieldDueDay" placeholder="π.χ. 15" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Σημειώσεις / Σύνδεσμος</label>
+                    <input type="text" id="fieldNotes" placeholder="Πληροφορίες ή URL πληρωμής..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div class="flex items-center space-x-2 pt-2">
+                    <input type="checkbox" id="fieldIsRecurring" class="h-4 w-4 text-blue-600 rounded border-gray-300">
+                    <label for="fieldIsRecurring" class="text-sm text-gray-700 font-medium">Επαναλαμβανόμενο κάθε μήνα</label>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-4 border-t border-gray-100">
+                    <button type="button" onclick="closeFormModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-300 transition">Ακύρωση</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow">Αποθήκευση</button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v60</div>
-
+    <!-- JavaScript Application Core -->
     <script>
-        // ==========================================
-        // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260818_v60
-        // ==========================================
+        /* Global Application State */
+        let expenseDatabase = [];
+        let activeDisplayedMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
+        let googleAccessToken = null;
+        let googleTokenClient = null;
 
-        const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
-        const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-        const DEDICATED_FILE_NAME = 'rne_database.json';
+        // GOOGLE DRIVE API CONSTANTS
+        const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'; // Insert Google Client ID if configuring OAuth
+        const DRIVE_FILENAME = 'rne_tracker_database.json';
+        const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
-        let expenses = [];
-        let templates = [];
-        let meta = { lastMonthPopulated: "", lastUpdated: 0, isInitialBlank: true };
-
-        let editingTargetId = null;
-        let collapsedGroups = JSON.parse(localStorage.getItem('household_collapsed_groups')) || {};
-        let tokenClient = null;
-        let activeAccessToken = null;
-        let gdriveFileId = null;
-
-        const recurrenceGroupsConfig = [
-            { key: 0, label: "One-Time Only" },
-            { key: 1, label: "Monthly" },
-            { key: 2, label: "Every 2 Months" },
-            { key: 3, label: "Quarterly" },
-            { key: 6, label: "Every 6 Months" },
-            { key: 12, label: "Yearly" }
+        const MONTH_NAMES_EL = [
+            'Ιανουάριος', 'Φεβρουάριος', 'Μάρτιος', 'Απρίλιος', 'Μάιος', 'Ιούνιος',
+            'Ιούλιος', 'Αύγουστος', 'Σεπτέμβριος', 'Οκτώβριος', 'Νοέμβριος', 'Δεκέμβριος'
         ];
 
-        function initializeSavedDisplayTheme() {
-            const savedTheme = localStorage.getItem('rne_app_theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-        }
-
-        function toggleDisplayTheme() {
-            const activeTheme = document.documentElement.getAttribute('data-theme');
-            const targetTheme = activeTheme === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', targetTheme);
-            localStorage.setItem('rne_app_theme', targetTheme);
-        }
-
-        function presentCustomChoicePrompt(questionMessage, leftLabel = "Current", rightLabel = "All", isDestructive = false) {
-            return new Promise((resolve) => {
-                const overlay = document.getElementById('customChoiceOverlay');
-                const textContainer = document.getElementById('choiceOverlayMessage');
-                const leftBtn = document.getElementById('choiceLeftActionBtn');
-                const rightBtn = document.getElementById('choiceRightActionBtn');
-                const container = document.getElementById('choiceButtonsContainer');
-
-                container.className = "choice-buttons-row";
-                leftBtn.style.display = "inline-block";
-                rightBtn.style.display = "inline-block";
-
-                textContainer.innerText = questionMessage;
-                leftBtn.innerText = leftLabel;
-                rightBtn.innerText = rightLabel;
-                if (isDestructive) {
-                    rightBtn.className = "btn-choice btn-choice-danger";
-                } else {
-                    rightBtn.className = "btn-choice btn-choice-right";
-                }
-
-                const handleLeftSelection = () => { cleanup(); resolve('left'); };
-                const handleRightSelection = () => { cleanup(); resolve('right'); };
-                const cleanup = () => {
-                    leftBtn.removeEventListener('click', handleLeftSelection);
-                    rightBtn.removeEventListener('click', handleRightSelection);
-                    overlay.style.display = 'none';
-                    leftBtn.innerText = "Current";
-                    rightBtn.innerText = "All";
-                };
-
-                leftBtn.addEventListener('click', handleLeftSelection);
-                rightBtn.addEventListener('click', handleRightSelection);
-                overlay.style.display = 'flex';
-            });
-        }
-
-        function presentCloudSyncCrossroadsPrompt(syncState, statusHeadline, localDateStr, cloudDateStr) {
-            return new Promise((resolve) => {
-                const overlay = document.getElementById('customChoiceOverlay');
-                const textContainer = document.getElementById('choiceOverlayMessage');
-                const container = document.getElementById('choiceButtonsContainer');
-
-                container.className = "vertical-buttons";
-
-                if (syncState === 'match') {
-                    textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
-                        ${statusHeadline}<br><br>
-                        <span style="font-size:12px; color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
-                        <span style="font-size:12px; color:var(--primary);">Cloud Backup Last Updated:</span><br><strong>${cloudDateStr}</strong>`;
-                    
-                    container.innerHTML = `
-                        <button class="btn-choice btn-choice-right btn-choice-full" style="background:var(--success); border-color:var(--success);" id="btnSyncPerfect">Perfect!</button>
-                    `;
-                    
-                    const perfectBtn = document.getElementById('btnSyncPerfect');
-                    const handlePerfect = () => { cleanup(); resolve('ignore'); };
-                    const cleanup = () => {
-                        perfectBtn.removeEventListener('click', handlePerfect);
-                        overlay.style.display = 'none';
-                        resetContainerToDefaultTemplate(container);
-                    };
-                    perfectBtn.addEventListener('click', handlePerfect);
-
-                } else {
-                    textContainer.innerHTML = `<strong>Database Synchronization</strong><br><br>
-                        ${statusHeadline}<br><br>
-                        <span style="font-size:12px; color:var(--text-muted);">Local Cache Last Updated:</span><br><strong>${localDateStr}</strong><br><br>
-                        <span style="font-size:12px; color:var(--primary);">Cloud Backup Last Updated:</span><br><strong>${cloudDateStr}</strong><br><br>
-                        What action would you like to take?`;
-
-                    if (syncState === 'cloud-newer') {
-                        container.innerHTML = `
-                            <button class="btn-choice btn-choice-full" style="background:var(--success); color:white; border-color:var(--success);" id="btnSyncPull">Restore (Download Cloud to Local)</button>
-                            <button class="btn-choice btn-choice-danger btn-choice-full" id="btnSyncPush">Backup (Upload Local to Cloud)</button>
-                            <button class="btn-choice btn-choice-left btn-choice-full" id="btnSyncIgnore">Do Nothing (Keep Offline Split)</button>
-                        `;
-                    } else if (syncState === 'local-newer') {
-                        container.innerHTML = `
-                            <button class="btn-choice btn-choice-right btn-choice-full" id="btnSyncPush">Backup (Upload Local to Cloud)</button>
-                            <button class="btn-choice btn-choice-danger btn-choice-full" id="btnSyncPull">Restore (Download Cloud to Local)</button>
-                            <button class="btn-choice btn-choice-left btn-choice-full" id="btnSyncIgnore">Do Nothing (Keep Offline Split)</button>
-                        `;
-                    }
-
-                    const pushBtn = document.getElementById('btnSyncPush');
-                    const pullBtn = document.getElementById('btnSyncPull');
-                    const ignoreBtn = document.getElementById('btnSyncIgnore');
-
-                    const handlePush = () => { cleanup(); resolve('push'); };
-                    const handlePull = () => { cleanup(); resolve('pull'); };
-                    const handleIgnore = () => { cleanup(); resolve('ignore'); };
-
-                    const cleanup = () => {
-                        if(pushBtn) pushBtn.removeEventListener('click', handlePush);
-                        if(pullBtn) pullBtn.removeEventListener('click', handlePull);
-                        if(ignoreBtn) ignoreBtn.removeEventListener('click', handleIgnore);
-                        overlay.style.display = 'none';
-                        resetContainerToDefaultTemplate(container);
-                    };
-
-                    if(pushBtn) pushBtn.addEventListener('click', handlePush);
-                    if(pullBtn) pullBtn.addEventListener('click', handlePull);
-                    if(ignoreBtn) ignoreBtn.addEventListener('click', handleIgnore);
-                }
-                overlay.style.display = 'flex';
-            });
-        }
-
-        function resetContainerToDefaultTemplate(containerElement) {
-            containerElement.className = "choice-buttons-row";
-            containerElement.innerHTML = `
-                <button class="btn-choice btn-choice-left" id="choiceLeftActionBtn">Current</button>
-                <button class="btn-choice btn-choice-right" id="choiceRightActionBtn">All</button>
-            `;
-            document.getElementById('choiceLeftActionBtn').style.display = "inline-block";
-            document.getElementById('choiceRightActionBtn').style.display = "inline-block";
-        }
-
-        function presentInteractiveOverrideReview(monthStr, customName, customCost, newName, newCost) {
-            return new Promise((resolve) => {
-                const overlay = document.getElementById('customChoiceOverlay');
-                const textContainer = document.getElementById('choiceOverlayMessage');
-                const container = document.getElementById('choiceButtonsContainer');
-                const prettyMonth = new Date(monthStr + '-01').toLocaleDateString('default', { month: 'long', year: 'numeric' });
-                
-                textContainer.innerHTML = `<strong>Review EDITED in ${prettyMonth}</strong><br><br>
-                    <span style="font-size:13px; color:var(--text-muted);">Current Custom Entry:</span><br><strong>${customName} (€${customCost.toFixed(2)})</strong><br><br>
-                    <span style="font-size:13px; color:var(--edit-color);">Proposed Master Update:</span><br><strong>${newName} (€${newCost.toFixed(2)})</strong><br><br>
-                    Do you want to overwrite this custom entry or keep it as is?`;
-                
-                container.className = "vertical-buttons";
-                container.innerHTML = `
-                    <button class="btn-choice btn-choice-right btn-choice-full" id="btnOverrideOverwrite">Overwrite Custom Entry</button>
-                    <button class="btn-choice btn-choice-left btn-choice-full" id="btnOverrideKeep">Keep My Custom Entry</button>
-                `;
-
-                const overwriteBtn = document.getElementById('btnOverrideOverwrite');
-                const keepBtn = document.getElementById('btnOverrideKeep');
-
-                const handleOverwrite = () => { cleanup(); resolve('overwrite'); };
-                const handleKeep = () => { cleanup(); resolve('keep'); };
-
-                const cleanup = () => {
-                    overlay.style.display = 'none';
-                    resetContainerToDefaultTemplate(container);
-                };
-
-                overwriteBtn.addEventListener('click', handleOverwrite);
-                keepBtn.addEventListener('click', handleKeep);
-                overlay.style.display = 'flex';
-            });
-        }
-
-        function presentInteractiveSignOutConfirmation() {
-            return new Promise((resolve) => {
-                const overlay = document.getElementById('customChoiceOverlay');
-                const textContainer = document.getElementById('choiceOverlayMessage');
-                const container = document.getElementById('choiceButtonsContainer');
-
-                textContainer.innerHTML = `<strong>Sign Out</strong><br><br>Disconnect this browser from Google Drive? Local data adjustments will remain intact until browser cache is explicitly cleared.`;
-                container.className = "choice-buttons-row";
-                container.innerHTML = `
-                    <button class="btn-choice btn-choice-left" id="btnConfirmSignOutCancel">Cancel</button>
-                    <button class="btn-choice btn-choice-danger" id="btnConfirmSignOutProceed">Sign Out</button>
-                `;
-
-                const cancelBtn = document.getElementById('btnConfirmSignOutCancel');
-                const proceedBtn = document.getElementById('btnConfirmSignOutProceed');
-
-                const handleCancel = () => { cleanup(); resolve(false); };
-                const handleProceed = () => { cleanup(); resolve(true); };
-
-                const cleanup = () => {
-                    cancelBtn.removeEventListener('click', handleCancel);
-                    proceedBtn.removeEventListener('click', handleProceed);
-                    overlay.style.display = 'none';
-                    resetContainerToDefaultTemplate(container);
-                };
-
-                cancelBtn.addEventListener('click', handleCancel);
-                proceedBtn.addEventListener('click', handleProceed);
-                overlay.style.display = 'flex';
-            });
-        }
-
-        function presentThreeWayDeleteCrossroads() {
-            return new Promise((resolve) => {
-                const overlay = document.getElementById('customChoiceOverlay');
-                const textContainer = document.getElementById('choiceOverlayMessage');
-                const container = document.getElementById('choiceButtonsContainer');
-
-                textContainer.innerHTML = `<strong>Delete Expense Entry</strong><br><br>How would you like to handle this deletion?`;
-                container.className = "vertical-buttons";
-                container.innerHTML = `
-                    <button class="btn-choice btn-choice-left btn-choice-full" id="delCurrentBtn">Delete Current Month Only</button>
-                    <button class="btn-choice btn-choice-danger btn-choice-full" id="delForwardBtn">Delete Whole Series Forward</button>
-                    <button class="btn-choice btn-choice-left btn-choice-full" style="background:#cbd5e1;" id="delCancelBtn">Cancel</button>
-                `;
-
-                const currentBtn = document.getElementById('delCurrentBtn');
-                const forwardBtn = document.getElementById('delForwardBtn');
-                const cancelBtn = document.getElementById('delCancelBtn');
-
-                const handleCurrent = () => { cleanup(); resolve('current'); };
-                const handleForward = () => { cleanup(); resolve('forward'); };
-                const handleCancel = () => { cleanup(); resolve('cancel'); };
-
-                const cleanup = () => {
-                    currentBtn.removeEventListener('click', handleCurrent);
-                    forwardBtn.removeEventListener('click', handleForward);
-                    cancelBtn.removeEventListener('click', handleCancel);
-                    overlay.style.display = 'none';
-                    resetContainerToDefaultTemplate(container);
-                };
-
-                currentBtn.addEventListener('click', handleCurrent);
-                forwardBtn.addEventListener('click', handleForward);
-                cancelBtn.addEventListener('click', handleCancel);
-                overlay.style.display = 'flex';
-            });
-        }
-
-        function formatPrettyOriginLabel(monthKeyString) {
-            if (!monthKeyString || !monthKeyString.includes('-')) return '';
-            const [year, month] = monthKeyString.split('-');
-            const labelStr = new Date(year, month - 1, 1).toLocaleDateString('default', { month: 'short', year: 'numeric' });
-            return `Originated: ${labelStr}`;
-        }
-
-        function formatPrettyUntilLabel(seriesId) {
-            if (!seriesId) return '';
-            const t = templates.find(tpl => tpl.seriesId === seriesId);
-            if (!t) return '';
-            if (t.durationLimit && t.durationLimit.includes('-')) {
-                const [year, month] = t.durationLimit.split('-');
-                return `Until: ${month}/${year}`;
-            }
-            if (t.endType === 'custom' && t.endCustomUntil) {
-                return `Until: ${t.endCustomUntil}`;
-            }
-            return '';
-        }
-
-        function getMonthList() {
-            const list = [];
-            const d = new Date();
-            for (let i = 0; i <= 12; i++) {
-                let targetMonth = d.getMonth() + i;
-                let targetYear = d.getFullYear() + Math.floor(targetMonth / 12);
-                let m = (targetMonth % 12) + 1;
-                list.push(`${targetYear}-${m < 10 ? '0' + m : m}`);
-            }
-            return list;
-        }
-
-        const monthsRange = getMonthList();
-        const currentSystemMonth = monthsRange[0];
-        const filterSelect = document.getElementById('monthViewFilter');
-        const formMonthSelect = document.getElementById('expMonthTarget');
-
-        monthsRange.forEach((mStr) => {
-            const [y, m] = mStr.split('-');
-            const label = new Date(y, m - 1, 1).toLocaleDateString('default', { month: 'long', year: 'numeric' });
-            filterSelect.options.add(new Option(label, mStr));
-            formMonthSelect.options.add(new Option(label, mStr));
-        });
-
+        /* Init Lifecycle */
         window.onload = function() {
-            initializeSavedDisplayTheme();
-            loadLocalStorageCache();
-            detectAndTriggerArrearsLogic();
+            loadLocalDataState();
+            checkAndApplySavedTheme();
+            initializeGoogleDriveClient();
             render();
-            initializeGoogleIdentityServiceServices();
         };
 
-        function loadLocalStorageCache() {
-            const cacheExpenses = localStorage.getItem('household_expenses');
-            const cacheTemplates = localStorage.getItem('household_templates');
-            const cacheMeta = localStorage.getItem('household_meta');
-
-            if (cacheExpenses) expenses = JSON.parse(cacheExpenses);
-            if (cacheTemplates) templates = JSON.parse(cacheTemplates);
-            if (cacheMeta) {
-                meta = JSON.parse(cacheMeta);
-            } else {
-                meta.isInitialBlank = true;
-            }
-
-            if (!meta.lastMonthPopulated) {
-                meta.lastMonthPopulated = currentSystemMonth;
-                meta.lastUpdated = Date.now();
-                saveStateToLocalStorage();
-            }
-            ensureSequencePopulatedUpToMonth(filterSelect.value);
-        }
-
-        function saveStateToLocalStorage() {
-            meta.lastUpdated = Date.now();
-            meta.isInitialBlank = false;
-            localStorage.setItem('household_expenses', JSON.stringify(expenses));
-            localStorage.setItem('household_templates', JSON.stringify(templates));
-            localStorage.setItem('household_meta', JSON.stringify(meta));
-        }
-
-        function detectAndTriggerArrearsLogic() {
-            const absoluteLeftOvers = expenses.filter(e => e.month < currentSystemMonth && e.status === 'unpaid');
-            const banner = document.getElementById('globalArrearsBanner');
-            if (absoluteLeftOvers.length > 0) {
-                banner.style.display = "flex";
-            } else {
-                banner.style.display = "none";
-            }
-        }
-
-        async function executeBatchBringArrearsToCurrent() {
-            const activeMonth = filterSelect.value;
-            const absoluteLeftOvers = expenses.filter(e => e.month < activeMonth && e.status === 'unpaid');
-            
-            absoluteLeftOvers.forEach(e => {
-                e.status = 'paid';
-                const alreadyExists = expenses.find(x => x.seriesId === e.seriesId && x.month === activeMonth);
-                if (!alreadyExists) {
-                    expenses.push({
-                        id: 'exp_' + Math.random().toString(36).substr(2, 9),
-                        seriesId: e.seriesId,
-                        name: e.name,
-                        cost: e.cost,
-                        month: activeMonth,
-                        recur: e.recur,
-                        status: 'unpaid',
-                        originated: e.originated || e.originatedMonth || e.origin || e.originMonth || e.month,
-                        isEdited: e.isEdited || false
-                    });
+        /* Local Storage Operations */
+        function loadLocalDataState() {
+            const raw = localStorage.getItem('rne_expenses_db');
+            if (raw) {
+                try {
+                    expenseDatabase = JSON.parse(raw);
+                } catch(e) {
+                    console.error("Failed to parse local storage DB", e);
+                    expenseDatabase = [];
                 }
-            });
-            saveStateToLocalStorage();
-            detectAndTriggerArrearsLogic();
+            }
+        }
+
+        function saveLocalDataState() {
+            localStorage.setItem('rne_expenses_db', JSON.stringify(expenseDatabase));
             render();
-            await silentlyExecuteCloudSyncEngineCheck();
         }
 
-        async function executeBatchDiscardArrears() {
-            const activeMonth = filterSelect.value;
-            expenses = expenses.filter(e => !(e.month < activeMonth && e.status === 'unpaid'));
-            saveStateToLocalStorage();
-            detectAndTriggerArrearsLogic();
+        /* Theme Handler */
+        function toggleDisplayTheme() {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            localStorage.setItem('rne_theme_dark', isDark ? 'true' : 'false');
+            document.getElementById('themeToggleBtn').innerHTML = isDark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+        }
+
+        function checkAndApplySavedTheme() {
+            if (localStorage.getItem('rne_theme_dark') === 'true') {
+                document.body.classList.add('dark');
+                document.getElementById('themeToggleBtn').innerHTML = '<i class="fa-solid fa-sun"></i>';
+            }
+        }
+
+        /* Month Navigation */
+        function navigateMonth(direction) {
+            let [y, m] = activeDisplayedMonth.split('-').map(Number);
+            m += direction;
+            if (m > 12) { m = 1; y += 1; }
+            if (m < 1) { m = 12; y -= 1; }
+            activeDisplayedMonth = `${y}-${String(m).padStart(2, '0')}`;
             render();
-            await silentlyExecuteCloudSyncEngineCheck();
         }
 
-        function ensureSequencePopulatedUpToMonth(targetMonthStr) {
-            if (!Array.isArray(templates) || templates.length === 0) return;
+        /* Modal Dialog Controls */
+        function openFormModal(id = null) {
+            const modal = document.getElementById('expenseFormModal');
+            const title = document.getElementById('modalFormTitleText');
+            document.getElementById('expenseDataInputForm').reset();
+            document.getElementById('fieldExpenseId').value = '';
+            document.getElementById('fieldTargetMonth').value = activeDisplayedMonth;
 
-            let hasChanges = false;
-
-            templates.forEach(tpl => {
-                if (!tpl || !tpl.seriesId) return;
-
-                if (shouldTemplateGenerateInstance(tpl, targetMonthStr)) {
-                    // Check if an instance originating from targetMonthStr already exists anywhere in expenses
-                    const exists = expenses.some(e => 
-                        e.seriesId === tpl.seriesId && 
-                        (e.originMonth === targetMonthStr || e.originated === targetMonthStr || (!e.originMonth && !e.originated && e.month === targetMonthStr))
-                    );
-
-                    if (!exists) {
-                        const newExpense = {
-                            id: 'exp_' + Math.random().toString(36).substr(2, 9),
-                            seriesId: tpl.seriesId,
-                            name: tpl.name || 'Untitled Expense',
-                            cost: parseFloat(tpl.cost || 0),
-                            month: targetMonthStr,
-                            recur: tpl.recur || 1,
-                            status: 'unpaid',
-                            originMonth: targetMonthStr,
-                            originated: targetMonthStr,
-                            isEdited: false
-                        };
-                        expenses.push(newExpense);
-                        hasChanges = true;
-                    }
-                }
-            });
-
-            if (hasChanges) {
-                saveStateToLocalStorage();
-            }
-        }
-
-        function shouldTemplateGenerateInstance(tpl, targetMonthStr) {
-            if (!tpl) return false;
-            // Skip generation if this month was explicitly deleted by the user
-            if (Array.isArray(tpl.excludedMonths) && tpl.excludedMonths.includes(targetMonthStr)) {
-                return false;
-            }
-            // Fallback: If startMonth is missing, default to the earliest known expense 
-            // for this series, or fall back to the current target month.
-            let effectiveStartMonth = tpl.startMonth;
-            if (!effectiveStartMonth) {
-                const seriesExpenses = expenses.filter(e => e.seriesId === tpl.seriesId);
-                if (seriesExpenses.length > 0) {
-                    effectiveStartMonth = seriesExpenses.reduce((min, e) => (e.month < min ? e.month : min), seriesExpenses[0].month);
-                } else {
-                    effectiveStartMonth = targetMonthStr;
-                }
-            }
-        
-            if (effectiveStartMonth > targetMonthStr) return false;
-            
-            if (tpl.endType === 'custom' && tpl.durationLimit && targetMonthStr > tpl.durationLimit) {
-                return false;
-            }
-        
-            if (tpl.recur === 1) return true;
-            
-            const [startY, startM] = effectiveStartMonth.split('-').map(Number);
-            const [targetY, targetM] = targetMonthStr.split('-').map(Number);
-            const absoluteDiffMonths = (targetY - startY) * 12 + (targetM - startM);
-            
-            return (absoluteDiffMonths % tpl.recur) === 0;
-        }
-
-        function stepMonth(delta) {
-            let index = filterSelect.selectedIndex + delta;
-            if (index >= 0 && index < filterSelect.options.length) {
-                filterSelect.selectedIndex = index;
-                ensureSequencePopulatedUpToMonth(filterSelect.value);
-                detectAndTriggerArrearsLogic();
-                render();
-            }
-        }
-
-        function toggleDurationField() {
-            const recurVal = parseInt(document.getElementById('expRecur').value);
-            const endTypeField = document.getElementById('expEndType');
-            if (recurVal > 0) {
-                endTypeField.style.display = 'block';
-            } else {
-                endTypeField.style.display = 'none';
-                endTypeField.value = 'inf';
-            }
-            toggleEndTypeField();
-        }
-
-        function toggleEndTypeField() {
-            const endType = document.getElementById('expEndType').value;
-            const customUntilInput = document.getElementById('expCustomUntil');
-            if (endType === 'custom' && document.getElementById('expEndType').style.display !== 'none') {
-                customUntilInput.style.display = 'block';
-            } else {
-                customUntilInput.style.display = 'none';
-                customUntilInput.value = '';
-            }
-        }
-
-        function openCreateMode() {
-            editingTargetId = null;
-            document.getElementById('editBannerElement').style.display = 'none';
-            document.getElementById('formSubmitBtn').innerText = "Save New Expense";
-            document.getElementById('expName').value = '';
-            document.getElementById('expCost').value = '';
-            document.getElementById('expMonthTarget').value = filterSelect.value;
-            document.getElementById('expRecur').value = '0';
-            document.getElementById('expEndType').value = 'inf';
-            document.getElementById('expCustomUntil').value = '';
-            
-            toggleDurationField();
-            document.getElementById('expenseFormCard').style.display = 'block';
-            document.getElementById('formTriggerBtn').style.display = 'none';
-        }
-
-        function openEditMode(id) {
-            const exp = expenses.find(e => e.id === id);
-            if (!exp) return;
-
-            editingTargetId = id;
-            document.getElementById('editBannerElement').style.display = 'block';
-            document.getElementById('formSubmitBtn').innerText = "Update Existing Entry";
-            document.getElementById('expName').value = exp.name;
-            document.getElementById('expCost').value = exp.cost;
-            document.getElementById('expMonthTarget').value = exp.month;
-            document.getElementById('expRecur').value = exp.recur.toString();
-
-            const tpl = templates.find(t => t.seriesId === exp.seriesId);
-            if (tpl) {
-                document.getElementById('expEndType').value = tpl.endType || 'inf';
-                document.getElementById('expCustomUntil').value = tpl.durationLimit || '';
-            } else {
-                document.getElementById('expEndType').value = 'inf';
-                document.getElementById('expCustomUntil').value = '';
-            }
-
-            toggleDurationField();
-            document.getElementById('expenseFormCard').style.display = 'block';
-            document.getElementById('formTriggerBtn').style.display = 'none';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function closeFormDisplay() {
-            document.getElementById('expenseFormCard').style.display = 'none';
-            document.getElementById('formTriggerBtn').style.display = 'block';
-            editingTargetId = null;
-        }
-
-        async function processFormSubmit() {
-            const name = document.getElementById('expName').value.trim();
-            const costVal = parseFloat(document.getElementById('expCost').value);
-            const monthTarget = document.getElementById('expMonthTarget').value;
-            const recur = parseInt(document.getElementById('expRecur').value);
-            const endType = document.getElementById('expEndType').value;
-            let customUntil = document.getElementById('expCustomUntil').value.trim();
-
-            if (!name || isNaN(costVal)) {
-                alert("Please fill in valid name and cost fields.");
-                return;
-            }
-
-            if (endType === 'custom' && recur > 0) {
-                if (!/^\d{2}\/\d{4}$/.test(customUntil)) {
-                    alert("Please specify clean end limit date using standard MM/YYYY syntax structure.");
-                    return;
-                }
-                const [m, y] = customUntil.split('/');
-                customUntil = `${y}-${m}`;
-            } else {
-                customUntil = "";
-            }
-
-            if (editingTargetId) {
-                const targetExpense = expenses.find(e => e.id === editingTargetId);
-                if (!targetExpense) return;
-
-                if (targetExpense.recur === 0 && recur === 0) {
-                    targetExpense.name = name;
-                    targetExpense.cost = costVal;
-                    targetExpense.month = monthTarget;
-                    saveStateToLocalStorage();
-                } else {
-                    const choice = await presentCustomChoicePrompt("Apply changes to current month item instance only, or cascade adjustments across entire template configuration series onwards?", "Current Only", "All (Series Cascade)");
-                    if (choice === 'left') {
-                        targetExpense.name = name;
-                        targetExpense.cost = costVal;
-                        targetExpense.isEdited = true;
-                        saveStateToLocalStorage();
-                    } else if (choice === 'right') {
-                        let tpl = templates.find(t => t.seriesId === targetExpense.seriesId);
-                        if (!tpl) {
-                            tpl = { seriesId: targetExpense.seriesId, startMonth: targetExpense.month };
-                            templates.push(tpl);
-                        }
-                        tpl.name = name;
-                        tpl.cost = costVal;
-                        tpl.recur = recur;
-                        tpl.endType = endType;
-                        tpl.durationLimit = customUntil;
-
-                        const matchingInstancesForward = expenses.filter(e => e.seriesId === targetExpense.seriesId && e.month >= targetExpense.month);
-                        for (const instance of matchingInstancesForward) {
-                            if (instance.isEdited) {
-                                const overrideDecision = await presentInteractiveOverrideReview(instance.month, instance.name, instance.cost, name, costVal);
-                                if (overrideDecision === 'overwrite') {
-                                    instance.name = name;
-                                    instance.cost = costVal;
-                                    instance.recur = recur;
-                                    instance.isEdited = false;
-                                }
-                            } else {
-                                instance.name = name;
-                                instance.cost = costVal;
-                                instance.recur = recur;
-                            }
-                        }
-                        
-                        expenses = expenses.filter(e => !(e.seriesId === targetExpense.seriesId && e.month > targetExpense.month && !shouldTemplateGenerateInstance(tpl, e.month)));
-                        saveStateToLocalStorage();
-                    }
+            if (id) {
+                title.textContent = 'Επεξεργασία Υποχρέωσης';
+                const item = expenseDatabase.find(x => x.id === id);
+                if (item) {
+                    document.getElementById('fieldExpenseId').value = item.id;
+                    document.getElementById('fieldTitle').value = item.title;
+                    document.getElementById('fieldAmount').value = item.amount;
+                    document.getElementById('fieldCategory').value = item.category;
+                    document.getElementById('fieldTargetMonth').value = item.month;
+                    document.getElementById('fieldDueDay').value = item.dueDay || '';
+                    document.getElementById('fieldNotes').value = item.notes || '';
+                    document.getElementById('fieldIsRecurring').checked = !!item.isRecurring;
                 }
             } else {
-                if (recur === 0) {
-                    expenses.push({
-                        id: 'exp_' + Math.random().toString(36).substr(2, 9),
-                        seriesId: 'static_' + Math.random().toString(36).substr(2, 9),
-                        name: name,
-                        cost: costVal,
-                        month: monthTarget,
-                        recur: 0,
-                        status: 'unpaid',
-                        originMonth: monthTarget,
-                        originated: monthTarget,
-                        isEdited: false
-                    });
-                    saveStateToLocalStorage();
-                } else {
-                    const newSeriesId = 'series_' + Date.now();
-                    const newTemplate = {
-                        seriesId: newSeriesId,
-                        name: name,
-                        cost: costVal,
-                        recur: recur,
-                        startMonth: monthTarget,
-                        endType: endType,
-                        durationLimit: customUntil
+                title.textContent = 'Προσθήκη Υποχρέωσης';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeFormModal() {
+            document.getElementById('expenseFormModal').classList.add('hidden');
+        }
+
+        /* Create / Edit Logic */
+        function processFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('fieldExpenseId').value;
+            const title = document.getElementById('fieldTitle').value.trim();
+            const amount = parseFloat(document.getElementById('fieldAmount').value) || 0;
+            const category = document.getElementById('fieldCategory').value;
+            const month = document.getElementById('fieldTargetMonth').value;
+            const dueDay = document.getElementById('fieldDueDay').value ? parseInt(document.getElementById('fieldDueDay').value) : null;
+            const notes = document.getElementById('fieldNotes').value.trim();
+            const isRecurring = document.getElementById('fieldIsRecurring').checked;
+
+            if (id) {
+                const idx = expenseDatabase.findIndex(x => x.id === id);
+                if (idx !== -1) {
+                    expenseDatabase[idx] = {
+                        ...expenseDatabase[idx],
+                        title, amount, category, month, dueDay, notes, isRecurring
                     };
-                    templates.push(newTemplate);
-
-                    const viewIndex = monthsRange.indexOf(filterSelect.value);
-                    const startIndex = monthsRange.indexOf(monthTarget);
-                    const topLimit = Math.max(viewIndex, startIndex);
-
-                    for (let i = startIndex; i <= topLimit; i++) {
-                        if (i < 0) continue;
-                        let mStr = monthsRange[i];
-                        if (shouldTemplateGenerateInstance(newTemplate, mStr)) {
-                            expenses.push({
-                                id: 'exp_' + Math.random().toString(36).substr(2, 9),
-                                seriesId: newSeriesId,
-                                name: name,
-                                cost: costVal,
-                                month: mStr,
-                                recur: recur,
-                                status: 'unpaid',
-                                originMonth: mStr,
-                                originated: mStr,
-                                isEdited: false
-                            });
-                        }
-                    }
-                    saveStateToLocalStorage();
-                }
-            }
-
-            closeFormDisplay();
-            ensureSequencePopulatedUpToMonth(filterSelect.value);
-            detectAndTriggerArrearsLogic();
-            render();
-            await silentlyExecuteCloudSyncEngineCheck();
-        }
-
-        async function togglePaid(id) {
-            const exp = expenses.find(e => e.id === id);
-            if (!exp) return;
-            exp.status = (exp.status === 'unpaid') ? 'paid' : 'unpaid';
-            saveStateToLocalStorage();
-            detectAndTriggerArrearsLogic();
-            render();
-            await silentlyExecuteCloudSyncEngineCheck();
-        }
-
-        async function moveNextMonth(id) {
-            const exp = expenses.find(e => e.id === id);
-            if (!exp) return;
-
-            const currentIndex = monthsRange.indexOf(exp.month);
-            if (currentIndex === -1 || currentIndex >= monthsRange.length - 1) {
-                alert("Cannot shift records past active planning buffers.");
-                return;
-            }
-            
-            // Preserve original month before moving if not set
-            if (!exp.originMonth && !exp.originated) {
-                exp.originMonth = exp.month;
-                exp.originated = exp.month;
-            }
-
-            const nextMonthStr = monthsRange[currentIndex + 1];
-            exp.month = nextMonthStr;
-            
-            saveStateToLocalStorage();
-            ensureSequencePopulatedUpToMonth(filterSelect.value);
-            detectAndTriggerArrearsLogic();
-            render();
-            await silentlyExecuteCloudSyncEngineCheck();
-        }
-
-        async function movePreviousMonth(id) {
-            const exp = expenses.find(e => e.id === id);
-            if (!exp) return;
-
-            const baseOrigin = exp.originMonth || exp.originated || currentSystemMonth;
-            if (exp.month <= baseOrigin) {
-                return;
-            }
-
-            const currentIndex = monthsRange.indexOf(exp.month);
-            if (currentIndex === -1 || currentIndex <= 0) {
-                alert("Cannot push records into past historical ranges.");
-                return;
-            }
-
-            const prevMonthStr = monthsRange[currentIndex - 1];
-            exp.month = prevMonthStr;
-
-            saveStateToLocalStorage();
-            detectAndTriggerArrearsLogic();
-            render();
-            await silentlyExecuteCloudSyncEngineCheck();
-        }
-
-        async function deleteExpense(id) {
-            const exp = expenses.find(e => e.id === id);
-            if (!exp) return;
-
-            if (exp.recur === 0) {
-                if (confirm(`Remove custom one-time item "${exp.name}" entirely?`)) {
-                    expenses = expenses.filter(e => e.id !== id);
-                    saveStateToLocalStorage();
                 }
             } else {
-                const decision = await presentThreeWayDeleteCrossroads();
-                if (decision === 'current') {
-                    // Record the deletion in the parent template so auto-population skips it
-                    const tpl = templates.find(t => t.seriesId === exp.seriesId);
-                    if (tpl) {
-                        if (!tpl.excludedMonths) tpl.excludedMonths = [];
-                        if (!tpl.excludedMonths.includes(exp.month)) {
-                            tpl.excludedMonths.push(exp.month);
-                        }
-                    }
+                const newItem = {
+                    id: 'exp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                    title,
+                    amount,
+                    category,
+                    month,
+                    dueDay,
+                    notes,
+                    isRecurring,
+                    isPaid: false,
+                    paidDate: null
+                };
+                expenseDatabase.push(newItem);
+            }
 
-                    expenses = expenses.filter(e => e.id !== id);
-                    saveStateToLocalStorage();
-                } else if (decision === 'forward') {
-                    expenses = expenses.filter(e => !(e.seriesId === exp.seriesId && e.month >= exp.month));
-                    templates = templates.filter(t => t.seriesId !== exp.seriesId);
-                    saveStateToLocalStorage();
+            saveLocalDataState();
+            closeFormModal();
+        }
+
+        /* Action Handlers */
+        function togglePaid(id) {
+            const item = expenseDatabase.find(x => x.id === id);
+            if (item) {
+                item.isPaid = !item.isPaid;
+                item.paidDate = item.isPaid ? new Date().toISOString() : null;
+                saveLocalDataState();
+            }
+        }
+
+        function moveNextMonth(id) {
+            const item = expenseDatabase.find(x => x.id === id);
+            if (item) {
+                let [y, m] = item.month.split('-').map(Number);
+                m += 1;
+                if (m > 12) { m = 1; y += 1; }
+                item.month = `${y}-${String(m).padStart(2, '0')}`;
+                saveLocalDataState();
+            }
+        }
+
+        function movePreviousMonth(id) {
+            const item = expenseDatabase.find(x => x.id === id);
+            if (item) {
+                let [y, m] = item.month.split('-').map(Number);
+                m -= 1;
+                if (m < 1) { m = 12; y -= 1; }
+                item.month = `${y}-${String(m).padStart(2, '0')}`;
+                saveLocalDataState();
+            }
+        }
+
+        function deleteExpense(id) {
+            if (confirm('Είστε βέβαιοι για τη διαγραφή αυτής της υποχρέωσης;')) {
+                expenseDatabase = expenseDatabase.filter(x => x.id !== id);
+                saveLocalDataState();
+            }
+        }
+
+        function executeBatchBringArrearsToCurrent() {
+            expenseDatabase.forEach(item => {
+                if (!item.isPaid && item.month < activeDisplayedMonth) {
+                    item.month = activeDisplayedMonth;
                 }
-            }
-            detectAndTriggerArrearsLogic();
-            render();
-            await silentlyExecuteCloudSyncEngineCheck();
+            });
+            saveLocalDataState();
         }
 
-        function toggleGroupCollapse(key) {
-            collapsedGroups[key] = !collapsedGroups[key];
-            localStorage.setItem('household_collapsed_groups', JSON.stringify(collapsedGroups));
-            render();
-        }
-
-        function toggleUtilityDrawer() {
-            const card = document.getElementById('utilityDrawerCard');
-            const arrow = document.getElementById('utilArrow');
-            if (card.style.display === 'block') {
-                card.style.display = 'none';
-                arrow.style.transform = 'rotate(0deg)';
-            } else {
-                card.style.display = 'block';
-                arrow.style.transform = 'rotate(180deg)';
-            }
-        }
-
-        function triggerResetToScratch() {
-            if (confirm("Are you sure you want to clear your local database files completely? All stored configuration profiles will be wiped out.")) {
-                localStorage.clear();
-                expenses = [];
-                templates = [];
-                meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now(), isInitialBlank: true };
-                localStorage.setItem('household_meta', JSON.stringify(meta));
-                location.reload();
-            }
-        }
-
+        /* Offline Backup / Restore */
         function exportToFile() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ meta, templates, expenses }));
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", `rne_database_backup_${filterSelect.value}.txt`);
-            dlAnchorElem.click();
+            const blob = new Blob([JSON.stringify(expenseDatabase, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `rne_tracker_backup_${new Date().toISOString().substring(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
-        function importFromFile(event) {
-            const file = event.target.files[0];
+        function importFromFile(e) {
+            const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function(evt) {
                 try {
-                    const parsed = JSON.parse(e.target.result);
-                    if (parsed.expenses && parsed.templates) {
-                        expenses = parsed.expenses;
-                        templates = parsed.templates;
-                        meta = parsed.meta || { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now(), isInitialBlank: false };
-                        meta.isInitialBlank = false;
-                        saveStateToLocalStorage();
-                        alert("Database configuration state recovered successfully.");
-                        location.reload();
+                    const importedData = JSON.parse(evt.target.result);
+                    if (Array.isArray(importedData)) {
+                        expenseDatabase = importedData;
+                        saveLocalDataState();
+                        alert('Επιτυχής εισαγωγή δεδομένων!');
                     } else {
-                        alert("Malformed data context detected within backup wrapper.");
+                        alert('Μη έγκυρη μορφή αρχείου.');
                     }
                 } catch(err) {
-                    alert("Failure parsing local backup stream asset structural contents.");
+                    alert('Σφάλμα κατά την ανάγνωση του αρχείου JSON.');
                 }
             };
             reader.readAsText(file);
         }
 
-        // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v60)
-        // =========================================================================
+        /* PDF Export Handler */
         function exportToPDF() {
-            const selectEl = document.getElementById('monthViewFilter');
-            if (!selectEl) return;
-            const rawValue = selectEl.value; // e.g., "2026-08"
-            
-            // Exact month/year label resolution from the select box text
-            const reportDateString = selectEl.options[selectEl.selectedIndex].text;
+            const element = document.createElement('div');
+            element.style.padding = '20px';
+            element.style.fontFamily = 'Arial, sans-serif';
 
-            // Build Current Generated Timestamp: "as of DD/MM/YYYY HH:MM"
-            const now = new Date();
-            const pad = (n) => String(n).padStart(2, '0');
-            const liveDateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
-            const liveTimeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-            const asOfTimestampString = `as of ${liveDateStr} ${liveTimeStr}`;
+            let [y, m] = activeDisplayedMonth.split('-');
+            let monthName = MONTH_NAMES_EL[parseInt(m) - 1];
 
-            // Document Title metadata timestamp definition
-            const timestamp = `${String(now.getFullYear()).slice(-2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
-            const originalTitle = document.title;
-            const parsedFileDate = rawValue.replace('-', '_');
-            document.title = `rne_report_${parsedFileDate}-${timestamp}`;
+            const currentMonthItems = expenseDatabase.filter(x => x.month === activeDisplayedMonth);
+            const total = currentMonthItems.reduce((acc, x) => acc + x.amount, 0);
+            const unpaid = currentMonthItems.filter(x => !x.isPaid).reduce((acc, x) => acc + x.amount, 0);
 
-            // Compute Summary Card aggregates
-            const monthFilteredItems = expenses.filter(e => e.month === rawValue);
-            let totalUnpaidSum = 0;
-            let totalOverallSum = 0;
-
-            monthFilteredItems.forEach(e => {
-                const val = parseFloat(e.cost || 0);
-                totalOverallSum += val;
-                if (e.status === 'unpaid') {
-                    totalUnpaidSum += val;
-                }
-            });
-
-            // 1. Generate Clean Document Data Stream HTML
-            let expensesHtml = '';
-            if (monthFilteredItems.length === 0) {
-                expensesHtml = '<p style="text-align: center; color: #666; font-size: 14px; margin-top: 30px;">No records logged for this period.</p>';
-            } else {
-                recurrenceGroupsConfig.forEach((grp) => {
-                    const grpItems = monthFilteredItems.filter(e => {
-                        if (grp.key === 0) return !e.recur || e.recur === 0;
-                        return e.recur === grp.key;
-                    });
-
-                    if (grpItems.length > 0) {
-                        // Category sum tracks ONLY unpaid expenses
-                        const groupUnpaidSum = grpItems.reduce((sum, e) => {
-                            return sum + (e.status === 'unpaid' ? parseFloat(e.cost || 0) : 0);
-                        }, 0);
-
-                        // Define Category Badge appearance state
-                        let groupBadgeHtml = '';
-                        if (groupUnpaidSum === 0) {
-                            groupBadgeHtml = `<span style="background: #dcfce7; color: #16a34a; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 800; border: 1px solid #bbf7d0;">PAID</span>`;
-                        } else {
-                            groupBadgeHtml = `<span style="background: #94a3b8; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700;">€${groupUnpaidSum.toFixed(2)}</span>`;
-                        }
-
-                        expensesHtml += `
-                            <div style="margin-bottom: 22px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #ffffff;">
-                                <div style="background: #e2e8f0; padding: 10px 15px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e1;">
-                                    <span style="color: #334155; text-transform: uppercase; letter-spacing: 0.5px;">${grp.label}</span>
-                                    ${groupBadgeHtml}
-                                </div>
-                                <div>
-                        `;
-
-                        // Sort items so 'unpaid' entries appear first before 'paid' entries
-                        const sortedGrpItems = [...grpItems].sort((a, b) => {
-                            if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
-                            if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
-                            return 0;
-                        });
-
-                        sortedGrpItems.forEach(e => {
-                            const isUnpaid = e.status === 'unpaid';
-                            const itemColor = isUnpaid ? '#dc2626' : '#16a34a';
-                            const costDecorationStyle = isUnpaid ? '' : 'text-decoration: line-through;';
-                            
-                            // Build Badges Container dynamically (Decoupled Checks)
-                            let badgeGroupHtml = '';
-                            
-                            if (e.isEdited) {
-                                badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">EDITED</span>`;
-                            }
-                            
-                            // UNIVERSAL SMART DATE RESOLVER
-                            const rawOrigin = e.originated || e.originatedMonth || e.origin || e.originMonth;
-                            if (rawOrigin) {
-                                let parsedYear = "";
-                                let parsedMonth = "";
-                                const strOrigin = String(rawOrigin).trim();
-
-                                if (strOrigin.includes('/')) {
-                                    const parts = strOrigin.split('/');
-                                    if (parts.length >= 3) {
-                                        parsedMonth = parts[1].padStart(2, '0');
-                                        parsedYear = parts[2].substring(0, 4);
-                                    }
-                                } else if (strOrigin.includes('-')) {
-                                    const parts = strOrigin.split('-');
-                                    if (parts[0].length === 4) {
-                                        parsedYear = parts[0];
-                                        parsedMonth = parts[1].padStart(2, '0');
-                                    }
-                                }
-
-                                if (parsedYear && parsedMonth) {
-                                    const itemOriginKey = `${parsedYear}-${parsedMonth}`;
-                                    if (itemOriginKey !== rawValue && itemOriginKey !== e.month) {
-                                        badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">ORIGINATED: ${parsedMonth}/${parsedYear}</span>`;
-                                    }
-                                }
-                            }
-                            
-                            expensesHtml += `
-                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e5e7eb;">
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: ${itemColor}; flex-shrink: 0;"></span>
-                                        <span style="font-weight: 600; font-size: 14px; color: ${itemColor}; display: inline-flex; align-items: center; flex-wrap: wrap;">
-                                            <span>${e.name}</span>${badgeGroupHtml}
-                                        </span>
-                                    </div>
-                                    <div style="font-weight: 700; font-size: 14px; color: ${itemColor}; ${costDecorationStyle} text-align: right; white-space: nowrap; margin-left: 10px;">€${parseFloat(e.cost || 0).toFixed(2)}</div>
-                                </div>
-                            `;
-                        });
-
-                        expensesHtml += `</div></div>`;
-                    }
-                });
-            }
-
-            // 2. Open isolated window context
-            const printWindow = window.open('', '_blank');
-            if (!printWindow) {
-                alert("Please allow popups to export PDFs.");
-                document.title = originalTitle;
-                return;
-            }
-
-            // 3. Document Stream Transmission Injection
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>${document.title}</title>
-                    <style>
-                        body {
-                            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                            color: #111827;
-                            background: #ffffff;
-                            padding: 20px;
-                            max-width: 650px;
-                            margin: 0 auto;
-                            -webkit-print-color-adjust: exact !important;
-                            print-color-adjust: exact !important;
-                        }
-                        .report-header-container {
-                            border-bottom: 2px solid #e5e7eb;
-                            padding-bottom: 14px;
-                            margin-bottom: 20px;
-                            text-align: center;
-                        }
-                        .report-title-main {
-                            margin: 0;
-                            font-size: 24px;
-                            font-weight: 800;
-                            color: #111827;
-                        }
-                        .report-subtitle-period {
-                            margin: 4px 0 0 0;
-                            font-size: 18px;
-                            font-weight: 600;
-                            color: #4b5563;
-                        }
-                        .summary-grid-layout {
-                            display: grid;
-                            grid-template-columns: 1fr 1fr;
-                            gap: 15px;
-                            margin-bottom: 25px;
-                        }
-                        .summary-card-box {
-                            border: 1px solid #e5e7eb;
-                            padding: 14px;
-                            border-radius: 8px;
-                            text-align: center;
-                            background: #f9fafb;
-                        }
-                        .summary-card-label {
-                            font-size: 11px;
-                            color: #6b7280;
-                            text-transform: uppercase;
-                            font-weight: 700;
-                            letter-spacing: 0.5px;
-                            margin-bottom: 4px;
-                            display: block;
-                        }
-                        .summary-card-value {
-                            font-size: 20px;
-                            font-weight: 800;
-                            color: #111827;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="report-header-container">
-                        <h2 class="report-title-main">RNE Tracker Report</h2>
-                        <div class="report-subtitle-period">${reportDateString}</div>
-                        <div class="report-subtitle-period" style="font-size: 14px; color: #6b7280; font-weight: 500; margin-top: 2px;">${asOfTimestampString}</div>
-                    </div>
-                    
-                    <div class="summary-grid-layout">
-                        <div class="summary-card-box">
-                            <span class="summary-card-label">Total Allocated Expenses</span>
-                            <span class="summary-card-value">€${totalOverallSum.toFixed(2)}</span>
-                        </div>
-                        <div class="summary-card-box">
-                            <span class="summary-card-label">Outstanding Unpaid Arrears</span>
-                            <span class="summary-card-value" style="color: #dc2626;">€${totalUnpaidSum.toFixed(2)}</span>
-                        </div>
-                    </div>
-
-                    <div class="expense-list-wrapper">
-                        ${expensesHtml}
-                    </div>
-
-                    <script>
-                        function executeSecurePrintProcess() {
-                            setTimeout(function() {
-                                window.print();
-                            }, 300);
-                        }
-                        if (document.readyState === 'complete') {
-                            executeSecurePrintProcess();
-                        } else {
-                            window.addEventListener('load', executeSecurePrintProcess);
-                        }
-                    <\/script>
-                </body>
-                </html>
-            `);
-
-            printWindow.document.close();
-            
-            setTimeout(() => {
-                document.title = originalTitle;
-            }, 1000);
-        }
-
-        // ==========================================
-        // GOOGLE DRIVE SYNC PIPELINE ARCHITECTURE LAYER
-        // ==========================================
-        function initializeGoogleIdentityServiceServices() {
-            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-                console.warn("Google API script asset is not fully loaded yet.");
-                return;
-            }
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: GOOGLE_CLIENT_ID,
-                scope: GOOGLE_DRIVE_SCOPE,
-                callback: async (tokenResponse) => {
-                    if (tokenResponse.error) {
-                        updateCloudStatusInterfaceDisplay("☁ Connection Fault");
-                        return;
-                    }
-                    activeAccessToken = tokenResponse.access_token;
-                    localStorage.setItem('gdrive_access_token', activeAccessToken);
-                    updateCloudStatusInterfaceDisplay("☁ Resolving Profile...");
-                    evaluateSignActionBtnVisualState();
-                    await lookupAndSynchronizeCloudBackupStorageState(true);
-                }
-            });
-            
-            const savedToken = localStorage.getItem('gdrive_access_token');
-            if (savedToken) {
-                activeAccessToken = savedToken;
-                evaluateSignActionBtnVisualState();
-                silentlyExecuteCloudSyncEngineCheck();
-            } else {
-                evaluateSignActionBtnVisualState();
-            }
-        }
-
-        function updateCloudStatusInterfaceDisplay(statusTextString) {
-            document.getElementById('cloudStatusLabel').innerText = statusTextString;
-        }
-
-        function evaluateSignActionBtnVisualState() {
-            const actionBtn = document.getElementById('gdriveMainActionBtn');
-            if (activeAccessToken) {
-                actionBtn.innerText = "Sign Out";
-                actionBtn.className = "btn-cloud-discreet btn-cloud-signout";
-            } else {
-                actionBtn.innerText = "Sign In";
-                actionBtn.className = "btn-cloud-discreet btn-cloud-signin";
-            }
-        }
-
-        async function toggleGoogleDriveConnectionState() {
-            if (activeAccessToken) {
-                const confirmed = await presentInteractiveSignOutConfirmation();
-                if (confirmed) {
-                    activeAccessToken = null;
-                    gdriveFileId = null;
-                    localStorage.removeItem('gdrive_access_token');
-                    updateCloudStatusInterfaceDisplay("☁ Cloud Offline");
-                    evaluateSignActionBtnVisualState();
-                }
-            } else {
-                if (!tokenClient) {
-                    alert("Google Interface components are initialize-pending.");
-                    return;
-                }
-                tokenClient.requestAccessToken({ prompt: 'consent' });
-            }
-        }
-
-        async function silentlyExecuteCloudSyncEngineCheck() {
-            if (!activeAccessToken) return;
-            await lookupAndSynchronizeCloudBackupStorageState(false);
-        }
-
-        async function lookupAndSynchronizeCloudBackupStorageState(triggerUserPromptDialog = false) {
-            try {
-                let response = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, {
-                    headers: { 'Authorization': `Bearer ${activeAccessToken}` }
-                });
-                let result = await response.json();
+            element.innerHTML = `
+                <h1 style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">Αναφορά Υποχρεώσεων - ${monthName} ${y}</h1>
+                <p style="font-size: 12px; margin-bottom: 15px; color: #555;">Εκδόθηκε στις: ${new Date().toLocaleDateString('el-GR')}</p>
                 
-                if (result.error) {
-                    if (result.error.status === 'UNAUTHENTICATED' || result.error.code === 401) {
-                        activeAccessToken = null;
-                        gdriveFileId = null;
-                        localStorage.removeItem('gdrive_access_token');
-                        updateCloudStatusInterfaceDisplay("☁ Session Terminated");
-                        evaluateSignActionBtnVisualState();
-                    }
-                    return;
-                }
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: left; font-size: 12px;">
+                    <thead>
+                        <tr style="background-color: #f2f2f2; border-bottom: 2px solid #ccc;">
+                            <th style="padding: 8px;">Τίτλος</th>
+                            <th style="padding: 8px;">Κατηγορία</th>
+                            <th style="padding: 8px;">Ημ. Λήξης</th>
+                            <th style="padding: 8px;">Κατάσταση</th>
+                            <th style="padding: 8px; text-align: right;">Ποσό (€)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${currentMonthItems.map(item => `
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 8px;">${item.title}</td>
+                                <td style="padding: 8px;">${item.category}</td>
+                                <td style="padding: 8px;">${item.dueDay ? item.dueDay + '/' + m : '-'}</td>
+                                <td style="padding: 8px;">${item.isPaid ? 'Εξοφλήθη' : 'Εκκρεμεί'}</td>
+                                <td style="padding: 8px; text-align: right;">€${item.amount.toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
 
-                if (result.files && result.files.length > 0) {
-                    gdriveFileId = result.files[0].id;
-                    await checkTimelineMetricsAgainstCloudTarget(gdriveFileId, triggerUserPromptDialog);
-                } else {
-                    updateCloudStatusInterfaceDisplay("☁ Initializing Sync...");
-                    await performCloudWriteExecutionSequence(true);
-                }
-            } catch (err) {
-                updateCloudStatusInterfaceDisplay("☁ Cloud Offline");
-            }
-        }
+                <div style="text-align: right; font-size: 14px;">
+                    <p><strong>Σύνολο Μήνα:</strong> €${total.toFixed(2)}</p>
+                    <p style="color: ${unpaid > 0 ? '#dc2626' : '#2e7d32'};"><strong>Ανεξόφλητο Υπόλοιπο:</strong> €${unpaid.toFixed(2)}</p>
+                </div>
+            `;
 
-        async function checkTimelineMetricsAgainstCloudTarget(fileId, triggerUserPromptDialog) {
-            try {
-                let response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-                    headers: { 'Authorization': `Bearer ${activeAccessToken}` }
-                });
-                let cloudData = await response.json();
-
-                if (meta.isInitialBlank === true || (expenses.length === 0 && templates.length === 0)) {
-                    console.log("Blank environment lifecycle profile found. Syncing from cloud...");
-                    await performCloudPullExtractionSequence(cloudData);
-                    return;
-                }
-
-                const localStamp = meta.lastUpdated || 0;
-                const cloudStamp = (cloudData.meta && cloudData.meta.lastUpdated) ? cloudData.meta.lastUpdated : 0;
-
-                const localDateStr = localStamp ? new Date(localStamp).toLocaleString() : 'Never';
-                const cloudDateStr = cloudStamp ? new Date(cloudStamp).toLocaleString() : 'Never';
-
-                if (localStamp === cloudStamp) {
-                    updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
-                    if (triggerUserPromptDialog) {
-                        await presentCloudSyncCrossroadsPrompt('match', "Your local cache database timeline perfectly matches the Cloud asset baseline storage.", localDateStr, cloudDateStr);
-                    }
-                } else if (cloudStamp > localStamp) {
-                    updateCloudStatusInterfaceDisplay("☁ Update Available");
-                    if (triggerUserPromptDialog) {
-                        const decision = await presentCloudSyncCrossroadsPrompt('cloud-newer', "The backup copy on Google Drive is newer than your current local browser instance.", localDateStr, cloudDateStr);
-                        if (decision === 'pull') await performCloudPullExtractionSequence(cloudData);
-                        else if (decision === 'push') await performCloudWriteExecutionSequence(false);
-                    }
-                } else {
-                    updateCloudStatusInterfaceDisplay("☁ Local Changes Pending");
-                    if (triggerUserPromptDialog) {
-                        const decision = await presentCloudSyncCrossroadsPrompt('local-newer', "Your current browser state contains changes that are newer than the active cloud backup file.", localDateStr, cloudDateStr);
-                        if (decision === 'push') await performCloudWriteExecutionSequence(false);
-                        else if (decision === 'pull') await performCloudPullExtractionSequence(cloudData);
-                    }
-                }
-            } catch(e) {
-                updateCloudStatusInterfaceDisplay("☁ Timeline Error");
-            }
-        }
-
-        async function manuallyTriggerCloudBackup() {
-            if (!activeAccessToken) {
-                updateCloudStatusInterfaceDisplay("☁ Access Token Missing");
-                return;
-            }
-            updateCloudStatusInterfaceDisplay("☁ Fetching State...");
-            try {
-                if (!gdriveFileId) {
-                    let response = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, { 
-                        headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-                    });
-                    let result = await response.json();
-                    if (result.files && result.files.length > 0) {
-                        gdriveFileId = result.files[0].id;
-                    }
-                }
-                
-                let cloudDb = null;
-                if (gdriveFileId) {
-                    let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, { 
-                        headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-                    });
-                    if (response.ok) {
-                        cloudDb = await response.json();
-                    }
-                }
-
-                let localMeta = { lastUpdated: 0 };
-                try {
-                    const rawMeta = localStorage.getItem('household_meta');
-                    if (rawMeta) {
-                        localMeta = JSON.parse(rawMeta) || { lastUpdated: 0 };
-                    }
-                } catch (e) {
-                    console.warn("Local metadata missing, defaulting.", e);
-                }
-
-                const localUpdateTimestamp = localMeta && localMeta.lastUpdated ? localMeta.lastUpdated : 0;
-                const cloudUpdateTimestamp = (cloudDb && cloudDb.meta) ? (cloudDb.meta.lastUpdated || 0) : 0;
-
-                const localDateStr = localUpdateTimestamp ? new Date(localUpdateTimestamp).toLocaleString() : "Never (Empty Local Cache)";
-                const cloudDateStr = cloudUpdateTimestamp ? new Date(cloudUpdateTimestamp).toLocaleString() : "Empty Cloud Storage";
-
-                let syncState = 'match';
-                let statusHeadline = '<span style="color: #d4af37; font-weight: bold;">Your offline storage is perfectly matching cloud copies.</span>';
-                
-                if (!cloudDb && localUpdateTimestamp === 0) {
-                    syncState = 'match';
-                    statusHeadline = 'Both local storage and cloud storage are currently uninitialized.';
-                } else if (localUpdateTimestamp > cloudUpdateTimestamp) {
-                    syncState = 'local-newer';
-                    statusHeadline = '<span style="color: #2563eb; font-weight: bold;">Your Local Cache is newer than the Cloud Backup.</span>';
-                } else if (cloudUpdateTimestamp > localUpdateTimestamp) {
-                    syncState = 'cloud-newer';
-                    statusHeadline = '<span style="color: #16a34a; font-weight: bold;">The Cloud Backup is newer than your Local Cache.</span>';
-                } else if (!cloudDb && localUpdateTimestamp > 0) {
-                    syncState = 'local-newer';
-                    statusHeadline = 'No file found in the cloud. Local cache is ready to back up.';
-                }
-
-                const decision = await presentCloudSyncCrossroadsPrompt(syncState, statusHeadline, localDateStr, cloudDateStr);
-                if (decision === 'push') {
-                    await performCloudWriteExecutionSequence();
-                } else if (decision === 'pull') {
-                    await performCloudPullExtractionSequence();
-                }
-            } catch (err) {
-                console.error("Sync Crossroads Failure Details:", err);
-                updateCloudStatusInterfaceDisplay("☁ Dynamic Sync Error");
-            }
-        }
-
-        async function manuallyTriggerCloudRestore() {
-            if (!activeAccessToken) {
-                updateCloudStatusInterfaceDisplay("☁ Access Token Missing");
-                return;
-            }
-            await manuallyTriggerCloudBackup();
-        }
-
-        async function performCloudPullExtractionSequence() {
-            if (!activeAccessToken) return;
-            updateCloudStatusInterfaceDisplay("☁ Downloading...");
-
-            try {
-                if (!gdriveFileId) {
-                    let fileSearchResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, { 
-                        headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-                    });
-                    let searchResult = await fileSearchResponse.json();
-                    if (searchResult.files && searchResult.files.length > 0) {
-                        gdriveFileId = searchResult.files[0].id;
-                    }
-                }
-
-                if (!gdriveFileId) {
-                    updateCloudStatusInterfaceDisplay("☁ Cloud File Missing");
-                    return;
-                }
-
-                let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, { 
-                    headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-                });
-
-                if (response.ok) {
-                    let cloudDb = await response.json();
-                    if (cloudDb) {
-                        localStorage.setItem('household_expenses', JSON.stringify(cloudDb.expenses || []));
-                        localStorage.setItem('household_templates', JSON.stringify(cloudDb.templates || []));
-                        localStorage.setItem('household_meta', JSON.stringify(cloudDb.meta || { lastUpdated: Date.now() }));
-                        updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
-                        location.reload();
-                    }
-                } else {
-                    updateCloudStatusInterfaceDisplay("☁ Extract Action Failed");
-                }
-            } catch (err) {
-                console.error("Cloud Pull Stack Error:", err);
-                updateCloudStatusInterfaceDisplay("☁ Extract Action Failed");
-            }
-        }
-
-        async function performCloudWriteExecutionSequence(isInitialInstantiation = false) {
-            if (!activeAccessToken) return;
-            updateCloudStatusInterfaceDisplay("☁ Synchronizing...");
-
-            meta.lastUpdated = Date.now();
-            saveStateToLocalStorage();
-
-            const payload = {
-                expenses: JSON.parse(localStorage.getItem('household_expenses')) || [],
-                templates: JSON.parse(localStorage.getItem('household_templates')) || [],
-                meta: JSON.parse(localStorage.getItem('household_meta')) || { lastUpdated: Date.now() }
+            const opt = {
+                margin:       0.5,
+                filename:     `rne_report_${activeDisplayedMonth}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
 
-            try {
-                let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-                let method = 'POST';
+            html2pdf().set(opt).from(element).save();
+        }
 
-                if (gdriveFileId) {
-                    url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`;
-                    method = 'PATCH';
-                }
+        /* Google Drive Integration Stubs */
+        function initializeGoogleDriveClient() {
+            if (typeof google !== 'undefined' && google.accounts) {
+                googleTokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: DRIVE_SCOPES,
+                    callback: (tokenResponse) => {
+                        if (tokenResponse.access_token) {
+                            googleAccessToken = tokenResponse.access_token;
+                            document.getElementById('cloudSyncBtn').disabled = false;
+                            document.getElementById('cloudSyncBtn').classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                            document.getElementById('cloudSyncBtn').classList.add('bg-blue-600', 'hover:bg-blue-700', 'text-white');
+                            
+                            document.getElementById('cloudPullBtn').disabled = false;
+                            document.getElementById('cloudPullBtn').classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                            document.getElementById('cloudPullBtn').classList.add('bg-green-600', 'hover:bg-green-700', 'text-white');
 
-                const metadata = {
-                    name: DEDICATED_FILE_NAME,
-                    mimeType: 'application/json'
-                };
-
-                const boundary = '32626_v60_boundary_sync';
-                const delimiter = `\r\n--${boundary}\r\n`;
-                const closeDelimiter = `\r\n--${boundary}--`;
-
-                let body = delimiter +
-                    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-                    JSON.stringify(metadata) +
-                    delimiter +
-                    'Content-Type: application/json\r\n\r\n' +
-                    JSON.stringify(payload) +
-                    closeDelimiter;
-
-                let response = await fetch(url, {
-                    method: method,
-                    headers: {
-                        'Authorization': `Bearer ${activeAccessToken}`,
-                        'Content-Type': `multipart/related; boundary=${boundary}`
+                            document.getElementById('googleAuthBtnText').textContent = 'Συνδέθηκε';
+                            document.getElementById('syncStatusIndicatorDot').className = 'h-2 w-2 rounded-full bg-green-500';
+                            document.getElementById('syncStatusMessageText').textContent = 'Google Drive Συνδεδεμένο';
+                        }
                     },
-                    body: body
                 });
-
-                if (response.ok) {
-                    let resData = await response.json();
-                    if (resData.id) gdriveFileId = resData.id;
-                    updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
-                } else {
-                    updateCloudStatusInterfaceDisplay("☁ Write Action Failed");
-                }
-            } catch (err) {
-                console.error("Cloud Write Stack Error:", err);
-                updateCloudStatusInterfaceDisplay("☁ Write Action Failed");
             }
         }
 
-        // ==========================================
-        // DYNAMIC DOM RENDERING PIPELINE CONTROLLER
-        // ==========================================
+        function handleAuthClick() {
+            if (googleTokenClient) {
+                googleTokenClient.requestAccessToken({ prompt: 'consent' });
+            } else {
+                alert('Το Google Client ID δεν έχει ρυθμιστεί ακόμα.');
+            }
+        }
+
+        function performCloudWriteExecutionSequence() {
+            if (!googleAccessToken) return;
+            alert('Έναρξη συγχρονισμού με το Google Drive...');
+            // Cloud push logic implementation...
+        }
+
+        function performCloudPullExtractionSequence() {
+            if (!googleAccessToken) return;
+            alert('Λήψη δεδομένων από το Google Drive...');
+            // Cloud pull logic implementation...
+        }
+
+        /* Core Application UI Rendering */
         function render() {
-            const activeMonth = filterSelect.value;
-            const container = document.getElementById('listContainer');
+            // 1. Render Current Month Header
+            let [y, m] = activeDisplayedMonth.split('-');
+            let monthName = MONTH_NAMES_EL[parseInt(m) - 1];
+            document.getElementById('currentMonthYearDisplay').textContent = `${monthName} ${y}`;
+
+            // 2. Filter Current Month Data
+            const currentItems = expenseDatabase.filter(x => x.month === activeDisplayedMonth);
+
+            // 3. Process Monthly Unpaid Summary Calculations
+            const monthTotal = currentItems.reduce((sum, item) => sum + item.amount, 0);
+            const monthUnpaid = currentItems.filter(item => !item.isPaid).reduce((sum, item) => sum + item.amount, 0);
+
+            const unpaidBannerEl = document.getElementById('monthlyUnpaidAmountDisplay');
+            unpaidBannerEl.textContent = `€${monthUnpaid.toFixed(2)} / €${monthTotal.toFixed(2)}`;
+
+            if (monthUnpaid === 0) {
+                unpaidBannerEl.style.color = '#2e7d32'; // Green when paid off completely
+            } else {
+                unpaidBannerEl.style.color = ''; // Default theme text color when unpaid balance remains
+            }
+
+            // 4. Arrears Banner Logic
+            const overdueItems = expenseDatabase.filter(x => !x.isPaid && x.month < activeDisplayedMonth);
+            const arrearsBanner = document.getElementById('arrearsAlertBanner');
+            if (overdueItems.length > 0) {
+                const arrearsTotal = overdueItems.reduce((acc, item) => acc + item.amount, 0);
+                document.getElementById('arrearsSummaryText').textContent = `Υπάρχουν ${overdueItems.length} ανεξόφλητες υποχρεώσεις από προηγούμενους μήνες (Σύνολο: €${arrearsTotal.toFixed(2)}).`;
+                arrearsBanner.classList.remove('hidden');
+            } else {
+                arrearsBanner.classList.add('hidden');
+            }
+
+            // 5. Categorized Expense Lists Rendering
+            const categories = [
+                "Σπίτι / Λογαριασμοί",
+                "Δάνεια / Κάρτες",
+                "Συνδρομές / Υπηρεσίες",
+                "Ασφάλειες / Φόροι",
+                "Διάφορα"
+            ];
+
+            const container = document.getElementById('expenseCategoryListContainer');
             container.innerHTML = '';
 
-            const currentFilteredList = expenses.filter(e => e.month === activeMonth);
+            categories.forEach(cat => {
+                const catItems = currentItems.filter(x => x.category === cat);
+                if (catItems.length === 0) return;
 
-            let calculatedUnpaidTotalValue = 0;
-            currentFilteredList.forEach(e => {
-                if (e.status === 'unpaid') {
-                    calculatedUnpaidTotalValue += parseFloat(e.cost || 0);
-                }
-            });
-            document.getElementById('totalUnpaid').innerText = `€${calculatedUnpaidTotalValue.toFixed(2)}`;
+                // Category Metrics Logic
+                const catTotal = catItems.reduce((acc, x) => acc + x.amount, 0);
+                const catUnpaid = catItems.filter(x => !x.isPaid).reduce((acc, x) => acc + x.amount, 0);
 
-            recurrenceGroupsConfig.forEach(groupConfig => {
-                const subsetItems = currentFilteredList.filter(e => e.recur === groupConfig.key);
-                
-                if (subsetItems.length === 0) return;
+                // Category Title Badge Text Logic
+                let badgeText = '';
+                let badgeClass = '';
 
-                // SORT: Unpaid expenses first, Paid expenses last
-                subsetItems.sort((a, b) => {
-                    if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
-                    if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
-                    return 0;
-                });
-                
-                const groupContainer = document.createElement('div');
-                groupContainer.className = "group-container";
-
-                let unpaidSum = 0;
-                let paidCount = 0;
-                subsetItems.forEach(e => {
-                    if (e.status === 'unpaid') unpaidSum += parseFloat(e.cost || 0);
-                    else paidCount++;
-                });
-
-                const isCollapsed = collapsedGroups[groupConfig.key] || false;
-
-                const headerDiv = document.createElement('div');
-                headerDiv.className = "group-header";
-                headerDiv.onclick = () => toggleGroupCollapse(groupConfig.key);
-
-                const titleSpan = document.createElement('div');
-                titleSpan.className = "group-header-title";
-                titleSpan.innerHTML = `<span>${isCollapsed ? '▶' : '▼'}</span> <span>${groupConfig.label}</span>`;
-                headerDiv.appendChild(titleSpan);
-
-                const badgesDiv = document.createElement('div');
-                badgesDiv.className = "group-badges-container";
-
-                const costBadge = document.createElement('span');
-                if (unpaidSum > 0) {
-                    costBadge.className = "group-unpaid-cost has-unpaid";
-                    costBadge.innerText = `€${unpaidSum.toFixed(2)}`;
+                if (catUnpaid === 0) {
+                    badgeText = `✓ Paid / €${catTotal.toFixed(2)}`;
+                    badgeClass = 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300';
                 } else {
-                    costBadge.className = "group-unpaid-cost all-paid";
-                    costBadge.innerText = "✓ Paid";
+                    badgeText = `€${catUnpaid.toFixed(2)} / €${catTotal.toFixed(2)}`;
+                    badgeClass = 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300';
                 }
-                badgesDiv.appendChild(costBadge);
 
-                const countBadge = document.createElement('span');
-                countBadge.className = "group-badge";
-                countBadge.innerText = `${paidCount}/${subsetItems.length}`;
-                badgesDiv.appendChild(countBadge);
+                // Card Wrapper Node
+                const card = document.createElement('div');
+                card.className = 'bg-white dark-banner rounded-xl border border-gray-200 shadow-sm overflow-hidden';
 
-                headerDiv.appendChild(badgesDiv);
-                groupContainer.appendChild(headerDiv);
+                let cardHTML = `
+                    <div class="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="font-bold text-gray-700 text-sm tracking-wide">${cat}</h3>
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${badgeClass}">${badgeText}</span>
+                    </div>
+                    <div class="divide-y divide-gray-100">
+                `;
 
-                if (!isCollapsed) {
-                    const groupContent = document.createElement('div');
-                    groupContent.className = "group-content";
+                catItems.forEach(item => {
+                    const isPaidClass = item.isPaid ? 'line-through text-gray-400' : 'text-gray-800';
+                    const bgPaidClass = item.isPaid ? 'bg-gray-50/50' : '';
 
-                    subsetItems.forEach(e => {
-                        const itemDiv = document.createElement('div');
-                        itemDiv.className = `expense-item ${e.status}`;
-
-                        // Decoupled badge rendering
-                        let badgeHtml = e.isEdited ? `<span class="badge-edited">Custom</span>` : '';
-                        
-                        let originLabelHtml = '';
-                        const originVal = e.originated || e.originMonth || e.origin;
-                        if (originVal && originVal !== activeMonth) {
-                            originLabelHtml = `<div class="origin-label">${formatPrettyOriginLabel(originVal)}</div>`;
-                        }
-
-                        let untilLabelText = formatPrettyUntilLabel(e.seriesId);
-                        let untilLabelHtml = untilLabelText ? `<div class="origin-label" style="color:var(--primary); border-color:var(--primary);">${untilLabelText}</div>` : '';
-
-                        // Move-left boundary condition check (Option B: Hide move back button entirely when not allowed)
-                        const baseOrigin = e.originMonth || e.originated || e.month;
-                        const canMoveBack = (e.month > baseOrigin && e.month > currentSystemMonth);
-
-                        let moveBackBtnHtml = '';
-                        if (canMoveBack) {
-                            moveBackBtnHtml = `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);">➔</button>`;
-                        }
-
-                        itemDiv.innerHTML = `
-                            <div class="info">
-                                <div class="name-wrapper">
-                                    <span class="name">${e.name}</span>
-                                    ${badgeHtml}
-                                </div>
-                                <div class="cost-row">
-                                    <span class="cost">€${parseFloat(e.cost || 0).toFixed(2)}</span>
-                                    ${originLabelHtml}
-                                    ${untilLabelHtml}
+                    cardHTML += `
+                        <div class="p-3 sm:p-4 flex items-center justify-between hover:bg-gray-50/80 transition ${bgPaidClass}">
+                            <div class="flex items-center space-x-3">
+                                <input type="checkbox" ${item.isPaid ? 'checked' : ''} onchange="togglePaid('${item.id}')" class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer">
+                                <div>
+                                    <div class="font-semibold text-sm ${isPaidClass}">${item.title}</div>
+                                    <div class="flex items-center space-x-2 text-xs text-gray-500 mt-0.5">
+                                        ${item.dueDay ? `<span><i class="fa-regular fa-calendar text-gray-400"></i> ${item.dueDay}/${m}</span>` : ''}
+                                        ${item.isRecurring ? `<span class="text-blue-500" title="Επαναλαμβανόμενο"><i class="fa-solid fa-repeat"></i></span>` : ''}
+                                        ${item.notes ? `<span class="text-gray-400" title="${item.notes}"><i class="fa-regular fa-note-sticky"></i></span>` : ''}
+                                    </div>
                                 </div>
                             </div>
-                            <div class="actions">
-                                ${moveBackBtnHtml}
-                                ${e.status === 'unpaid' ? `
-                                    <button class="btn-action btn-move" onclick="moveNextMonth('${e.id}')">➔</button>
-                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
-                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">✓</button>
-                                ` : `
-                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
-                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">↩</button>
-                                `}
-                                <button class="btn-action btn-delete" onclick="deleteExpense('${e.id}')">✕</button>
+
+                            <div class="flex items-center space-x-3">
+                                <div class="text-right">
+                                    <div class="font-bold text-sm ${item.isPaid ? 'text-gray-400' : 'text-gray-900'}">€${item.amount.toFixed(2)}</div>
+                                </div>
+                                <div class="flex items-center space-x-1">
+                                    <button onclick="movePreviousMonth('${item.id}')" class="p-1 text-gray-400 hover:text-blue-600 transition" title="Μεταφορά στον Προηγούμενο Μήνα">
+                                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                                    </button>
+                                    <button onclick="moveNextMonth('${item.id}')" class="p-1 text-gray-400 hover:text-blue-600 transition" title="Μεταφορά στον Επόμενο Μήνα">
+                                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                                    </button>
+                                    <button onclick="openFormModal('${item.id}')" class="p-1 text-gray-400 hover:text-amber-600 transition" title="Επεξεργασία">
+                                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                    </button>
+                                    <button onclick="deleteExpense('${item.id}')" class="p-1 text-gray-400 hover:text-red-600 transition" title="Διαγραφή">
+                                        <i class="fa-solid fa-trash-can text-xs"></i>
+                                    </button>
+                                </div>
                             </div>
-                        `;
-                        groupContent.appendChild(itemDiv);
-                    });
-                    groupContainer.appendChild(groupContent);
-                }
-                container.appendChild(groupContainer);
+                        </div>
+                    `;
+                });
+
+                cardHTML += `</div>`;
+                card.innerHTML = cardHTML;
+                container.appendChild(card);
             });
+
+            if (currentItems.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-white dark-banner rounded-xl border border-gray-200">
+                        <i class="fa-solid fa-receipt text-4xl text-gray-300 mb-2"></i>
+                        <p class="text-gray-500 text-sm font-medium">Δεν υπάρχουν καταχωρημένες υποχρεώσεις για αυτόν τον μήνα.</p>
+                    </div>
+                `;
+            }
         }
     </script>
 </body>
