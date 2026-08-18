@@ -271,12 +271,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v59</div>
+    <div class="version-watermark">RNE Tracker • v60</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260817_v59
+        // VERSION TRACKER REFERENCE: 260818_v60
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -665,55 +665,51 @@
             await silentlyExecuteCloudSyncEngineCheck();
         }
 
+        function ensureSequencePopulatedUpToMonth(targetMonthStr) {
+            if (!Array.isArray(templates) || templates.length === 0) return;
 
-function ensureSequencePopulatedUpToMonth(targetMonthStr) {
-    if (!Array.isArray(templates) || templates.length === 0) return;
+            let hasChanges = false;
 
-    let hasChanges = false;
+            templates.forEach(tpl => {
+                if (!tpl || !tpl.seriesId) return;
 
-    templates.forEach(tpl => {
-        if (!tpl || !tpl.seriesId) return;
+                if (shouldTemplateGenerateInstance(tpl, targetMonthStr)) {
+                    // Check if an instance originating from targetMonthStr already exists anywhere in expenses
+                    const exists = expenses.some(e => 
+                        e.seriesId === tpl.seriesId && 
+                        (e.originMonth === targetMonthStr || e.originated === targetMonthStr || (!e.originMonth && !e.originated && e.month === targetMonthStr))
+                    );
 
-        if (shouldTemplateGenerateInstance(tpl, targetMonthStr)) {
-            // Check if an instance originating from targetMonthStr already exists anywhere in expenses
-            const exists = expenses.some(e => 
-                e.seriesId === tpl.seriesId && 
-                (e.originMonth === targetMonthStr || e.originated === targetMonthStr || (!e.originMonth && !e.originated && e.month === targetMonthStr))
-            );
+                    if (!exists) {
+                        const newExpense = {
+                            id: 'exp_' + Math.random().toString(36).substr(2, 9),
+                            seriesId: tpl.seriesId,
+                            name: tpl.name || 'Untitled Expense',
+                            cost: parseFloat(tpl.cost || 0),
+                            month: targetMonthStr,
+                            recur: tpl.recur || 1,
+                            status: 'unpaid',
+                            originMonth: targetMonthStr,
+                            originated: targetMonthStr,
+                            isEdited: false
+                        };
+                        expenses.push(newExpense);
+                        hasChanges = true;
+                    }
+                }
+            });
 
-            if (!exists) {
-                const newExpense = {
-                    id: 'exp_' + Math.random().toString(36).substr(2, 9),
-                    seriesId: tpl.seriesId,
-                    name: tpl.name || 'Untitled Expense',
-                    cost: parseFloat(tpl.cost || 0),
-                    month: targetMonthStr,
-                    recur: tpl.recur || 1,
-                    status: 'unpaid',
-                    originMonth: targetMonthStr,
-                    originated: targetMonthStr,
-                    isEdited: false
-                };
-                expenses.push(newExpense);
-                hasChanges = true;
+            if (hasChanges) {
+                saveStateToLocalStorage();
             }
         }
-    });
-
-    if (hasChanges) {
-        saveStateToLocalStorage();
-    }
-}
-
-
-
 
         function shouldTemplateGenerateInstance(tpl, targetMonthStr) {
             if (!tpl) return false;
-        // Skip generation if this month was explicitly deleted by the user
-    if (Array.isArray(tpl.excludedMonths) && tpl.excludedMonths.includes(targetMonthStr)) {
-        return false;
-    }
+            // Skip generation if this month was explicitly deleted by the user
+            if (Array.isArray(tpl.excludedMonths) && tpl.excludedMonths.includes(targetMonthStr)) {
+                return false;
+            }
             // Fallback: If startMonth is missing, default to the earliest known expense 
             // for this series, or fall back to the current target month.
             let effectiveStartMonth = tpl.startMonth;
@@ -967,57 +963,55 @@ function ensureSequencePopulatedUpToMonth(targetMonthStr) {
             await silentlyExecuteCloudSyncEngineCheck();
         }
 
+        async function moveNextMonth(id) {
+            const exp = expenses.find(e => e.id === id);
+            if (!exp) return;
 
-async function moveNextMonth(id) {
-    const exp = expenses.find(e => e.id === id);
-    if (!exp) return;
+            const currentIndex = monthsRange.indexOf(exp.month);
+            if (currentIndex === -1 || currentIndex >= monthsRange.length - 1) {
+                alert("Cannot shift records past active planning buffers.");
+                return;
+            }
+            
+            // Preserve original month before moving if not set
+            if (!exp.originMonth && !exp.originated) {
+                exp.originMonth = exp.month;
+                exp.originated = exp.month;
+            }
 
-    const currentIndex = monthsRange.indexOf(exp.month);
-    if (currentIndex === -1 || currentIndex >= monthsRange.length - 1) {
-        alert("Cannot shift records past active planning buffers.");
-        return;
-    }
-    
-    // Preserve original month before moving if not set
-    if (!exp.originMonth && !exp.originated) {
-        exp.originMonth = exp.month;
-        exp.originated = exp.month;
-    }
+            const nextMonthStr = monthsRange[currentIndex + 1];
+            exp.month = nextMonthStr;
+            
+            saveStateToLocalStorage();
+            ensureSequencePopulatedUpToMonth(filterSelect.value);
+            detectAndTriggerArrearsLogic();
+            render();
+            await silentlyExecuteCloudSyncEngineCheck();
+        }
 
-    const nextMonthStr = monthsRange[currentIndex + 1];
-    exp.month = nextMonthStr;
-    
-    saveStateToLocalStorage();
-    ensureSequencePopulatedUpToMonth(filterSelect.value);
-    detectAndTriggerArrearsLogic();
-    render();
-    await silentlyExecuteCloudSyncEngineCheck();
-}
+        async function movePreviousMonth(id) {
+            const exp = expenses.find(e => e.id === id);
+            if (!exp) return;
 
-async function movePreviousMonth(id) {
-    const exp = expenses.find(e => e.id === id);
-    if (!exp) return;
+            const baseOrigin = exp.originMonth || exp.originated || currentSystemMonth;
+            if (exp.month <= baseOrigin) {
+                return;
+            }
 
-    const baseOrigin = exp.originMonth || exp.originated || currentSystemMonth;
-    if (exp.month <= baseOrigin) {
-        return;
-    }
+            const currentIndex = monthsRange.indexOf(exp.month);
+            if (currentIndex === -1 || currentIndex <= 0) {
+                alert("Cannot push records into past historical ranges.");
+                return;
+            }
 
-    const currentIndex = monthsRange.indexOf(exp.month);
-    if (currentIndex === -1 || currentIndex <= 0) {
-        alert("Cannot push records into past historical ranges.");
-        return;
-    }
+            const prevMonthStr = monthsRange[currentIndex - 1];
+            exp.month = prevMonthStr;
 
-    const prevMonthStr = monthsRange[currentIndex - 1];
-    exp.month = prevMonthStr;
-
-    saveStateToLocalStorage();
-    detectAndTriggerArrearsLogic();
-    render();
-    await silentlyExecuteCloudSyncEngineCheck();
-}
-
+            saveStateToLocalStorage();
+            detectAndTriggerArrearsLogic();
+            render();
+            await silentlyExecuteCloudSyncEngineCheck();
+        }
 
         async function deleteExpense(id) {
             const exp = expenses.find(e => e.id === id);
@@ -1031,14 +1025,14 @@ async function movePreviousMonth(id) {
             } else {
                 const decision = await presentThreeWayDeleteCrossroads();
                 if (decision === 'current') {
-// Record the deletion in the parent template so auto-population skips it
-    const tpl = templates.find(t => t.seriesId === exp.seriesId);
-    if (tpl) {
-        if (!tpl.excludedMonths) tpl.excludedMonths = [];
-        if (!tpl.excludedMonths.includes(exp.month)) {
-            tpl.excludedMonths.push(exp.month);
-        }
-    }
+                    // Record the deletion in the parent template so auto-population skips it
+                    const tpl = templates.find(t => t.seriesId === exp.seriesId);
+                    if (tpl) {
+                        if (!tpl.excludedMonths) tpl.excludedMonths = [];
+                        if (!tpl.excludedMonths.includes(exp.month)) {
+                            tpl.excludedMonths.push(exp.month);
+                        }
+                    }
 
                     expenses = expenses.filter(e => e.id !== id);
                     saveStateToLocalStorage();
@@ -1116,7 +1110,7 @@ async function movePreviousMonth(id) {
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v59)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v60)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1665,7 +1659,7 @@ async function movePreviousMonth(id) {
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v59_boundary_sync';
+                const boundary = '32626_v60_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
@@ -1812,18 +1806,18 @@ async function movePreviousMonth(id) {
                                     ${untilLabelHtml}
                                 </div>
                             </div>
-<div class="actions">
-    ${moveBackBtnHtml}
-    ${e.status === 'unpaid' ? `
-        <button class="btn-action btn-move" onclick="moveNextMonth('${e.id}')">➔</button>
-        <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
-        <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">✓</button>
-    ` : `
-        <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
-        <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">↩</button>
-    `}
-    <button class="btn-action btn-delete" onclick="deleteExpense('${e.id}')">✕</button>
-</div>
+                            <div class="actions">
+                                ${moveBackBtnHtml}
+                                ${e.status === 'unpaid' ? `
+                                    <button class="btn-action btn-move" onclick="moveNextMonth('${e.id}')">➔</button>
+                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
+                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">✓</button>
+                                ` : `
+                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
+                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">↩</button>
+                                `}
+                                <button class="btn-action btn-delete" onclick="deleteExpense('${e.id}')">✕</button>
+                            </div>
                         `;
                         groupContent.appendChild(itemDiv);
                     });
