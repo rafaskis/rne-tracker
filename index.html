@@ -271,12 +271,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v60</div>
+    <div class="version-watermark">RNE Tracker • v62</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260818_v60
+        // VERSION TRACKER REFERENCE: 260818_v62
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1110,7 +1110,7 @@
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v60)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v62)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1659,7 +1659,7 @@
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v60_boundary_sync';
+                const boundary = '32626_v62_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
@@ -1696,136 +1696,153 @@
         // ==========================================
         // DYNAMIC DOM RENDERING PIPELINE CONTROLLER
         // ==========================================
-        function render() {
-            const activeMonth = filterSelect.value;
-            const container = document.getElementById('listContainer');
-            container.innerHTML = '';
+function render() {
+    const activeMonth = filterSelect.value;
+    const container = document.getElementById('listContainer');
+    container.innerHTML = '';
 
-            const currentFilteredList = expenses.filter(e => e.month === activeMonth);
+    const currentFilteredList = expenses.filter(e => e.month === activeMonth);
 
-            let calculatedUnpaidTotalValue = 0;
-            currentFilteredList.forEach(e => {
-                if (e.status === 'unpaid') {
-                    calculatedUnpaidTotalValue += parseFloat(e.cost || 0);
-                }
-            });
-            document.getElementById('totalUnpaid').innerText = `€${calculatedUnpaidTotalValue.toFixed(2)}`;
+    // 1. Calculate Total Unpaid & Total Monthly Sums
+    let calculatedUnpaidTotalValue = 0;
+    let calculatedMonthTotalValue = 0;
 
-            recurrenceGroupsConfig.forEach(groupConfig => {
-                const subsetItems = currentFilteredList.filter(e => e.recur === groupConfig.key);
-                
-                if (subsetItems.length === 0) return;
-
-                // SORT: Unpaid expenses first, Paid expenses last
-                subsetItems.sort((a, b) => {
-                    if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
-                    if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
-                    return 0;
-                });
-                
-                const groupContainer = document.createElement('div');
-                groupContainer.className = "group-container";
-
-                let unpaidSum = 0;
-                let paidCount = 0;
-                subsetItems.forEach(e => {
-                    if (e.status === 'unpaid') unpaidSum += parseFloat(e.cost || 0);
-                    else paidCount++;
-                });
-
-                const isCollapsed = collapsedGroups[groupConfig.key] || false;
-
-                const headerDiv = document.createElement('div');
-                headerDiv.className = "group-header";
-                headerDiv.onclick = () => toggleGroupCollapse(groupConfig.key);
-
-                const titleSpan = document.createElement('div');
-                titleSpan.className = "group-header-title";
-                titleSpan.innerHTML = `<span>${isCollapsed ? '▶' : '▼'}</span> <span>${groupConfig.label}</span>`;
-                headerDiv.appendChild(titleSpan);
-
-                const badgesDiv = document.createElement('div');
-                badgesDiv.className = "group-badges-container";
-
-                const costBadge = document.createElement('span');
-                if (unpaidSum > 0) {
-                    costBadge.className = "group-unpaid-cost has-unpaid";
-                    costBadge.innerText = `€${unpaidSum.toFixed(2)}`;
-                } else {
-                    costBadge.className = "group-unpaid-cost all-paid";
-                    costBadge.innerText = "✓ Paid";
-                }
-                badgesDiv.appendChild(costBadge);
-
-                const countBadge = document.createElement('span');
-                countBadge.className = "group-badge";
-                countBadge.innerText = `${paidCount}/${subsetItems.length}`;
-                badgesDiv.appendChild(countBadge);
-
-                headerDiv.appendChild(badgesDiv);
-                groupContainer.appendChild(headerDiv);
-
-                if (!isCollapsed) {
-                    const groupContent = document.createElement('div');
-                    groupContent.className = "group-content";
-
-                    subsetItems.forEach(e => {
-                        const itemDiv = document.createElement('div');
-                        itemDiv.className = `expense-item ${e.status}`;
-
-                        // Decoupled badge rendering
-                        let badgeHtml = e.isEdited ? `<span class="badge-edited">Custom</span>` : '';
-                        
-                        let originLabelHtml = '';
-                        const originVal = e.originated || e.originMonth || e.origin;
-                        if (originVal && originVal !== activeMonth) {
-                            originLabelHtml = `<div class="origin-label">${formatPrettyOriginLabel(originVal)}</div>`;
-                        }
-
-                        let untilLabelText = formatPrettyUntilLabel(e.seriesId);
-                        let untilLabelHtml = untilLabelText ? `<div class="origin-label" style="color:var(--primary); border-color:var(--primary);">${untilLabelText}</div>` : '';
-
-                        // Move-left boundary condition check (Option B: Hide move back button entirely when not allowed)
-                        const baseOrigin = e.originMonth || e.originated || e.month;
-                        const canMoveBack = (e.month > baseOrigin && e.month > currentSystemMonth);
-
-                        let moveBackBtnHtml = '';
-                        if (canMoveBack) {
-                            moveBackBtnHtml = `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);">➔</button>`;
-                        }
-
-                        itemDiv.innerHTML = `
-                            <div class="info">
-                                <div class="name-wrapper">
-                                    <span class="name">${e.name}</span>
-                                    ${badgeHtml}
-                                </div>
-                                <div class="cost-row">
-                                    <span class="cost">€${parseFloat(e.cost || 0).toFixed(2)}</span>
-                                    ${originLabelHtml}
-                                    ${untilLabelHtml}
-                                </div>
-                            </div>
-                            <div class="actions">
-                                ${moveBackBtnHtml}
-                                ${e.status === 'unpaid' ? `
-                                    <button class="btn-action btn-move" onclick="moveNextMonth('${e.id}')">➔</button>
-                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
-                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">✓</button>
-                                ` : `
-                                    <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
-                                    <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">↩</button>
-                                `}
-                                <button class="btn-action btn-delete" onclick="deleteExpense('${e.id}')">✕</button>
-                            </div>
-                        `;
-                        groupContent.appendChild(itemDiv);
-                    });
-                    groupContainer.appendChild(groupContent);
-                }
-                container.appendChild(groupContainer);
-            });
+    currentFilteredList.forEach(e => {
+        const cost = parseFloat(e.cost || 0);
+        calculatedMonthTotalValue += cost;
+        if (e.status === 'unpaid') {
+            calculatedUnpaidTotalValue += cost;
         }
+    });
+
+    // 2. Update Total Unpaid Banner (Displays €Unpaid / €Total with Green on €0.00)
+    const totalUnpaidElem = document.getElementById('totalUnpaid');
+    totalUnpaidElem.innerText = `€${calculatedUnpaidTotalValue.toFixed(2)} / €${calculatedMonthTotalValue.toFixed(2)}`;
+
+    if (calculatedUnpaidTotalValue === 0) {
+        totalUnpaidElem.style.color = "#2e7d32";
+    } else {
+        totalUnpaidElem.style.color = ""; // Resets to default CSS style when > 0
+    }
+
+    recurrenceGroupsConfig.forEach(groupConfig => {
+        const subsetItems = currentFilteredList.filter(e => e.recur === groupConfig.key);
+        
+        if (subsetItems.length === 0) return;
+
+        // SORT: Unpaid expenses first, Paid expenses last
+        subsetItems.sort((a, b) => {
+            if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
+            if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
+            return 0;
+        });
+        
+        const groupContainer = document.createElement('div');
+        groupContainer.className = "group-container";
+
+        let unpaidSum = 0;
+        let groupTotalSum = 0;
+        let paidCount = 0;
+
+        subsetItems.forEach(e => {
+            const cost = parseFloat(e.cost || 0);
+            groupTotalSum += cost;
+            if (e.status === 'unpaid') {
+                unpaidSum += cost;
+            } else {
+                paidCount++;
+            }
+        });
+
+        const isCollapsed = collapsedGroups[groupConfig.key] || false;
+
+        const headerDiv = document.createElement('div');
+        headerDiv.className = "group-header";
+        headerDiv.onclick = () => toggleGroupCollapse(groupConfig.key);
+
+        const titleSpan = document.createElement('div');
+        titleSpan.className = "group-header-title";
+        titleSpan.innerHTML = `<span>${isCollapsed ? '▶' : '▼'}</span> <span>${groupConfig.label}</span>`;
+        headerDiv.appendChild(titleSpan);
+
+        const badgesDiv = document.createElement('div');
+        badgesDiv.className = "group-badges-container";
+
+        // 3. Category Header Badge (Displays ✓ Paid / €Total or €Unpaid / €Total)
+        const costBadge = document.createElement('span');
+        if (unpaidSum > 0) {
+            costBadge.className = "group-unpaid-cost has-unpaid";
+            costBadge.innerText = `€${unpaidSum.toFixed(2)} / €${groupTotalSum.toFixed(2)}`;
+        } else {
+            costBadge.className = "group-unpaid-cost all-paid";
+            costBadge.innerText = `✓ Paid / €${groupTotalSum.toFixed(2)}`;
+        }
+        badgesDiv.appendChild(costBadge);
+
+        headerDiv.appendChild(badgesDiv);
+        groupContainer.appendChild(headerDiv);
+
+        if (!isCollapsed) {
+            const groupContent = document.createElement('div');
+            groupContent.className = "group-content";
+
+            subsetItems.forEach(e => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `expense-item ${e.status}`;
+
+                // Decoupled badge rendering
+                let badgeHtml = e.isEdited ? `<span class="badge-edited">Custom</span>` : '';
+                
+                let originLabelHtml = '';
+                const originVal = e.originated || e.originMonth || e.origin;
+                if (originVal && originVal !== activeMonth) {
+                    originLabelHtml = `<div class="origin-label">${formatPrettyOriginLabel(originVal)}</div>`;
+                }
+
+                let untilLabelText = formatPrettyUntilLabel(e.seriesId);
+                let untilLabelHtml = untilLabelText ? `<div class="origin-label" style="color:var(--primary); border-color:var(--primary);">${untilLabelText}</div>` : '';
+
+                // Move-left boundary condition check
+                const baseOrigin = e.originMonth || e.originated || e.month;
+                const canMoveBack = (e.month > baseOrigin && e.month > currentSystemMonth);
+
+                let moveBackBtnHtml = '';
+                if (canMoveBack) {
+                    moveBackBtnHtml = `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);">➔</button>`;
+                }
+
+                itemDiv.innerHTML = `
+                    <div class="info">
+                        <div class="name-wrapper">
+                            <span class="name">${e.name}</span>
+                            ${badgeHtml}
+                        </div>
+                        <div class="cost-row">
+                            <span class="cost">€${parseFloat(e.cost || 0).toFixed(2)}</span>
+                            ${originLabelHtml}
+                            ${untilLabelHtml}
+                        </div>
+                    </div>
+                    <div class="actions">
+                        ${moveBackBtnHtml}
+                        ${e.status === 'unpaid' ? `
+                            <button class="btn-action btn-move" onclick="moveNextMonth('${e.id}')">➔</button>
+                            <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
+                            <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">✓</button>
+                        ` : `
+                            <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
+                            <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">↩</button>
+                        `}
+                        <button class="btn-action btn-delete" onclick="deleteExpense('${e.id}')">✕</button>
+                    </div>
+                `;
+                groupContent.appendChild(itemDiv);
+            });
+            groupContainer.appendChild(groupContent);
+        }
+        container.appendChild(groupContainer);
+    });
+}
     </script>
 </body>
 </html>
