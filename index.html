@@ -1029,12 +1029,18 @@
             const exp = expenses.find(e => e.id === id);
             if (!exp) return;
 
-            if (exp.recur === 0) {
-                if (confirm(`Remove custom one-time item "${exp.name}" entirely?`)) {
-                    expenses = expenses.filter(e => e.id !== id);
-                    saveStateToLocalStorage();
-                }
-            } else {
+if (exp.recur === 0) {
+    const decision = await presentCustomChoicePrompt(
+        `Remove custom one-time item "${exp.name}" entirely?`,
+        "Cancel",
+        "Delete",
+        true
+    );
+    if (decision === 'right') {
+        expenses = expenses.filter(e => e.id !== id);
+        saveStateToLocalStorage();
+    }
+} else {
                 const decision = await presentThreeWayDeleteCrossroads();
                 if (decision === 'current') {
                     // Record the deletion in the parent template so auto-population skips it
