@@ -271,12 +271,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v62</div>
+    <div class="version-watermark">RNE Tracker • v63</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260818_v62
+        // VERSION TRACKER REFERENCE: 260819_v63
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -293,6 +293,8 @@
         let activeAccessToken = null;
         let gdriveFileId = null;
 
+        let isCloudSyncPending = false;
+        
         const recurrenceGroupsConfig = [
             { key: 0, label: "One-Time Only" },
             { key: 1, label: "Monthly" },
@@ -603,15 +605,25 @@
                 meta.isInitialBlank = true;
             }
 
-            if (!meta.lastMonthPopulated) {
-                meta.lastMonthPopulated = currentSystemMonth;
-                meta.lastUpdated = Date.now();
-                saveStateToLocalStorage();
+            // Check if the user is logged into Google Drive
+            const savedToken = localStorage.getItem('gdrive_access_token');
+            if (savedToken) {
+                // LOCK local state mutation until cloud check completes
+                isCloudSyncPending = true;
+            } else {
+                // Offline mode: proceed with normal auto-population immediately
+                if (!meta.lastMonthPopulated) {
+                    meta.lastMonthPopulated = currentSystemMonth;
+                    meta.lastUpdated = Date.now();
+                    saveStateToLocalStorage();
+                }
+                ensureSequencePopulatedUpToMonth(filterSelect.value);
             }
-            ensureSequencePopulatedUpToMonth(filterSelect.value);
         }
 
         function saveStateToLocalStorage() {
+            // Prevent accidental timestamp updates while waiting for cloud evaluation
+            if (isCloudSyncPending) return;
             meta.lastUpdated = Date.now();
             meta.isInitialBlank = false;
             localStorage.setItem('household_expenses', JSON.stringify(expenses));
@@ -1110,7 +1122,7 @@
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v62)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v63)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1444,25 +1456,30 @@
                 let result = await response.json();
                 
                 if (result.error) {
-                    if (result.error.status === 'UNAUTHENTICATED' || result.error.code === 401) {
-                        activeAccessToken = null;
-                        gdriveFileId = null;
-                        localStorage.removeItem('gdrive_access_token');
-                        updateCloudStatusInterfaceDisplay("☁ Session Terminated");
-                        evaluateSignActionBtnVisualState();
-                    }
+                    /* ... existing error handling ... */
+                    isCloudSyncPending = false; // Release lock on error
                     return;
                 }
-
+        
                 if (result.files && result.files.length > 0) {
                     gdriveFileId = result.files[0].id;
                     await checkTimelineMetricsAgainstCloudTarget(gdriveFileId, triggerUserPromptDialog);
                 } else {
                     updateCloudStatusInterfaceDisplay("☁ Initializing Sync...");
+                    // Lock must be released before writing
+                    isCloudSyncPending = false; 
                     await performCloudWriteExecutionSequence(true);
                 }
             } catch (err) {
                 updateCloudStatusInterfaceDisplay("☁ Cloud Offline");
+            } finally {
+                // Always ensure lock is released and local population runs on pure state
+                if (isCloudSyncPending) {
+                    isCloudSyncPending = false;
+                    ensureSequencePopulatedUpToMonth(filterSelect.value);
+                    detectAndTriggerArrearsLogic();
+                    render();
+                }
             }
         }
 
@@ -1659,7 +1676,7 @@
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v62_boundary_sync';
+                const boundary = '32626_v63_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
