@@ -271,12 +271,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v63.3</div>
+    <div class="version-watermark">RNE Tracker • v63.3.2</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260820_v63.3
+        // VERSION TRACKER REFERENCE: 260820_v63.3.2
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -586,13 +586,17 @@ const currentSystemMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).pa
             formMonthSelect.options.add(new Option(label, mStr));
         });
 
-        window.onload = function() {
-            initializeSavedDisplayTheme();
-            loadLocalStorageCache();
-            detectAndTriggerArrearsLogic();
-            render();
-            initializeGoogleIdentityServiceServices();
-        };
+window.onload = function() {
+    initializeSavedDisplayTheme();
+    // Default the month selector to current system month on startup
+    if (filterSelect) {
+        filterSelect.value = currentSystemMonth;
+    }
+    loadLocalStorageCache();
+    detectAndTriggerArrearsLogic();
+    render();
+    initializeGoogleIdentityServiceServices();
+};
 
         function loadLocalStorageCache() {
             const cacheExpenses = localStorage.getItem('household_expenses');
@@ -643,32 +647,35 @@ const currentSystemMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).pa
             }
         }
 
-        async function executeBatchBringArrearsToCurrent() {
-            const activeMonth = filterSelect.value;
-            const absoluteLeftOvers = expenses.filter(e => e.month < activeMonth && e.status === 'unpaid');
-            
-            absoluteLeftOvers.forEach(e => {
-                e.status = 'paid';
-                const alreadyExists = expenses.find(x => x.seriesId === e.seriesId && x.month === activeMonth);
-                if (!alreadyExists) {
-                    expenses.push({
-                        id: 'exp_' + Math.random().toString(36).substr(2, 9),
-                        seriesId: e.seriesId,
-                        name: e.name,
-                        cost: e.cost,
-                        month: activeMonth,
-                        recur: e.recur,
-                        status: 'unpaid',
-                        originated: e.originated || e.originatedMonth || e.origin || e.originMonth || e.month,
-                        isEdited: e.isEdited || false
-                    });
-                }
+async function executeBatchBringArrearsToCurrent() {
+    const absoluteLeftOvers = expenses.filter(e => e.month < currentSystemMonth && e.status === 'unpaid');
+    
+    absoluteLeftOvers.forEach(e => {
+        e.status = 'paid';
+        const alreadyExists = expenses.find(x => x.seriesId === e.seriesId && x.month === currentSystemMonth);
+        if (!alreadyExists) {
+            expenses.push({
+                id: 'exp_' + Math.random().toString(36).substr(2, 9),
+                seriesId: e.seriesId,
+                name: e.name,
+                cost: e.cost,
+                month: currentSystemMonth,
+                recur: e.recur,
+                status: 'unpaid',
+                originated: e.originated || e.originatedMonth || e.origin || e.originMonth || e.month,
+                isEdited: e.isEdited || false
             });
-            saveStateToLocalStorage();
-            detectAndTriggerArrearsLogic();
-            render();
-            await silentlyExecuteCloudSyncEngineCheck();
         }
+    });
+
+    // Switch view back to the current month to view brought-forward items immediately
+    filterSelect.value = currentSystemMonth;
+
+    saveStateToLocalStorage();
+    detectAndTriggerArrearsLogic();
+    render();
+    await silentlyExecuteCloudSyncEngineCheck();
+}
 
         async function executeBatchDiscardArrears() {
             const activeMonth = filterSelect.value;
@@ -1130,7 +1137,7 @@ if (exp.recur === 0) {
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v63.3)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v63.3.2)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1684,7 +1691,7 @@ if (exp.recur === 0) {
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v63.3_boundary_sync';
+                const boundary = '32626_v63.3.2_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
@@ -1725,6 +1732,13 @@ function render() {
     const activeMonth = filterSelect.value;
     const container = document.getElementById('listContainer');
     container.innerHTML = '';
+
+    // Hide or show the "+ Add New Expense" button for historical months
+    const isPastMonth = activeMonth < currentSystemMonth;
+    const formTriggerBtn = document.getElementById('formTriggerBtn');
+    if (formTriggerBtn) {
+        formTriggerBtn.style.display = isPastMonth ? 'none' : 'block';
+    }
 
     const currentFilteredList = expenses.filter(e => e.month === activeMonth);
 
