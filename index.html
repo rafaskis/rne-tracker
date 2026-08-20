@@ -271,12 +271,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v63</div>
+    <div class="version-watermark">RNE Tracker • v63.2</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260819_v63
+        // VERSION TRACKER REFERENCE: 260820_v63.2
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -560,17 +560,17 @@
             return '';
         }
 
-        function getMonthList() {
-            const list = [];
-            const d = new Date();
-            for (let i = 0; i <= 12; i++) {
-                let targetMonth = d.getMonth() + i;
-                let targetYear = d.getFullYear() + Math.floor(targetMonth / 12);
-                let m = (targetMonth % 12) + 1;
-                list.push(`${targetYear}-${m < 10 ? '0' + m : m}`);
-            }
-            return list;
-        }
+function getMonthList() {
+    const list = [];
+    const d = new Date();
+    for (let i = -12; i <= 12; i++) {
+        let targetMonth = d.getMonth() + i;
+        let targetYear = d.getFullYear() + Math.floor(targetMonth / 12);
+        let m = ((targetMonth % 12) + 12) % 12 + 1;
+        list.push(`${targetYear}-${m < 10 ? '0' + m : m}`);
+    }
+    return list;
+}
 
         const monthsRange = getMonthList();
         const currentSystemMonth = monthsRange[0];
@@ -1128,7 +1128,7 @@ if (exp.recur === 0) {
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v63)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v63.2)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1682,7 +1682,7 @@ if (exp.recur === 0) {
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v63_boundary_sync';
+                const boundary = '32626_v63.2_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
