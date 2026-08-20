@@ -271,12 +271,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v63.3.3</div>
+    <div class="version-watermark">RNE Tracker • v63.3.4</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260820_v63.3.3
+        // VERSION TRACKER REFERENCE: 260820_v63.3.4
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1137,13 +1137,16 @@ if (exp.recur === 0) {
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v63.3.3)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v63.3.4)
         // =========================================================================
-        function exportToPDF() {
+function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
             if (!selectEl) return;
             const rawValue = selectEl.value; // e.g., "2026-08"
             
+            // Check if the selected report month is older than current system month
+            const isReportPastMonth = rawValue < currentSystemMonth;
+
             // Exact month/year label resolution from the select box text
             const reportDateString = selectEl.options[selectEl.selectedIndex].text;
 
@@ -1172,6 +1175,66 @@ if (exp.recur === 0) {
                     totalUnpaidSum += val;
                 }
             });
+
+            // Dynamically construct the Summary Grid Layout
+            let summaryGridHtml = '';
+            let summaryGridCss = '';
+
+            if (isReportPastMonth) {
+                // Single centered card for past months
+                summaryGridCss = `
+                    .summary-grid-layout {
+                        display: flex;
+                        justify-content: center;
+                        margin-bottom: 25px;
+                    }
+                    .summary-card-box {
+                        border: 1px solid #e5e7eb;
+                        padding: 14px 28px;
+                        border-radius: 8px;
+                        text-align: center;
+                        background: #f9fafb;
+                        min-width: 250px;
+                    }
+                `;
+                summaryGridHtml = `
+                    <div class="summary-grid-layout">
+                        <div class="summary-card-box">
+                            <span class="summary-card-label">Total Allocated Expenses</span>
+                            <span class="summary-card-value">€${totalOverallSum.toFixed(2)}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Standard two-column grid for current and future months
+                summaryGridCss = `
+                    .summary-grid-layout {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 15px;
+                        margin-bottom: 25px;
+                    }
+                    .summary-card-box {
+                        border: 1px solid #e5e7eb;
+                        padding: 14px;
+                        border-radius: 8px;
+                        text-align: center;
+                        background: #f9fafb;
+                    }
+                `;
+                summaryGridHtml = `
+                    <div class="summary-grid-layout">
+                        <div class="summary-card-box">
+                            <span class="summary-card-label">Total Allocated Expenses</span>
+                            <span class="summary-card-value">€${totalOverallSum.toFixed(2)}</span>
+                        </div>
+                        <div class="summary-card-box">
+                            <span class="summary-card-label">Outstanding Unpaid Arrears</span>
+                            <span class="summary-card-value" style="color: #dc2626;">€${totalUnpaidSum.toFixed(2)}</span>
+                        </div>
+                    </div>
+                `;
+            }
 
             // 1. Generate Clean Document Data Stream HTML
             let expensesHtml = '';
@@ -1316,19 +1379,7 @@ if (exp.recur === 0) {
                             font-weight: 600;
                             color: #4b5563;
                         }
-                        .summary-grid-layout {
-                            display: grid;
-                            grid-template-columns: 1fr 1fr;
-                            gap: 15px;
-                            margin-bottom: 25px;
-                        }
-                        .summary-card-box {
-                            border: 1px solid #e5e7eb;
-                            padding: 14px;
-                            border-radius: 8px;
-                            text-align: center;
-                            background: #f9fafb;
-                        }
+                        ${summaryGridCss}
                         .summary-card-label {
                             font-size: 11px;
                             color: #6b7280;
@@ -1352,16 +1403,7 @@ if (exp.recur === 0) {
                         <div class="report-subtitle-period" style="font-size: 14px; color: #6b7280; font-weight: 500; margin-top: 2px;">${asOfTimestampString}</div>
                     </div>
                     
-                    <div class="summary-grid-layout">
-                        <div class="summary-card-box">
-                            <span class="summary-card-label">Total Allocated Expenses</span>
-                            <span class="summary-card-value">€${totalOverallSum.toFixed(2)}</span>
-                        </div>
-                        <div class="summary-card-box">
-                            <span class="summary-card-label">Outstanding Unpaid Arrears</span>
-                            <span class="summary-card-value" style="color: #dc2626;">€${totalUnpaidSum.toFixed(2)}</span>
-                        </div>
-                    </div>
+                    ${summaryGridHtml}
 
                     <div class="expense-list-wrapper">
                         ${expensesHtml}
@@ -1691,7 +1733,7 @@ if (exp.recur === 0) {
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v63.3.3_boundary_sync';
+                const boundary = '32626_v63.3.4_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
