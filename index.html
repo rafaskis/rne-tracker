@@ -271,12 +271,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v63.2</div>
+    <div class="version-watermark">RNE Tracker • v63.3</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260820_v63.2
+        // VERSION TRACKER REFERENCE: 260820_v63.3
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1128,7 +1128,7 @@ if (exp.recur === 0) {
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v63.2)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v63.3)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1682,7 +1682,7 @@ if (exp.recur === 0) {
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v63.2_boundary_sync';
+                const boundary = '32626_v63.3_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
@@ -1808,6 +1808,9 @@ function render() {
         if (!isCollapsed) {
             const groupContent = document.createElement('div');
             groupContent.className = "group-content";
+            
+            // Check if viewing a past month
+            const isPastMonth = activeMonth < currentSystemMonth;
 
             subsetItems.forEach(e => {
                 const itemDiv = document.createElement('div');
@@ -1825,13 +1828,32 @@ function render() {
                 let untilLabelText = formatPrettyUntilLabel(e.seriesId);
                 let untilLabelHtml = untilLabelText ? `<div class="origin-label" style="color:var(--primary); border-color:var(--primary);">${untilLabelText}</div>` : '';
 
-                // Move-left boundary condition check
-                const baseOrigin = e.originMonth || e.originated || e.month;
-                const canMoveBack = (e.month > baseOrigin && e.month > currentSystemMonth);
+                // Generate actions only if NOT viewing a past month
+                let actionsHtml = '';
+                if (!isPastMonth) {
+                    // Move-left boundary condition check
+                    const baseOrigin = e.originMonth || e.originated || e.month;
+                    const canMoveBack = (e.month > baseOrigin && e.month > currentSystemMonth);
 
-                let moveBackBtnHtml = '';
-                if (canMoveBack) {
-                    moveBackBtnHtml = `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);">➔</button>`;
+                    let moveBackBtnHtml = '';
+                    if (canMoveBack) {
+                        moveBackBtnHtml = `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);">➔</button>`;
+                    }
+
+                    actionsHtml = `
+                        <div class="actions">
+                            ${moveBackBtnHtml}
+                            ${e.status === 'unpaid' ? `
+                                <button class="btn-action btn-move" onclick="moveNextMonth('${e.id}')">➔</button>
+                                <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
+                                <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">✓</button>
+                            ` : `
+                                <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
+                                <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">↩</button>
+                            `}
+                            <button class="btn-action btn-delete" onclick="deleteExpense('${e.id}')">✕</button>
+                        </div>
+                    `;
                 }
 
                 itemDiv.innerHTML = `
@@ -1846,18 +1868,7 @@ function render() {
                             ${untilLabelHtml}
                         </div>
                     </div>
-                    <div class="actions">
-                        ${moveBackBtnHtml}
-                        ${e.status === 'unpaid' ? `
-                            <button class="btn-action btn-move" onclick="moveNextMonth('${e.id}')">➔</button>
-                            <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
-                            <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">✓</button>
-                        ` : `
-                            <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
-                            <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">↩</button>
-                        `}
-                        <button class="btn-action btn-delete" onclick="deleteExpense('${e.id}')">✕</button>
-                    </div>
+                    ${actionsHtml}
                 `;
                 groupContent.appendChild(itemDiv);
             });
