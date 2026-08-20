@@ -204,12 +204,12 @@
         <button class="btn-nav-arrow" onclick="stepMonth(1)" title="Next Month">▶</button>
     </div>
 
-    <div class="top-bar">
-        <div class="header-card">
-            <div style="font-size: 14px; color: var(--text-muted); font-weight: 500;">TOTAL UNPAID FOR THIS MONTH</div>
-            <div class="unpaid-badge" id="totalUnpaid">€0.00</div>
-        </div>
+<div class="top-bar">
+    <div class="header-card">
+        <div id="unpaidBannerLabel" style="font-size: 14px; color: var(--text-muted); font-weight: 500;">TOTAL UNPAID FOR THIS MONTH</div>
+        <div class="unpaid-badge" id="totalUnpaid">€0.00</div>
     </div>
+</div>
 
     <button id="formTriggerBtn" class="btn-trigger-form" onclick="openCreateMode()">+ Add New Expense</button>
 
@@ -271,12 +271,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v63.3.2</div>
+    <div class="version-watermark">RNE Tracker • v63.3.3</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260820_v63.3.2
+        // VERSION TRACKER REFERENCE: 260820_v63.3.3
         // ==========================================
 
         const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
@@ -1137,7 +1137,7 @@ if (exp.recur === 0) {
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v63.3.2)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v63.3.3)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1691,7 +1691,7 @@ if (exp.recur === 0) {
                     mimeType: 'application/json'
                 };
 
-                const boundary = '32626_v63.3.2_boundary_sync';
+                const boundary = '32626_v63.3.3_boundary_sync';
                 const delimiter = `\r\n--${boundary}\r\n`;
                 const closeDelimiter = `\r\n--${boundary}--`;
 
@@ -1733,8 +1733,9 @@ function render() {
     const container = document.getElementById('listContainer');
     container.innerHTML = '';
 
-    // Hide or show the "+ Add New Expense" button for historical months
     const isPastMonth = activeMonth < currentSystemMonth;
+
+    // Hide or show the "+ Add New Expense" button for historical months
     const formTriggerBtn = document.getElementById('formTriggerBtn');
     if (formTriggerBtn) {
         formTriggerBtn.style.display = isPastMonth ? 'none' : 'block';
@@ -1754,14 +1755,25 @@ function render() {
         }
     });
 
-    // 2. Update Total Unpaid Banner (Displays €Unpaid / €Total with Green on €0.00)
+    // 2. Update Total Banner (Handles Past Months vs Current/Future Months)
     const totalUnpaidElem = document.getElementById('totalUnpaid');
-    totalUnpaidElem.innerText = `€${calculatedUnpaidTotalValue.toFixed(2)} / €${calculatedMonthTotalValue.toFixed(2)}`;
+    const bannerLabelElem = document.getElementById('unpaidBannerLabel');
 
-    if (calculatedUnpaidTotalValue === 0) {
-        totalUnpaidElem.style.color = "#2e7d32";
+    if (isPastMonth) {
+        // Old Month Mode
+        if (bannerLabelElem) bannerLabelElem.innerText = "TOTAL PAID FOR THIS MONTH";
+        totalUnpaidElem.innerText = `€${calculatedMonthTotalValue.toFixed(2)}`;
+        totalUnpaidElem.style.color = "#2e7d32"; // Same green color
     } else {
-        totalUnpaidElem.style.color = ""; // Resets to default CSS style when > 0
+        // Current / Future Month Mode
+        if (bannerLabelElem) bannerLabelElem.innerText = "TOTAL UNPAID FOR THIS MONTH";
+        totalUnpaidElem.innerText = `€${calculatedUnpaidTotalValue.toFixed(2)} / €${calculatedMonthTotalValue.toFixed(2)}`;
+
+        if (calculatedUnpaidTotalValue === 0) {
+            totalUnpaidElem.style.color = "#2e7d32"; // Green when all paid
+        } else {
+            totalUnpaidElem.style.color = ""; // Default red/theme color when unpaid > 0
+        }
     }
 
     recurrenceGroupsConfig.forEach(groupConfig => {
