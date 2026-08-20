@@ -572,8 +572,10 @@ function getMonthList() {
     return list;
 }
 
-        const monthsRange = getMonthList();
-        const currentSystemMonth = monthsRange[0];
+const monthsRange = getMonthList();
+const now = new Date();
+const currentSystemMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        
         const filterSelect = document.getElementById('monthViewFilter');
         const formMonthSelect = document.getElementById('expMonthTarget');
 
