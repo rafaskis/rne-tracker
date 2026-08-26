@@ -299,12 +299,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v65.1</div>
+    <div class="version-watermark">RNE Tracker • v65.3</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260826_v65.1
+        // VERSION TRACKER REFERENCE: 260826_v65.3
         // ==========================================
 
         const SUPABASE_URL = 'https://ztgwsvhikhefuutdnvwt.supabase.co';
@@ -641,11 +641,15 @@
                 meta.isInitialBlank = true;
             }
 
-            if (!meta.lastMonthPopulated) {
-                meta.lastMonthPopulated = currentSystemMonth;
-                meta.lastUpdated = Date.now();
-                saveStateToLocalStorage();
-            }
+if (!meta.lastMonthPopulated) {
+    meta.lastMonthPopulated = currentSystemMonth;
+    meta.lastUpdated = Date.now();
+
+    // Preserve the blank-state flag during first initialization.
+    localStorage.setItem('household_expenses', JSON.stringify(expenses));
+    localStorage.setItem('household_templates', JSON.stringify(templates));
+    localStorage.setItem('household_meta', JSON.stringify(meta));
+}
             ensureSequencePopulatedUpToMonth(filterSelect.value);
         }
 
@@ -1199,7 +1203,7 @@ async function triggerResetToScratch() {
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v65.1)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v65.3)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1737,11 +1741,11 @@ async function lookupAndSynchronizeCloudBackupStorageState(triggerUserPromptDial
 
         async function checkTimelineMetricsAgainstCloudTarget(cloudData, triggerUserPromptDialog) {
             try {
-                if (meta.isInitialBlank === true || (expenses.length === 0 && templates.length === 0)) {
-                    console.log("Blank environment lifecycle profile found. Syncing from cloud...");
-                    await performCloudPullExtractionSequence(cloudData);
-                    return;
-                }
+if (meta.isInitialBlank === true) {
+    console.log("New local environment detected. Syncing from cloud...");
+    await performCloudPullExtractionSequence(cloudData);
+    return;
+}
 
                 const localStamp = meta.lastUpdated || 0;
                 const cloudStamp = (cloudData.meta && cloudData.meta.lastUpdated) ? cloudData.meta.lastUpdated : 0;
