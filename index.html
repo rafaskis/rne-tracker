@@ -148,7 +148,11 @@
         .utility-card { background: var(--utility-card-bg); padding: 16px; border-radius: 12px; border: 1px dashed var(--utility); margin-top: 8px; display: none; }
         .utility-title { font-size: 12px; font-weight: bold; color: var(--utility); margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
         .utility-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
-        
+        .btn-util-warning {
+    background: #d97706;
+    color: #fff;
+    border-color: #d97706;
+}
         .btn-util { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); font-size: 16px; font-weight: normal; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center; -webkit-appearance: none; }
         .btn-util-danger { border-color: var(--danger); color: var(--danger); font-weight: 600; margin-top: 4px; font-size: 14px; padding: 10px; }
         .file-input-wrapper { position: relative; width: 100%; }
@@ -265,6 +269,10 @@
                 <input type="file" id="importFile" accept=".txt,.json" onchange="importFromFile(event)">
             </div>
         </div>
+        <button class="btn-util btn-util-warning"
+        onclick="signOutAndClearBrowserData()">
+    🧹 Sign out and clear local data
+</button>
         <div class="utility-title" style="border-top:1px dashed var(--border); padding-top:12px; color:var(--danger);">Danger Zone</div>
         <button class="btn-util btn-util-danger" onclick="triggerResetToScratch()">☢ Start From Scratch</button>
     </div>
@@ -299,12 +307,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v65.3</div>
+    <div class="version-watermark">RNE Tracker • v66</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260826_v65.3
+        // VERSION TRACKER REFERENCE: 260826_v66
         // ==========================================
 
         const SUPABASE_URL = 'https://ztgwsvhikhefuutdnvwt.supabase.co';
@@ -1203,7 +1211,7 @@ async function triggerResetToScratch() {
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v65.3)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v66)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1719,12 +1727,42 @@ async function lookupAndSynchronizeCloudBackupStorageState(triggerUserPromptDial
                 cloudData,
                 triggerUserPromptDialog
             );
-        } else {
-            updateCloudStatusInterfaceDisplay("☁ Initializing Sync...");
-            isCloudSyncPending = false;
+} else {
+    updateCloudStatusInterfaceDisplay("☁ Initializing Blank Database...");
+    isCloudSyncPending = false;
 
-            await performCloudWriteExecutionSequence(true);
+    // A new user with no cloud database must NEVER inherit
+    // whatever database happens to be present in this browser.
+    const blankDatabase = {
+        expenses: [],
+        templates: [],
+        meta: {
+            lastMonthPopulated: currentSystemMonth,
+            lastUpdated: Date.now(),
+            isInitialBlank: false
         }
+    };
+
+    const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
+
+    const blob = new Blob(
+        [JSON.stringify(blankDatabase, null, 2)],
+        { type: 'application/json' }
+    );
+
+    const { error: uploadError } = await supabaseClient.storage
+        .from('rne_backups')
+        .upload(filePath, blob, { upsert: true });
+
+    if (uploadError) {
+        console.error("Initial Blank Database Upload Error:", uploadError);
+        updateCloudStatusInterfaceDisplay("☁ Storage Error");
+        return;
+    }
+
+    // Download the newly-created blank database back into the browser.
+    await performCloudPullExtractionSequence(blankDatabase);
+}
 
     } catch (err) {
         console.error("Cloud Synchronization Exception:", err);
