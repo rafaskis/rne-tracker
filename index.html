@@ -299,12 +299,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v64.3</div>
+    <div class="version-watermark">RNE Tracker • v64.3.2</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260826_v64.3
+        // VERSION TRACKER REFERENCE: 260826_v64.3.2
         // ==========================================
 
         const SUPABASE_URL = 'https://ztgwsvhikhefuutdnvwt.supabase.co';
@@ -330,6 +330,13 @@
             { key: 6, label: "Every 6 Months" },
             { key: 12, label: "Yearly" }
         ];
+
+        function getStorageFilePath() {
+            if (!activeUser || !activeUser.id) return null;
+            const cleanUserId = String(activeUser.id).trim().replace(/^\/+|\/+$/g, '');
+            const cleanFileName = DEDICATED_FILE_NAME.trim().replace(/^\/+|\/+$/g, '');
+            return `${cleanUserId}/${cleanFileName}`;
+        }
 
         function initializeSavedDisplayTheme() {
             const savedTheme = localStorage.getItem('rne_app_theme') || 'light';
@@ -622,7 +629,6 @@
             detectAndTriggerArrearsLogic();
             render();
             
-            // Safely attempt cloud initialization without blocking UI rendering
             initializeSupabaseServices().catch(e => {
                 console.error("Cloud init non-blocking failure:", e);
             });
@@ -1150,7 +1156,7 @@
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v64.3)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1435,7 +1441,6 @@
                 return window.supabase;
             }
             
-            // Poll for up to 3 seconds in case script tag is delayed
             for (let i = 0; i < 15; i++) {
                 await new Promise(res => setTimeout(res, 200));
                 if (window.supabase && typeof window.supabase.createClient === 'function') {
@@ -1536,7 +1541,6 @@
                 return;
             }
 
-            // Fallback initialization if it hasn't loaded yet
             if (!supabaseClient) {
                 updateCloudStatusInterfaceDisplay("☁ Connecting to SDK...");
                 const success = await initializeSupabaseServices();
@@ -1614,8 +1618,10 @@
 
         async function lookupAndSynchronizeCloudBackupStorageState(triggerUserPromptDialog = false) {
             if (!supabaseClient || !activeUser) return;
+            const filePath = getStorageFilePath();
+            if (!filePath) return;
+
             try {
-                const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
                 const { data, error } = await supabaseClient.storage.from('rne_backups').download(filePath);
 
                 if (error && error.status !== 404 && error.error !== 'Object not found') {
@@ -1692,13 +1698,15 @@
             }
             updateCloudStatusInterfaceDisplay("☁ Fetching State...");
             try {
-                const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
+                const filePath = getStorageFilePath();
                 let cloudDb = null;
 
-                const { data, error } = await supabaseClient.storage.from('rne_backups').download(filePath);
-                if (data && !error) {
-                    const text = await data.text();
-                    cloudDb = JSON.parse(text);
+                if (filePath) {
+                    const { data, error } = await supabaseClient.storage.from('rne_backups').download(filePath);
+                    if (data && !error) {
+                        const text = await data.text();
+                        cloudDb = JSON.parse(text);
+                    }
                 }
 
                 let localMeta = { lastUpdated: 0 };
@@ -1763,7 +1771,9 @@
                 let cloudDb = providedCloudDb;
 
                 if (!cloudDb) {
-                    const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
+                    const filePath = getStorageFilePath();
+                    if (!filePath) throw new Error("Invalid target storage path.");
+                    
                     const { data, error } = await supabaseClient.storage.from('rne_backups').download(filePath);
                     if (error || !data) {
                         updateCloudStatusInterfaceDisplay("☁ Cloud File Missing");
@@ -1802,19 +1812,21 @@
             };
 
             try {
-                const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
-                const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+                const filePath = getStorageFilePath();
+                if (!filePath) throw new Error("Invalid storage path generated.");
 
-const { data, error } = await supabaseClient.storage
-    .from('rne_backups')
-    .upload(filePath, blob, { upsert: true }); // Line 1019
+                const blobPayload = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
 
-if (error) {
-    console.error("Supabase Storage Error Details:", error.message, error.statusCode, error);
-}
+                const { data, error } = await supabaseClient.storage
+                    .from('rne_backups')
+                    .upload(filePath, blobPayload, {
+                        contentType: 'application/json',
+                        upsert: true,
+                        cacheControl: '0'
+                    });
 
                 if (error) {
-                    console.error("Supabase Storage Error:", error);
+                    console.error("Supabase Storage Error Details:", error.message, error.statusCode, error);
                     updateCloudStatusInterfaceDisplay("☁ Write Action Failed");
                 } else {
                     updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
