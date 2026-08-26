@@ -299,12 +299,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v66.3</div>
+    <div class="version-watermark">RNE Tracker • v66.4</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260826_v66.3
+        // VERSION TRACKER REFERENCE: 260826_v66.4
         // ==========================================
 
         const SUPABASE_URL = 'https://ztgwsvhikhefuutdnvwt.supabase.co';
@@ -505,13 +505,13 @@ function toggleDisplayTheme() {
             });
         }
 
-        function presentInteractiveSignOutConfirmation() {
+function presentInteractiveSignOutConfirmation() {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('customChoiceOverlay');
                 const textContainer = document.getElementById('choiceOverlayMessage');
                 const container = document.getElementById('choiceButtonsContainer');
 
-                textContainer.innerHTML = `<strong>Sign Out</strong><br><br>Sign Out?`;
+                textContainer.innerHTML = `<strong>Sign Out</strong><br><br>Are you sure you want to sign out?`;
                 container.className = "choice-buttons-row";
                 container.innerHTML = `
                     <button class="btn-choice btn-choice-left" id="btnConfirmSignOutCancel">Cancel</button>
@@ -534,16 +534,6 @@ function toggleDisplayTheme() {
                 cancelBtn.addEventListener('click', handleCancel);
                 proceedBtn.addEventListener('click', handleProceed);
                 overlay.style.display = 'flex';
-
-                // Remove or pass an empty string/null for the modal body text
-        showModal({
-            title: "Sign out?",
-            message: "", // Leave blank so the body text isn't repeated
-            confirmText: "Sign Out",
-            cancelText: "Cancel",
-            onConfirm: () => resolve(true),
-            onCancel: () => resolve(false)
-        });
             });
         }
 
@@ -1222,7 +1212,7 @@ async function triggerResetToScratch() {
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v66.3)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v66.4)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
