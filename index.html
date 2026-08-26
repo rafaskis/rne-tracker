@@ -282,7 +282,7 @@
     <!-- Auth & Password Modals -->
     <div class="auth-overlay" id="loginModalOverlay">
         <div class="auth-card">
-            <h3 id="authModalTitle">Supabase Sign In</h3>
+            <h3 id="authModalTitle">Sign In</h3>
             <input type="text" id="loginUsername" placeholder="Username">
             <input type="password" id="loginPassword" placeholder="Password">
             <button class="btn-primary" onclick="executeSupabaseLogin()">Sign In</button>
@@ -299,12 +299,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v64.3</div>
+    <div class="version-watermark">RNE Tracker • v65</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260826_v64.3
+        // VERSION TRACKER REFERENCE: 260826_v65
         // ==========================================
 
         const SUPABASE_URL = 'https://ztgwsvhikhefuutdnvwt.supabase.co';
@@ -503,7 +503,7 @@
                 const textContainer = document.getElementById('choiceOverlayMessage');
                 const container = document.getElementById('choiceButtonsContainer');
 
-                textContainer.innerHTML = `<strong>Sign Out</strong><br><br>Disconnect this session from Supabase? Local data adjustments will remain intact until browser cache is explicitly cleared.`;
+                textContainer.innerHTML = `<strong>Sign Out</strong><br><br>Sign Out? Local data adjustments will remain intact until browser cache is explicitly cleared.`;
                 container.className = "choice-buttons-row";
                 container.innerHTML = `
                     <button class="btn-choice btn-choice-left" id="btnConfirmSignOutCancel">Cancel</button>
@@ -1150,7 +1150,7 @@
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v64.3)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v65)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1456,7 +1456,7 @@
 
             try {
                 supabaseClient = factory.createClient(SUPABASE_URL, SUPABASE_KEY);
-                updateCloudStatusInterfaceDisplay("☁ Supabase Ready");
+                updateCloudStatusInterfaceDisplay("☁ Cloud Ready");
 
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session && session.user) {
@@ -1478,7 +1478,7 @@
                 return true;
             } catch (err) {
                 console.error("Supabase Init Error:", err);
-                updateCloudStatusInterfaceDisplay("☁ Supabase Init Error");
+                updateCloudStatusInterfaceDisplay("☁ Cloud Init Error");
                 return false;
             }
         }
@@ -1541,8 +1541,8 @@
                 updateCloudStatusInterfaceDisplay("☁ Connecting to SDK...");
                 const success = await initializeSupabaseServices();
                 if (!success || !supabaseClient) {
-                    alert("Supabase SDK failed to load. Please check your internet connection or disable ad-blockers and refresh.");
-                    updateCloudStatusInterfaceDisplay("☁ Supabase SDK Error");
+                    alert("Cloud SDK failed to load. Please check your internet connection or disable ad-blockers and refresh.");
+                    updateCloudStatusInterfaceDisplay("☁ Cloud SDK Error");
                     return;
                 }
             }
@@ -1603,7 +1603,7 @@
             } else {
                 alert("Password updated successfully!");
                 closePasswordModal();
-                updateCloudStatusInterfaceDisplay("☁ Supabase Ready");
+                updateCloudStatusInterfaceDisplay("☁ Cloud Ready");
             }
         }
 
@@ -1612,38 +1612,79 @@
             await lookupAndSynchronizeCloudBackupStorageState(false);
         }
 
-        async function lookupAndSynchronizeCloudBackupStorageState(triggerUserPromptDialog = false) {
-            if (!supabaseClient || !activeUser) return;
-            try {
-                const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
-                const { data, error } = await supabaseClient.storage.from('rne_backups').download(filePath);
+async function lookupAndSynchronizeCloudBackupStorageState(triggerUserPromptDialog = false) {
+    if (!supabaseClient || !activeUser) return;
 
-                if (error && error.status !== 404 && error.error !== 'Object not found') {
-                    isCloudSyncPending = false;
-                    updateCloudStatusInterfaceDisplay("☁ Storage Error");
-                    return;
-                }
+    try {
+        const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
 
-                if (data) {
-                    const text = await data.text();
-                    const cloudData = JSON.parse(text);
-                    await checkTimelineMetricsAgainstCloudTarget(cloudData, triggerUserPromptDialog);
-                } else {
-                    updateCloudStatusInterfaceDisplay("☁ Initializing Sync...");
-                    isCloudSyncPending = false;
-                    await performCloudWriteExecutionSequence(true);
-                }
-            } catch (err) {
-                updateCloudStatusInterfaceDisplay("☁ Cloud Offline");
-            } finally {
-                if (isCloudSyncPending) {
-                    isCloudSyncPending = false;
-                    ensureSequencePopulatedUpToMonth(filterSelect.value);
-                    detectAndTriggerArrearsLogic();
-                    render();
-                }
+        const { data, error } = await supabaseClient.storage
+            .from('rne_backups')
+            .download(filePath);
+
+        if (error) {
+            console.log("Supabase Storage Download Diagnostic:", {
+                message: error.message,
+                error: error.error,
+                status: error.status,
+                statusCode: error.statusCode,
+                name: error.name,
+                fullError: error
+            });
+
+            /*
+             * Supabase Storage can report a missing object with HTTP 400
+             * while the Storage error itself indicates "Object not found".
+             *
+             * A missing backup is expected for a new user.
+             */
+            const isMissingObject =
+                error.message === 'Object not found' ||
+                error.error === 'not_found' ||
+                error.error === 'Object not found' ||
+                error.status === 404 ||
+                error.statusCode === 404;
+
+            if (!isMissingObject) {
+                console.error("Actual Supabase Storage Error:", error);
+                isCloudSyncPending = false;
+                updateCloudStatusInterfaceDisplay("☁ Storage Error");
+                return;
             }
+
+            console.log(
+                `No cloud backup exists for user ${activeUser.id}. ` +
+                `Creating initial backup.`
+            );
         }
+
+        if (data) {
+            const text = await data.text();
+            const cloudData = JSON.parse(text);
+
+            await checkTimelineMetricsAgainstCloudTarget(
+                cloudData,
+                triggerUserPromptDialog
+            );
+        } else {
+            updateCloudStatusInterfaceDisplay("☁ Initializing Sync...");
+            isCloudSyncPending = false;
+
+            await performCloudWriteExecutionSequence(true);
+        }
+
+    } catch (err) {
+        console.error("Cloud Synchronization Exception:", err);
+        updateCloudStatusInterfaceDisplay("☁ Cloud Offline");
+    } finally {
+        if (isCloudSyncPending) {
+            isCloudSyncPending = false;
+            ensureSequencePopulatedUpToMonth(filterSelect.value);
+            detectAndTriggerArrearsLogic();
+            render();
+        }
+    }
+}
 
         async function checkTimelineMetricsAgainstCloudTarget(cloudData, triggerUserPromptDialog) {
             try {
@@ -1667,7 +1708,7 @@
                 } else if (cloudStamp > localStamp) {
                     updateCloudStatusInterfaceDisplay("☁ Update Available");
                     if (triggerUserPromptDialog) {
-                        const decision = await presentCloudSyncCrossroadsPrompt('cloud-newer', "The backup copy on Supabase is newer than your current local browser instance.", localDateStr, cloudDateStr);
+                        const decision = await presentCloudSyncCrossroadsPrompt('cloud-newer', "The backup copy on cloud is newer than your current local browser instance.", localDateStr, cloudDateStr);
                         if (decision === 'pull') await performCloudPullExtractionSequence(cloudData);
                         else if (decision === 'push') await performCloudWriteExecutionSequence(false);
                     }
