@@ -299,12 +299,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v66.2</div>
+    <div class="version-watermark">RNE Tracker • v66.3</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260826_v66.2
+        // VERSION TRACKER REFERENCE: 260826_v66.3
         // ==========================================
 
         const SUPABASE_URL = 'https://ztgwsvhikhefuutdnvwt.supabase.co';
@@ -332,7 +332,7 @@
         ];
 
 function initializeSavedDisplayTheme() {
-    // Read theme from meta object first, falling back to localStorage or light theme
+    // Priority: Saved meta object from database -> local browser cache fallback -> default light
     const savedTheme = (meta && meta.theme) ? meta.theme : (localStorage.getItem('rne_app_theme') || 'light');
     document.documentElement.setAttribute('data-theme', savedTheme);
 }
@@ -341,10 +341,11 @@ function toggleDisplayTheme() {
     const activeTheme = document.documentElement.getAttribute('data-theme');
     const targetTheme = activeTheme === 'dark' ? 'light' : 'dark';
     
+    // Apply UI update locally
     document.documentElement.setAttribute('data-theme', targetTheme);
     localStorage.setItem('rne_app_theme', targetTheme);
     
-    // Save theme choice to application state and sync if connected
+    // Store in meta state & push immediately to cloud if online
     meta.theme = targetTheme;
     saveStateToLocalStorage();
     silentlyExecuteCloudSyncEngineCheck();
@@ -510,7 +511,7 @@ function toggleDisplayTheme() {
                 const textContainer = document.getElementById('choiceOverlayMessage');
                 const container = document.getElementById('choiceButtonsContainer');
 
-                textContainer.innerHTML = `<strong>Sign Out</strong><br><br>Sign Out?`;
+                //textContainer.innerHTML = `<strong>Sign Out</strong><br><br>Sign Out?`;
                 container.className = "choice-buttons-row";
                 container.innerHTML = `
                     <button class="btn-choice btn-choice-left" id="btnConfirmSignOutCancel">Cancel</button>
@@ -651,7 +652,7 @@ function toggleDisplayTheme() {
 if (!meta.lastMonthPopulated) {
     meta.lastMonthPopulated = currentSystemMonth;
     meta.lastUpdated = Date.now();
-meta.theme = localStorage.getItem('rne_app_theme') || 'light';
+    meta.theme = localStorage.getItem('rne_app_theme') || 'light';
     
     // Preserve the blank-state flag during first initialization.
     localStorage.setItem('household_expenses', JSON.stringify(expenses));
@@ -1211,7 +1212,7 @@ async function triggerResetToScratch() {
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v66.2)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v66.3)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1921,10 +1922,11 @@ if (meta.isInitialBlank === true) {
                     localStorage.setItem('household_templates', JSON.stringify(cloudDb.templates || []));
                     localStorage.setItem('household_meta', JSON.stringify(cloudDb.meta || { lastUpdated: Date.now() }));
 
-if (cloudDb.meta && cloudDb.meta.theme) {
-        localStorage.setItem('rne_app_theme', cloudDb.meta.theme);
-        document.documentElement.setAttribute('data-theme', cloudDb.meta.theme);
-    }
+// Instantly apply downloaded user theme to current browser DOM & localStorage
+            if (cloudDb.meta && cloudDb.meta.theme) {
+                localStorage.setItem('rne_app_theme', cloudDb.meta.theme);
+                document.documentElement.setAttribute('data-theme', cloudDb.meta.theme);
+            }
                     
                     updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
                     location.reload();
