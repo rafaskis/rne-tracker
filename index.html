@@ -299,12 +299,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v65</div>
+    <div class="version-watermark">RNE Tracker • v65.1</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260826_v65
+        // VERSION TRACKER REFERENCE: 260826_v65.1
         // ==========================================
 
         const SUPABASE_URL = 'https://ztgwsvhikhefuutdnvwt.supabase.co';
@@ -1105,16 +1105,65 @@
             }
         }
 
-        function triggerResetToScratch() {
-            if (confirm("Are you sure you want to clear your local database files completely? All stored configuration profiles will be wiped out.")) {
-                localStorage.clear();
-                expenses = [];
-                templates = [];
-                meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now(), isInitialBlank: true };
-                localStorage.setItem('household_meta', JSON.stringify(meta));
-                location.reload();
+async function triggerResetToScratch() {
+    if (!confirm("Are you sure you want to clear your data completely?")) {
+        return;
+    }
+
+    // If a user is logged in, remove their cloud backup first.
+    if (activeUser && supabaseClient) {
+        updateCloudStatusInterfaceDisplay("☁ Clearing Cloud Database...");
+
+        const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
+
+        try {
+            const { error } = await supabaseClient.storage
+                .from('rne_backups')
+                .remove([filePath]);
+
+            if (error) {
+                console.error("Cloud Reset Delete Error:", error);
+
+                alert(
+                    "The cloud database could not be cleared.\n\n" +
+                    "Your local data has NOT been deleted."
+                );
+
+                updateCloudStatusInterfaceDisplay("☁ Cloud Reset Failed");
+                return;
             }
+
+            console.log("Cloud backup deleted successfully:", filePath);
+
+        } catch (err) {
+            console.error("Cloud Reset Exception:", err);
+
+            alert(
+                "The cloud database could not be cleared.\n\n" +
+                "Your local data has NOT been deleted."
+            );
+
+            updateCloudStatusInterfaceDisplay("☁ Cloud Reset Failed");
+            return;
         }
+    }
+
+    // Clear local application data.
+    localStorage.clear();
+
+    expenses = [];
+    templates = [];
+
+    meta = {
+        lastMonthPopulated: currentSystemMonth,
+        lastUpdated: Date.now(),
+        isInitialBlank: true
+    };
+
+    localStorage.setItem('household_meta', JSON.stringify(meta));
+
+    location.reload();
+}
 
         function exportToFile() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ meta, templates, expenses }));
@@ -1150,7 +1199,7 @@
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v65)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v65.1)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
