@@ -511,7 +511,7 @@ function toggleDisplayTheme() {
                 const textContainer = document.getElementById('choiceOverlayMessage');
                 const container = document.getElementById('choiceButtonsContainer');
 
-                //textContainer.innerHTML = `<strong>Sign Out</strong><br><br>Sign Out?`;
+                textContainer.innerHTML = `<strong>Sign Out</strong><br><br>Sign Out?`;
                 container.className = "choice-buttons-row";
                 container.innerHTML = `
                     <button class="btn-choice btn-choice-left" id="btnConfirmSignOutCancel">Cancel</button>
@@ -534,6 +534,16 @@ function toggleDisplayTheme() {
                 cancelBtn.addEventListener('click', handleCancel);
                 proceedBtn.addEventListener('click', handleProceed);
                 overlay.style.display = 'flex';
+
+                // Remove or pass an empty string/null for the modal body text
+        showModal({
+            title: "Sign out?",
+            message: "", // Leave blank so the body text isn't repeated
+            confirmText: "Sign Out",
+            cancelText: "Cancel",
+            onConfirm: () => resolve(true),
+            onCancel: () => resolve(false)
+        });
             });
         }
 
