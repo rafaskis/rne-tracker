@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RNE Tracker</title>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Supabase JS Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
         :root {
@@ -19,7 +20,7 @@
             --utility: #4b5563;
             --edit-color: #0284c7;
             --group-header-bg: #e2e8f0;
-            --gdrive-color: #0f9d58;
+            --supabase-color: #3ecf8e;
             --cost-text: #111827;
             --cloud-bar-bg: #e2e8f0;
             --cloud-bar-text: #475569;
@@ -62,8 +63,9 @@
         .top-cloud-bar { display: flex; justify-content: space-between; align-items: center; background: var(--cloud-bar-bg); padding: 8px 12px; border-radius: 10px; margin-bottom: 12px; border: 1px dashed var(--cloud-bar-border); font-size: 13px; }
         .cloud-status-text { font-weight: 600; color: var(--cloud-bar-text); display: flex; align-items: center; gap: 4px; }
         .btn-cloud-discreet { width: auto; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 4px; }
-        .btn-cloud-signin { background: var(--gdrive-color); box-shadow: 0 1px 2px rgba(15, 157, 88, 0.2); }
+        .btn-cloud-signin { background: var(--supabase-color); color: #1c1c1c; box-shadow: 0 1px 2px rgba(62, 207, 142, 0.3); }
         .btn-cloud-signout { background: var(--utility); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .btn-cloud-password { background: var(--edit-color); }
         .btn-cloud-push { background: #4285f4; }
         .btn-cloud-pull { background: #16a34a; }
         .discreet-actions-grid { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
@@ -165,6 +167,11 @@
         .btn-choice-full { width: 100%; margin-bottom: 8px; }
         .vertical-buttons { flex-direction: column; gap: 4px; width: 100%; display: flex; }
 
+        /* Auth / Password Modal */
+        .auth-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2100; padding: 24px; align-items: center; justify-content: center; }
+        .auth-card { background: var(--card-bg); border-radius: 16px; padding: 24px; width: 100%; max-width: 360px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
+        .auth-card h3 { font-size: 18px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+
         /* Persistent Version Watermark */
         .version-watermark { position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; user-select: none; pointer-events: none; }
     </style>
@@ -175,9 +182,10 @@
         <div class="cloud-status-text" id="cloudStatusLabel">☁ Cloud Offline</div>
         <div class="discreet-actions-grid">
             <button class="btn-theme-toggle" id="themeToggleBtn" onclick="toggleDisplayTheme()">Toggle Theme</button>
-            <button class="btn-cloud-discreet btn-cloud-signin" id="gdriveMainActionBtn" onclick="toggleGoogleDriveConnectionState()">Sign In</button>
-            <button class="btn-cloud-discreet btn-cloud-push" id="gdrivePushBtn" onclick="manuallyTriggerCloudBackup()">Backup</button>
-            <button class="btn-cloud-discreet btn-cloud-pull" id="gdrivePullBtn" onclick="manuallyTriggerCloudRestore()">Restore</button>
+            <button class="btn-cloud-discreet btn-cloud-signin" id="supabaseMainActionBtn" onclick="handleAuthActionBtn()">Sign In</button>
+            <button class="btn-cloud-discreet btn-cloud-password" id="supabaseChangePassBtn" style="display:none;" onclick="openPasswordModal()">Password</button>
+            <button class="btn-cloud-discreet btn-cloud-push" id="supabasePushBtn" onclick="manuallyTriggerCloudBackup()">Backup</button>
+            <button class="btn-cloud-discreet btn-cloud-pull" id="supabasePullBtn" onclick="manuallyTriggerCloudRestore()">Restore</button>
         </div>
     </div>
 
@@ -204,12 +212,12 @@
         <button class="btn-nav-arrow" onclick="stepMonth(1)" title="Next Month">▶</button>
     </div>
 
-<div class="top-bar">
-    <div class="header-card">
-        <div id="unpaidBannerLabel" style="font-size: 14px; color: var(--text-muted); font-weight: 500;">TOTAL UNPAID FOR THIS MONTH</div>
-        <div class="unpaid-badge" id="totalUnpaid">€0.00</div>
+    <div class="top-bar">
+        <div class="header-card">
+            <div id="unpaidBannerLabel" style="font-size: 14px; color: var(--text-muted); font-weight: 500;">TOTAL UNPAID FOR THIS MONTH</div>
+            <div class="unpaid-badge" id="totalUnpaid">€0.00</div>
+        </div>
     </div>
-</div>
 
     <button id="formTriggerBtn" class="btn-trigger-form" onclick="openCreateMode()">+ Add New Expense</button>
 
@@ -271,17 +279,40 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v63.3.4</div>
+    <!-- Auth & Password Modals -->
+    <div class="auth-overlay" id="loginModalOverlay">
+        <div class="auth-card">
+            <h3 id="authModalTitle">Supabase Sign In</h3>
+            <input type="text" id="loginUsername" placeholder="Username">
+            <input type="password" id="loginPassword" placeholder="Password">
+            <button class="btn-primary" onclick="executeSupabaseLogin()">Sign In</button>
+            <button class="btn-cancel-form" onclick="closeAuthModal()">Cancel</button>
+        </div>
+    </div>
+
+    <div class="auth-overlay" id="passwordModalOverlay">
+        <div class="auth-card">
+            <h3>Change Password</h3>
+            <input type="password" id="newPassword" placeholder="New Password">
+            <button class="btn-primary" onclick="executePasswordChange()">Update Password</button>
+            <button class="btn-cancel-form" onclick="closePasswordModal()">Cancel</button>
+        </div>
+    </div>
+
+    <div class="version-watermark">RNE Tracker • v64</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260820_v63.3.4
+        // VERSION TRACKER REFERENCE: 260826_v64
         // ==========================================
 
-        const GOOGLE_CLIENT_ID = '527213566046-7tfns91ll8c84v26tuipqnk4a1lt2bbt.apps.googleusercontent.com';
-        const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+        const SUPABASE_URL = 'https://ztgwsvhikhefuutdnvwt.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_vBHvaxI4sTTS8-PIC_wyiw_8VW5xbXG';
         const DEDICATED_FILE_NAME = 'rne_database.json';
+
+        let supabase = null;
+        let activeUser = null;
 
         let expenses = [];
         let templates = [];
@@ -289,10 +320,6 @@
 
         let editingTargetId = null;
         let collapsedGroups = JSON.parse(localStorage.getItem('household_collapsed_groups')) || {};
-        let tokenClient = null;
-        let activeAccessToken = null;
-        let gdriveFileId = null;
-
         let isCloudSyncPending = false;
         
         const recurrenceGroupsConfig = [
@@ -476,7 +503,7 @@
                 const textContainer = document.getElementById('choiceOverlayMessage');
                 const container = document.getElementById('choiceButtonsContainer');
 
-                textContainer.innerHTML = `<strong>Sign Out</strong><br><br>Disconnect this browser from Google Drive? Local data adjustments will remain intact until browser cache is explicitly cleared.`;
+                textContainer.innerHTML = `<strong>Sign Out</strong><br><br>Disconnect this session from Supabase? Local data adjustments will remain intact until browser cache is explicitly cleared.`;
                 container.className = "choice-buttons-row";
                 container.innerHTML = `
                     <button class="btn-choice btn-choice-left" id="btnConfirmSignOutCancel">Cancel</button>
@@ -560,21 +587,21 @@
             return '';
         }
 
-function getMonthList() {
-    const list = [];
-    const d = new Date();
-    for (let i = -12; i <= 12; i++) {
-        let targetMonth = d.getMonth() + i;
-        let targetYear = d.getFullYear() + Math.floor(targetMonth / 12);
-        let m = ((targetMonth % 12) + 12) % 12 + 1;
-        list.push(`${targetYear}-${m < 10 ? '0' + m : m}`);
-    }
-    return list;
-}
+        function getMonthList() {
+            const list = [];
+            const d = new Date();
+            for (let i = -12; i <= 12; i++) {
+                let targetMonth = d.getMonth() + i;
+                let targetYear = d.getFullYear() + Math.floor(targetMonth / 12);
+                let m = ((targetMonth % 12) + 12) % 12 + 1;
+                list.push(`${targetYear}-${m < 10 ? '0' + m : m}`);
+            }
+            return list;
+        }
 
-const monthsRange = getMonthList();
-const now = new Date();
-const currentSystemMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const monthsRange = getMonthList();
+        const now = new Date();
+        const currentSystemMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
         
         const filterSelect = document.getElementById('monthViewFilter');
         const formMonthSelect = document.getElementById('expMonthTarget');
@@ -586,17 +613,16 @@ const currentSystemMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).pa
             formMonthSelect.options.add(new Option(label, mStr));
         });
 
-window.onload = function() {
-    initializeSavedDisplayTheme();
-    // Default the month selector to current system month on startup
-    if (filterSelect) {
-        filterSelect.value = currentSystemMonth;
-    }
-    loadLocalStorageCache();
-    detectAndTriggerArrearsLogic();
-    render();
-    initializeGoogleIdentityServiceServices();
-};
+        window.onload = function() {
+            initializeSavedDisplayTheme();
+            if (filterSelect) {
+                filterSelect.value = currentSystemMonth;
+            }
+            loadLocalStorageCache();
+            detectAndTriggerArrearsLogic();
+            render();
+            initializeSupabaseServices();
+        };
 
         function loadLocalStorageCache() {
             const cacheExpenses = localStorage.getItem('household_expenses');
@@ -611,24 +637,15 @@ window.onload = function() {
                 meta.isInitialBlank = true;
             }
 
-            // Check if the user is logged into Google Drive
-            const savedToken = localStorage.getItem('gdrive_access_token');
-            if (savedToken) {
-                // LOCK local state mutation until cloud check completes
-                isCloudSyncPending = true;
-            } else {
-                // Offline mode: proceed with normal auto-population immediately
-                if (!meta.lastMonthPopulated) {
-                    meta.lastMonthPopulated = currentSystemMonth;
-                    meta.lastUpdated = Date.now();
-                    saveStateToLocalStorage();
-                }
-                ensureSequencePopulatedUpToMonth(filterSelect.value);
+            if (!meta.lastMonthPopulated) {
+                meta.lastMonthPopulated = currentSystemMonth;
+                meta.lastUpdated = Date.now();
+                saveStateToLocalStorage();
             }
+            ensureSequencePopulatedUpToMonth(filterSelect.value);
         }
 
         function saveStateToLocalStorage() {
-            // Prevent accidental timestamp updates while waiting for cloud evaluation
             if (isCloudSyncPending) return;
             meta.lastUpdated = Date.now();
             meta.isInitialBlank = false;
@@ -647,35 +664,33 @@ window.onload = function() {
             }
         }
 
-async function executeBatchBringArrearsToCurrent() {
-    const absoluteLeftOvers = expenses.filter(e => e.month < currentSystemMonth && e.status === 'unpaid');
-    
-    absoluteLeftOvers.forEach(e => {
-        e.status = 'paid';
-        const alreadyExists = expenses.find(x => x.seriesId === e.seriesId && x.month === currentSystemMonth);
-        if (!alreadyExists) {
-            expenses.push({
-                id: 'exp_' + Math.random().toString(36).substr(2, 9),
-                seriesId: e.seriesId,
-                name: e.name,
-                cost: e.cost,
-                month: currentSystemMonth,
-                recur: e.recur,
-                status: 'unpaid',
-                originated: e.originated || e.originatedMonth || e.origin || e.originMonth || e.month,
-                isEdited: e.isEdited || false
+        async function executeBatchBringArrearsToCurrent() {
+            const absoluteLeftOvers = expenses.filter(e => e.month < currentSystemMonth && e.status === 'unpaid');
+            
+            absoluteLeftOvers.forEach(e => {
+                e.status = 'paid';
+                const alreadyExists = expenses.find(x => x.seriesId === e.seriesId && x.month === currentSystemMonth);
+                if (!alreadyExists) {
+                    expenses.push({
+                        id: 'exp_' + Math.random().toString(36).substr(2, 9),
+                        seriesId: e.seriesId,
+                        name: e.name,
+                        cost: e.cost,
+                        month: currentSystemMonth,
+                        recur: e.recur,
+                        status: 'unpaid',
+                        originated: e.originated || e.originatedMonth || e.origin || e.originMonth || e.month,
+                        isEdited: e.isEdited || false
+                    });
+                }
             });
+
+            filterSelect.value = currentSystemMonth;
+            saveStateToLocalStorage();
+            detectAndTriggerArrearsLogic();
+            render();
+            await silentlyExecuteCloudSyncEngineCheck();
         }
-    });
-
-    // Switch view back to the current month to view brought-forward items immediately
-    filterSelect.value = currentSystemMonth;
-
-    saveStateToLocalStorage();
-    detectAndTriggerArrearsLogic();
-    render();
-    await silentlyExecuteCloudSyncEngineCheck();
-}
 
         async function executeBatchDiscardArrears() {
             const activeMonth = filterSelect.value;
@@ -695,7 +710,6 @@ async function executeBatchBringArrearsToCurrent() {
                 if (!tpl || !tpl.seriesId) return;
 
                 if (shouldTemplateGenerateInstance(tpl, targetMonthStr)) {
-                    // Check if an instance originating from targetMonthStr already exists anywhere in expenses
                     const exists = expenses.some(e => 
                         e.seriesId === tpl.seriesId && 
                         (e.originMonth === targetMonthStr || e.originated === targetMonthStr || (!e.originMonth && !e.originated && e.month === targetMonthStr))
@@ -727,12 +741,9 @@ async function executeBatchBringArrearsToCurrent() {
 
         function shouldTemplateGenerateInstance(tpl, targetMonthStr) {
             if (!tpl) return false;
-            // Skip generation if this month was explicitly deleted by the user
             if (Array.isArray(tpl.excludedMonths) && tpl.excludedMonths.includes(targetMonthStr)) {
                 return false;
             }
-            // Fallback: If startMonth is missing, default to the earliest known expense 
-            // for this series, or fall back to the current target month.
             let effectiveStartMonth = tpl.startMonth;
             if (!effectiveStartMonth) {
                 const seriesExpenses = expenses.filter(e => e.seriesId === tpl.seriesId);
@@ -994,7 +1005,6 @@ async function executeBatchBringArrearsToCurrent() {
                 return;
             }
             
-            // Preserve original month before moving if not set
             if (!exp.originMonth && !exp.originated) {
                 exp.originMonth = exp.month;
                 exp.originated = exp.month;
@@ -1038,21 +1048,20 @@ async function executeBatchBringArrearsToCurrent() {
             const exp = expenses.find(e => e.id === id);
             if (!exp) return;
 
-if (exp.recur === 0) {
-    const decision = await presentCustomChoicePrompt(
-        `Remove custom one-time item "${exp.name}" entirely?`,
-        "Cancel",
-        "Delete",
-        true
-    );
-    if (decision === 'right') {
-        expenses = expenses.filter(e => e.id !== id);
-        saveStateToLocalStorage();
-    }
-} else {
+            if (exp.recur === 0) {
+                const decision = await presentCustomChoicePrompt(
+                    `Remove custom one-time item "${exp.name}" entirely?`,
+                    "Cancel",
+                    "Delete",
+                    true
+                );
+                if (decision === 'right') {
+                    expenses = expenses.filter(e => e.id !== id);
+                    saveStateToLocalStorage();
+                }
+            } else {
                 const decision = await presentThreeWayDeleteCrossroads();
                 if (decision === 'current') {
-                    // Record the deletion in the parent template so auto-population skips it
                     const tpl = templates.find(t => t.seriesId === exp.seriesId);
                     if (tpl) {
                         if (!tpl.excludedMonths) tpl.excludedMonths = [];
@@ -1137,33 +1146,27 @@ if (exp.recur === 0) {
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v63.3.4)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v64)
         // =========================================================================
-function exportToPDF() {
+        function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
             if (!selectEl) return;
-            const rawValue = selectEl.value; // e.g., "2026-08"
+            const rawValue = selectEl.value;
             
-            // Check if the selected report month is older than current system month
             const isReportPastMonth = rawValue < currentSystemMonth;
-
-            // Exact month/year label resolution from the select box text
             const reportDateString = selectEl.options[selectEl.selectedIndex].text;
 
-            // Build Current Generated Timestamp: "as of DD/MM/YYYY HH:MM"
             const now = new Date();
             const pad = (n) => String(n).padStart(2, '0');
             const liveDateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
             const liveTimeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
             const asOfTimestampString = `as of ${liveDateStr} ${liveTimeStr}`;
 
-            // Document Title metadata timestamp definition
             const timestamp = `${String(now.getFullYear()).slice(-2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
             const originalTitle = document.title;
             const parsedFileDate = rawValue.replace('-', '_');
             document.title = `rne_report_${parsedFileDate}-${timestamp}`;
 
-            // Compute Summary Card aggregates
             const monthFilteredItems = expenses.filter(e => e.month === rawValue);
             let totalUnpaidSum = 0;
             let totalOverallSum = 0;
@@ -1176,12 +1179,10 @@ function exportToPDF() {
                 }
             });
 
-            // Dynamically construct the Summary Grid Layout
             let summaryGridHtml = '';
             let summaryGridCss = '';
 
             if (isReportPastMonth) {
-                // Single centered card for past months
                 summaryGridCss = `
                     .summary-grid-layout {
                         display: flex;
@@ -1206,7 +1207,6 @@ function exportToPDF() {
                     </div>
                 `;
             } else {
-                // Standard two-column grid for current and future months
                 summaryGridCss = `
                     .summary-grid-layout {
                         display: grid;
@@ -1236,7 +1236,6 @@ function exportToPDF() {
                 `;
             }
 
-            // 1. Generate Clean Document Data Stream HTML
             let expensesHtml = '';
             if (monthFilteredItems.length === 0) {
                 expensesHtml = '<p style="text-align: center; color: #666; font-size: 14px; margin-top: 30px;">No records logged for this period.</p>';
@@ -1248,12 +1247,10 @@ function exportToPDF() {
                     });
 
                     if (grpItems.length > 0) {
-                        // Category sum tracks ONLY unpaid expenses
                         const groupUnpaidSum = grpItems.reduce((sum, e) => {
                             return sum + (e.status === 'unpaid' ? parseFloat(e.cost || 0) : 0);
                         }, 0);
 
-                        // Define Category Badge appearance state
                         let groupBadgeHtml = '';
                         if (groupUnpaidSum === 0) {
                             groupBadgeHtml = `<span style="background: #dcfce7; color: #16a34a; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 800; border: 1px solid #bbf7d0;">PAID</span>`;
@@ -1270,7 +1267,6 @@ function exportToPDF() {
                                 <div>
                         `;
 
-                        // Sort items so 'unpaid' entries appear first before 'paid' entries
                         const sortedGrpItems = [...grpItems].sort((a, b) => {
                             if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
                             if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
@@ -1282,14 +1278,11 @@ function exportToPDF() {
                             const itemColor = isUnpaid ? '#dc2626' : '#16a34a';
                             const costDecorationStyle = isUnpaid ? '' : 'text-decoration: line-through;';
                             
-                            // Build Badges Container dynamically (Decoupled Checks)
                             let badgeGroupHtml = '';
-                            
                             if (e.isEdited) {
                                 badgeGroupHtml += ` <span style="font-size: 10px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 1px 4px; border-radius:3px; margin-left: 4px; text-decoration: none !important; display: inline-block; vertical-align: middle;">EDITED</span>`;
                             }
                             
-                            // UNIVERSAL SMART DATE RESOLVER
                             const rawOrigin = e.originated || e.originatedMonth || e.origin || e.originMonth;
                             if (rawOrigin) {
                                 let parsedYear = "";
@@ -1336,7 +1329,6 @@ function exportToPDF() {
                 });
             }
 
-            // 2. Open isolated window context
             const printWindow = window.open('', '_blank');
             if (!printWindow) {
                 alert("Please allow popups to export PDFs.");
@@ -1344,7 +1336,6 @@ function exportToPDF() {
                 return;
             }
 
-            // 3. Document Stream Transmission Injection
             printWindow.document.write(`
                 <!DOCTYPE html>
                 <html>
@@ -1433,37 +1424,34 @@ function exportToPDF() {
         }
 
         // ==========================================
-        // GOOGLE DRIVE SYNC PIPELINE ARCHITECTURE LAYER
+        // SUPABASE BACKUP & AUTH ARCHITECTURE LAYER
         // ==========================================
-        function initializeGoogleIdentityServiceServices() {
-            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-                console.warn("Google API script asset is not fully loaded yet.");
+        async function initializeSupabaseServices() {
+            if (typeof window.supabase === 'undefined') {
+                console.warn("Supabase SDK is loading or unavailable.");
+                updateCloudStatusInterfaceDisplay("☁ Supabase SDK Error");
                 return;
             }
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: GOOGLE_CLIENT_ID,
-                scope: GOOGLE_DRIVE_SCOPE,
-                callback: async (tokenResponse) => {
-                    if (tokenResponse.error) {
-                        updateCloudStatusInterfaceDisplay("☁ Connection Fault");
-                        return;
-                    }
-                    activeAccessToken = tokenResponse.access_token;
-                    localStorage.setItem('gdrive_access_token', activeAccessToken);
-                    updateCloudStatusInterfaceDisplay("☁ Resolving Profile...");
-                    evaluateSignActionBtnVisualState();
-                    await lookupAndSynchronizeCloudBackupStorageState(true);
-                }
-            });
-            
-            const savedToken = localStorage.getItem('gdrive_access_token');
-            if (savedToken) {
-                activeAccessToken = savedToken;
+
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session && session.user) {
+                activeUser = session.user;
                 evaluateSignActionBtnVisualState();
                 silentlyExecuteCloudSyncEngineCheck();
             } else {
                 evaluateSignActionBtnVisualState();
             }
+
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (session && session.user) {
+                    activeUser = session.user;
+                } else {
+                    activeUser = null;
+                }
+                evaluateSignActionBtnVisualState();
+            });
         }
 
         function updateCloudStatusInterfaceDisplay(statusTextString) {
@@ -1471,66 +1459,133 @@ function exportToPDF() {
         }
 
         function evaluateSignActionBtnVisualState() {
-            const actionBtn = document.getElementById('gdriveMainActionBtn');
-            if (activeAccessToken) {
-                actionBtn.innerText = "Sign Out";
+            const actionBtn = document.getElementById('supabaseMainActionBtn');
+            const passBtn = document.getElementById('supabaseChangePassBtn');
+            if (activeUser) {
+                const usernameDisplay = activeUser.email ? activeUser.email.split('@')[0] : 'User';
+                actionBtn.innerText = `Sign Out (${usernameDisplay})`;
                 actionBtn.className = "btn-cloud-discreet btn-cloud-signout";
+                passBtn.style.display = "inline-flex";
             } else {
                 actionBtn.innerText = "Sign In";
                 actionBtn.className = "btn-cloud-discreet btn-cloud-signin";
+                passBtn.style.display = "none";
             }
         }
 
-        async function toggleGoogleDriveConnectionState() {
-            if (activeAccessToken) {
+        async function handleAuthActionBtn() {
+            if (activeUser) {
                 const confirmed = await presentInteractiveSignOutConfirmation();
                 if (confirmed) {
-                    activeAccessToken = null;
-                    gdriveFileId = null;
-                    localStorage.removeItem('gdrive_access_token');
+                    await supabase.auth.signOut();
+                    activeUser = null;
                     updateCloudStatusInterfaceDisplay("☁ Cloud Offline");
                     evaluateSignActionBtnVisualState();
                 }
             } else {
-                if (!tokenClient) {
-                    alert("Google Interface components are initialize-pending.");
-                    return;
-                }
-                tokenClient.requestAccessToken({ prompt: 'consent' });
+                openLoginModal();
+            }
+        }
+
+        function openLoginModal() {
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('loginModalOverlay').style.display = 'flex';
+        }
+
+        function closeAuthModal() {
+            document.getElementById('loginModalOverlay').style.display = 'none';
+        }
+
+        async function executeSupabaseLogin() {
+            const rawUsername = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!rawUsername || !password) {
+                alert("Please fill in both username and password.");
+                return;
+            }
+
+            const cleanUsername = rawUsername.toLowerCase().replace(/@.*$/, '');
+            const fullEmail = `${cleanUsername}@rne.tracker`;
+
+            updateCloudStatusInterfaceDisplay("☁ Authenticating...");
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: fullEmail,
+                password: password
+            });
+
+            if (error) {
+                alert("Login failed: " + error.message);
+                updateCloudStatusInterfaceDisplay("☁ Auth Error");
+                return;
+            }
+
+            activeUser = data.user;
+            closeAuthModal();
+            evaluateSignActionBtnVisualState();
+            updateCloudStatusInterfaceDisplay("☁ Resolving Profile...");
+            await lookupAndSynchronizeCloudBackupStorageState(true);
+        }
+
+        function openPasswordModal() {
+            document.getElementById('newPassword').value = '';
+            document.getElementById('passwordModalOverlay').style.display = 'flex';
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModalOverlay').style.display = 'none';
+        }
+
+        async function executePasswordChange() {
+            const newPass = document.getElementById('newPassword').value;
+            if (!newPass || newPass.length < 6) {
+                alert("Password must be at least 6 characters long.");
+                return;
+            }
+
+            updateCloudStatusInterfaceDisplay("☁ Updating Password...");
+            const { error } = await supabase.auth.updateUser({ password: newPass });
+
+            if (error) {
+                alert("Password update failed: " + error.message);
+                updateCloudStatusInterfaceDisplay("☁ Password Error");
+            } else {
+                alert("Password updated successfully!");
+                closePasswordModal();
+                updateCloudStatusInterfaceDisplay("☁ Supabase Ready");
             }
         }
 
         async function silentlyExecuteCloudSyncEngineCheck() {
-            if (!activeAccessToken) return;
+            if (!activeUser) return;
             await lookupAndSynchronizeCloudBackupStorageState(false);
         }
 
         async function lookupAndSynchronizeCloudBackupStorageState(triggerUserPromptDialog = false) {
+            if (!supabase || !activeUser) return;
             try {
-                let response = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, {
-                    headers: { 'Authorization': `Bearer ${activeAccessToken}` }
-                });
-                let result = await response.json();
-                
-                if (result.error) {
-                    /* ... existing error handling ... */
-                    isCloudSyncPending = false; // Release lock on error
+                const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
+                const { data, error } = await supabase.storage.from('rne_backups').download(filePath);
+
+                if (error && error.status !== 404 && error.error !== 'Object not found') {
+                    isCloudSyncPending = false;
+                    updateCloudStatusInterfaceDisplay("☁ Storage Error");
                     return;
                 }
-        
-                if (result.files && result.files.length > 0) {
-                    gdriveFileId = result.files[0].id;
-                    await checkTimelineMetricsAgainstCloudTarget(gdriveFileId, triggerUserPromptDialog);
+
+                if (data) {
+                    const text = await data.text();
+                    const cloudData = JSON.parse(text);
+                    await checkTimelineMetricsAgainstCloudTarget(cloudData, triggerUserPromptDialog);
                 } else {
                     updateCloudStatusInterfaceDisplay("☁ Initializing Sync...");
-                    // Lock must be released before writing
-                    isCloudSyncPending = false; 
+                    isCloudSyncPending = false;
                     await performCloudWriteExecutionSequence(true);
                 }
             } catch (err) {
                 updateCloudStatusInterfaceDisplay("☁ Cloud Offline");
             } finally {
-                // Always ensure lock is released and local population runs on pure state
                 if (isCloudSyncPending) {
                     isCloudSyncPending = false;
                     ensureSequencePopulatedUpToMonth(filterSelect.value);
@@ -1540,13 +1595,8 @@ function exportToPDF() {
             }
         }
 
-        async function checkTimelineMetricsAgainstCloudTarget(fileId, triggerUserPromptDialog) {
+        async function checkTimelineMetricsAgainstCloudTarget(cloudData, triggerUserPromptDialog) {
             try {
-                let response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-                    headers: { 'Authorization': `Bearer ${activeAccessToken}` }
-                });
-                let cloudData = await response.json();
-
                 if (meta.isInitialBlank === true || (expenses.length === 0 && templates.length === 0)) {
                     console.log("Blank environment lifecycle profile found. Syncing from cloud...");
                     await performCloudPullExtractionSequence(cloudData);
@@ -1567,7 +1617,7 @@ function exportToPDF() {
                 } else if (cloudStamp > localStamp) {
                     updateCloudStatusInterfaceDisplay("☁ Update Available");
                     if (triggerUserPromptDialog) {
-                        const decision = await presentCloudSyncCrossroadsPrompt('cloud-newer', "The backup copy on Google Drive is newer than your current local browser instance.", localDateStr, cloudDateStr);
+                        const decision = await presentCloudSyncCrossroadsPrompt('cloud-newer', "The backup copy on Supabase is newer than your current local browser instance.", localDateStr, cloudDateStr);
                         if (decision === 'pull') await performCloudPullExtractionSequence(cloudData);
                         else if (decision === 'push') await performCloudWriteExecutionSequence(false);
                     }
@@ -1585,30 +1635,20 @@ function exportToPDF() {
         }
 
         async function manuallyTriggerCloudBackup() {
-            if (!activeAccessToken) {
-                updateCloudStatusInterfaceDisplay("☁ Access Token Missing");
+            if (!activeUser) {
+                updateCloudStatusInterfaceDisplay("☁ Not Authenticated");
+                openLoginModal();
                 return;
             }
             updateCloudStatusInterfaceDisplay("☁ Fetching State...");
             try {
-                if (!gdriveFileId) {
-                    let response = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, { 
-                        headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-                    });
-                    let result = await response.json();
-                    if (result.files && result.files.length > 0) {
-                        gdriveFileId = result.files[0].id;
-                    }
-                }
-                
+                const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
                 let cloudDb = null;
-                if (gdriveFileId) {
-                    let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, { 
-                        headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-                    });
-                    if (response.ok) {
-                        cloudDb = await response.json();
-                    }
+
+                const { data, error } = await supabase.storage.from('rne_backups').download(filePath);
+                if (data && !error) {
+                    const text = await data.text();
+                    cloudDb = JSON.parse(text);
                 }
 
                 let localMeta = { lastUpdated: 0 };
@@ -1648,7 +1688,7 @@ function exportToPDF() {
                 if (decision === 'push') {
                     await performCloudWriteExecutionSequence();
                 } else if (decision === 'pull') {
-                    await performCloudPullExtractionSequence();
+                    await performCloudPullExtractionSequence(cloudDb);
                 }
             } catch (err) {
                 console.error("Sync Crossroads Failure Details:", err);
@@ -1657,46 +1697,38 @@ function exportToPDF() {
         }
 
         async function manuallyTriggerCloudRestore() {
-            if (!activeAccessToken) {
-                updateCloudStatusInterfaceDisplay("☁ Access Token Missing");
+            if (!activeUser) {
+                updateCloudStatusInterfaceDisplay("☁ Not Authenticated");
+                openLoginModal();
                 return;
             }
             await manuallyTriggerCloudBackup();
         }
 
-        async function performCloudPullExtractionSequence() {
-            if (!activeAccessToken) return;
+        async function performCloudPullExtractionSequence(providedCloudDb = null) {
+            if (!activeUser) return;
             updateCloudStatusInterfaceDisplay("☁ Downloading...");
 
             try {
-                if (!gdriveFileId) {
-                    let fileSearchResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${DEDICATED_FILE_NAME}' and trashed=false`, { 
-                        headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-                    });
-                    let searchResult = await fileSearchResponse.json();
-                    if (searchResult.files && searchResult.files.length > 0) {
-                        gdriveFileId = searchResult.files[0].id;
+                let cloudDb = providedCloudDb;
+
+                if (!cloudDb) {
+                    const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
+                    const { data, error } = await supabase.storage.from('rne_backups').download(filePath);
+                    if (error || !data) {
+                        updateCloudStatusInterfaceDisplay("☁ Cloud File Missing");
+                        return;
                     }
+                    const text = await data.text();
+                    cloudDb = JSON.parse(text);
                 }
 
-                if (!gdriveFileId) {
-                    updateCloudStatusInterfaceDisplay("☁ Cloud File Missing");
-                    return;
-                }
-
-                let response = await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`, { 
-                    headers: { 'Authorization': `Bearer ${activeAccessToken}` } 
-                });
-
-                if (response.ok) {
-                    let cloudDb = await response.json();
-                    if (cloudDb) {
-                        localStorage.setItem('household_expenses', JSON.stringify(cloudDb.expenses || []));
-                        localStorage.setItem('household_templates', JSON.stringify(cloudDb.templates || []));
-                        localStorage.setItem('household_meta', JSON.stringify(cloudDb.meta || { lastUpdated: Date.now() }));
-                        updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
-                        location.reload();
-                    }
+                if (cloudDb) {
+                    localStorage.setItem('household_expenses', JSON.stringify(cloudDb.expenses || []));
+                    localStorage.setItem('household_templates', JSON.stringify(cloudDb.templates || []));
+                    localStorage.setItem('household_meta', JSON.stringify(cloudDb.meta || { lastUpdated: Date.now() }));
+                    updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
+                    location.reload();
                 } else {
                     updateCloudStatusInterfaceDisplay("☁ Extract Action Failed");
                 }
@@ -1707,7 +1739,7 @@ function exportToPDF() {
         }
 
         async function performCloudWriteExecutionSequence(isInitialInstantiation = false) {
-            if (!activeAccessToken) return;
+            if (!activeUser) return;
             updateCloudStatusInterfaceDisplay("☁ Synchronizing...");
 
             meta.lastUpdated = Date.now();
@@ -1720,46 +1752,18 @@ function exportToPDF() {
             };
 
             try {
-                let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-                let method = 'POST';
+                const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
+                const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
 
-                if (gdriveFileId) {
-                    url = `https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=multipart`;
-                    method = 'PATCH';
-                }
+                const { data, error } = await supabase.storage
+                    .from('rne_backups')
+                    .upload(filePath, blob, { upsert: true });
 
-                const metadata = {
-                    name: DEDICATED_FILE_NAME,
-                    mimeType: 'application/json'
-                };
-
-                const boundary = '32626_v63.3.4_boundary_sync';
-                const delimiter = `\r\n--${boundary}\r\n`;
-                const closeDelimiter = `\r\n--${boundary}--`;
-
-                let body = delimiter +
-                    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-                    JSON.stringify(metadata) +
-                    delimiter +
-                    'Content-Type: application/json\r\n\r\n' +
-                    JSON.stringify(payload) +
-                    closeDelimiter;
-
-                let response = await fetch(url, {
-                    method: method,
-                    headers: {
-                        'Authorization': `Bearer ${activeAccessToken}`,
-                        'Content-Type': `multipart/related; boundary=${boundary}`
-                    },
-                    body: body
-                });
-
-                if (response.ok) {
-                    let resData = await response.json();
-                    if (resData.id) gdriveFileId = resData.id;
-                    updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
-                } else {
+                if (error) {
+                    console.error("Supabase Storage Error:", error);
                     updateCloudStatusInterfaceDisplay("☁ Write Action Failed");
+                } else {
+                    updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
                 }
             } catch (err) {
                 console.error("Cloud Write Stack Error:", err);
@@ -1770,183 +1774,152 @@ function exportToPDF() {
         // ==========================================
         // DYNAMIC DOM RENDERING PIPELINE CONTROLLER
         // ==========================================
-function render() {
-    const activeMonth = filterSelect.value;
-    const container = document.getElementById('listContainer');
-    container.innerHTML = '';
+        function render() {
+            const activeMonth = filterSelect.value;
+            const container = document.getElementById('listContainer');
+            container.innerHTML = '';
 
-    const isPastMonth = activeMonth < currentSystemMonth;
-
-    // Hide or show the "+ Add New Expense" button for historical months
-    const formTriggerBtn = document.getElementById('formTriggerBtn');
-    if (formTriggerBtn) {
-        formTriggerBtn.style.display = isPastMonth ? 'none' : 'block';
-    }
-
-    const currentFilteredList = expenses.filter(e => e.month === activeMonth);
-
-    // 1. Calculate Total Unpaid & Total Monthly Sums
-    let calculatedUnpaidTotalValue = 0;
-    let calculatedMonthTotalValue = 0;
-
-    currentFilteredList.forEach(e => {
-        const cost = parseFloat(e.cost || 0);
-        calculatedMonthTotalValue += cost;
-        if (e.status === 'unpaid') {
-            calculatedUnpaidTotalValue += cost;
-        }
-    });
-
-    // 2. Update Total Banner (Handles Past Months vs Current/Future Months)
-    const totalUnpaidElem = document.getElementById('totalUnpaid');
-    const bannerLabelElem = document.getElementById('unpaidBannerLabel');
-
-    if (isPastMonth) {
-        // Old Month Mode
-        if (bannerLabelElem) bannerLabelElem.innerText = "TOTAL PAID FOR THIS MONTH";
-        totalUnpaidElem.innerText = `€${calculatedMonthTotalValue.toFixed(2)}`;
-        totalUnpaidElem.style.color = "#2e7d32"; // Same green color
-    } else {
-        // Current / Future Month Mode
-        if (bannerLabelElem) bannerLabelElem.innerText = "TOTAL UNPAID FOR THIS MONTH";
-        totalUnpaidElem.innerText = `€${calculatedUnpaidTotalValue.toFixed(2)} / €${calculatedMonthTotalValue.toFixed(2)}`;
-
-        if (calculatedUnpaidTotalValue === 0) {
-            totalUnpaidElem.style.color = "#2e7d32"; // Green when all paid
-        } else {
-            totalUnpaidElem.style.color = ""; // Default red/theme color when unpaid > 0
-        }
-    }
-
-    recurrenceGroupsConfig.forEach(groupConfig => {
-        const subsetItems = currentFilteredList.filter(e => e.recur === groupConfig.key);
-        
-        if (subsetItems.length === 0) return;
-
-        // SORT: Unpaid expenses first, Paid expenses last
-        subsetItems.sort((a, b) => {
-            if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
-            if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
-            return 0;
-        });
-        
-        const groupContainer = document.createElement('div');
-        groupContainer.className = "group-container";
-
-        let unpaidSum = 0;
-        let groupTotalSum = 0;
-        let paidCount = 0;
-
-        subsetItems.forEach(e => {
-            const cost = parseFloat(e.cost || 0);
-            groupTotalSum += cost;
-            if (e.status === 'unpaid') {
-                unpaidSum += cost;
-            } else {
-                paidCount++;
-            }
-        });
-
-        const isCollapsed = collapsedGroups[groupConfig.key] || false;
-
-        const headerDiv = document.createElement('div');
-        headerDiv.className = "group-header";
-        headerDiv.onclick = () => toggleGroupCollapse(groupConfig.key);
-
-        const titleSpan = document.createElement('div');
-        titleSpan.className = "group-header-title";
-        titleSpan.innerHTML = `<span>${isCollapsed ? '▶' : '▼'}</span> <span>${groupConfig.label}</span>`;
-        headerDiv.appendChild(titleSpan);
-
-        const badgesDiv = document.createElement('div');
-        badgesDiv.className = "group-badges-container";
-
-        // 3. Category Header Badge (Displays ✓ Paid / €Total or €Unpaid / €Total)
-        const costBadge = document.createElement('span');
-        if (unpaidSum > 0) {
-            costBadge.className = "group-unpaid-cost has-unpaid";
-            costBadge.innerText = `€${unpaidSum.toFixed(2)} / €${groupTotalSum.toFixed(2)}`;
-        } else {
-            costBadge.className = "group-unpaid-cost all-paid";
-            costBadge.innerText = `✓ Paid / €${groupTotalSum.toFixed(2)}`;
-        }
-        badgesDiv.appendChild(costBadge);
-
-        headerDiv.appendChild(badgesDiv);
-        groupContainer.appendChild(headerDiv);
-
-        if (!isCollapsed) {
-            const groupContent = document.createElement('div');
-            groupContent.className = "group-content";
-            
-            // Check if viewing a past month
             const isPastMonth = activeMonth < currentSystemMonth;
 
-            subsetItems.forEach(e => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = `expense-item ${e.status}`;
+            const formTriggerBtn = document.getElementById('formTriggerBtn');
+            if (formTriggerBtn) {
+                formTriggerBtn.style.display = isPastMonth ? 'none' : 'block';
+            }
 
-                // Decoupled badge rendering
-                let badgeHtml = e.isEdited ? `<span class="badge-edited">Custom</span>` : '';
-                
-                let originLabelHtml = '';
-                const originVal = e.originated || e.originMonth || e.origin;
-                if (originVal && originVal !== activeMonth) {
-                    originLabelHtml = `<div class="origin-label">${formatPrettyOriginLabel(originVal)}</div>`;
+            const currentFilteredList = expenses.filter(e => e.month === activeMonth);
+
+            let calculatedUnpaidTotalValue = 0;
+            let calculatedMonthTotalValue = 0;
+
+            currentFilteredList.forEach(e => {
+                const cost = parseFloat(e.cost || 0);
+                calculatedMonthTotalValue += cost;
+                if (e.status === 'unpaid') {
+                    calculatedUnpaidTotalValue += cost;
                 }
-
-                let untilLabelText = formatPrettyUntilLabel(e.seriesId);
-                let untilLabelHtml = untilLabelText ? `<div class="origin-label" style="color:var(--primary); border-color:var(--primary);">${untilLabelText}</div>` : '';
-
-                // Generate actions only if NOT viewing a past month
-                let actionsHtml = '';
-                if (!isPastMonth) {
-                    // Move-left boundary condition check
-                    const baseOrigin = e.originMonth || e.originated || e.month;
-                    const canMoveBack = (e.month > baseOrigin && e.month > currentSystemMonth);
-
-                    let moveBackBtnHtml = '';
-                    if (canMoveBack) {
-                        moveBackBtnHtml = `<button class="btn-action btn-back" onclick="movePreviousMonth('${e.id}')" style="transform: scaleX(-1);">➔</button>`;
-                    }
-
-                    actionsHtml = `
-                        <div class="actions">
-                            ${moveBackBtnHtml}
-                            ${e.status === 'unpaid' ? `
-                                <button class="btn-action btn-move" onclick="moveNextMonth('${e.id}')">➔</button>
-                                <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
-                                <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">✓</button>
-                            ` : `
-                                <button class="btn-action btn-edit" onclick="openEditMode('${e.id}')">📝</button>
-                                <button class="btn-action btn-pay" onclick="togglePaid('${e.id}')">↩</button>
-                            `}
-                            <button class="btn-action btn-delete" onclick="deleteExpense('${e.id}')">✕</button>
-                        </div>
-                    `;
-                }
-
-                itemDiv.innerHTML = `
-                    <div class="info">
-                        <div class="name-wrapper">
-                            <span class="name">${e.name}</span>
-                            ${badgeHtml}
-                        </div>
-                        <div class="cost-row">
-                            <span class="cost">€${parseFloat(e.cost || 0).toFixed(2)}</span>
-                            ${originLabelHtml}
-                            ${untilLabelHtml}
-                        </div>
-                    </div>
-                    ${actionsHtml}
-                `;
-                groupContent.appendChild(itemDiv);
             });
-            groupContainer.appendChild(groupContent);
+
+            const totalUnpaidElem = document.getElementById('totalUnpaid');
+            const bannerLabelElem = document.getElementById('unpaidBannerLabel');
+
+            if (isPastMonth) {
+                if (bannerLabelElem) bannerLabelElem.innerText = "TOTAL PAID FOR THIS MONTH";
+                totalUnpaidElem.innerText = `€${calculatedMonthTotalValue.toFixed(2)}`;
+                totalUnpaidElem.style.color = "#2e7d32";
+            } else {
+                if (bannerLabelElem) bannerLabelElem.innerText = "TOTAL UNPAID FOR THIS MONTH";
+                totalUnpaidElem.innerText = `€${calculatedUnpaidTotalValue.toFixed(2)} / €${calculatedMonthTotalValue.toFixed(2)}`;
+
+                if (calculatedUnpaidTotalValue === 0) {
+                    totalUnpaidElem.style.color = "#2e7d32";
+                } else {
+                    totalUnpaidElem.style.color = "";
+                }
+            }
+
+            recurrenceGroupsConfig.forEach(groupConfig => {
+                const subsetItems = currentFilteredList.filter(e => e.recur === groupConfig.key);
+                
+                if (subsetItems.length === 0) return;
+
+                subsetItems.sort((a, b) => {
+                    if (a.status === 'unpaid' && b.status !== 'unpaid') return -1;
+                    if (a.status !== 'unpaid' && b.status === 'unpaid') return 1;
+                    return 0;
+                });
+                
+                const groupContainer = document.createElement('div');
+                groupContainer.className = "group-container";
+
+                let unpaidSum = 0;
+                let groupTotalSum = 0;
+                let paidCount = 0;
+
+                subsetItems.forEach(e => {
+                    const cost = parseFloat(e.cost || 0);
+                    groupTotalSum += cost;
+                    if (e.status === 'unpaid') {
+                        unpaidSum += cost;
+                    } else {
+                        paidCount++;
+                    }
+                });
+
+                const isCollapsed = collapsedGroups[groupConfig.key] || false;
+                const arrowIcon = isCollapsed ? '▶' : '▼';
+
+                let groupCostBadgeHtml = '';
+                if (unpaidSum > 0) {
+                    groupCostBadgeHtml = `<span class="group-unpaid-cost has-unpaid">€${unpaidSum.toFixed(2)}</span>`;
+                } else {
+                    groupCostBadgeHtml = `<span class="group-unpaid-cost all-paid">PAID</span>`;
+                }
+
+                const groupHeader = document.createElement('div');
+                groupHeader.className = 'group-header';
+                groupHeader.onclick = () => toggleGroupCollapse(groupConfig.key);
+                groupHeader.innerHTML = `
+                    <div class="group-header-title">
+                        <span>${arrowIcon}</span>
+                        <span>${groupConfig.label}</span>
+                    </div>
+                    <div class="group-badges-container">
+                        ${groupCostBadgeHtml}
+                        <span class="group-badge">${subsetItems.length}</span>
+                    </div>
+                `;
+
+                groupContainer.appendChild(groupHeader);
+
+                if (!isCollapsed) {
+                    const groupContent = document.createElement('div');
+                    groupContent.className = 'group-content';
+
+                    subsetItems.forEach(item => {
+                        const itemCard = document.createElement('div');
+                        itemCard.className = `expense-item ${item.status}`;
+
+                        const originatedLabel = formatPrettyOriginLabel(item.originated || item.originMonth);
+                        const untilLabel = formatPrettyUntilLabel(item.seriesId);
+
+                        let datesMarkup = '';
+                        if (originatedLabel || untilLabel) {
+                            const combined = [originatedLabel, untilLabel].filter(Boolean).join(' • ');
+                            datesMarkup = `<div class="origin-label">${combined}</div>`;
+                        }
+
+                        let editedBadge = item.isEdited ? `<span class="badge-edited">EDITED</span>` : '';
+
+                        let leftShiftDisabled = (item.month <= (item.originMonth || item.originated || currentSystemMonth)) ? 'disabled' : '';
+
+                        itemCard.innerHTML = `
+                            <div class="info">
+                                <div class="name-wrapper">
+                                    <div class="name">${item.name}</div>
+                                    ${editedBadge}
+                                </div>
+                                <div class="cost-row">
+                                    <div class="cost">€${parseFloat(item.cost).toFixed(2)}</div>
+                                    ${datesMarkup}
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <button class="btn-action btn-pay" onclick="togglePaid('${item.id}')" title="Toggle Paid">${item.status === 'paid' ? '✓' : '✗'}</button>
+                                <button class="btn-action btn-back ${leftShiftDisabled}" ${leftShiftDisabled} onclick="movePreviousMonth('${item.id}')" title="Move to Previous Month">◄</button>
+                                <button class="btn-action btn-move" onclick="moveNextMonth('${item.id}')" title="Move to Next Month">►</button>
+                                <button class="btn-action btn-edit" onclick="openEditMode('${item.id}')" title="Edit Entry">✎</button>
+                                <button class="btn-action btn-delete" onclick="deleteExpense('${item.id}')" title="Delete Entry">🗑</button>
+                            </div>
+                        `;
+                        groupContent.appendChild(itemCard);
+                    });
+
+                    groupContainer.appendChild(groupContent);
+                }
+
+                container.appendChild(groupContainer);
+            });
         }
-        container.appendChild(groupContainer);
-    });
-}
     </script>
 </body>
 </html>
