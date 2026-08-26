@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RNE Tracker</title>
     <!-- Supabase JS Client Library -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <style>
         /* Color Palette Themes Engine Base Configuration */
         :root {
@@ -621,7 +621,13 @@
             loadLocalStorageCache();
             detectAndTriggerArrearsLogic();
             render();
-            initializeSupabaseServices();
+            
+// Safely attempt cloud initialization without blocking UI rendering
+    try {
+        initializeSupabaseServices();
+    } catch (e) {
+        console.error("Cloud init non-blocking failure:", e);
+    }
         };
 
         function loadLocalStorageCache() {
@@ -1426,33 +1432,41 @@
         // ==========================================
         // SUPABASE BACKUP & AUTH ARCHITECTURE LAYER
         // ==========================================
-        async function initializeSupabaseServices() {
-            if (typeof window.supabase === 'undefined') {
-                console.warn("Supabase SDK is loading or unavailable.");
-                updateCloudStatusInterfaceDisplay("☁ Supabase SDK Error");
-                return;
-            }
+async function initializeSupabaseServices() {
+    // Check if Supabase SDK is available
+    const supabaseLib = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
 
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    if (!supabaseLib || typeof supabaseLib.createClient !== 'function') {
+        console.warn("Supabase SDK is loading or unavailable.");
+        updateCloudStatusInterfaceDisplay("☁ Supabase SDK Error");
+        return;
+    }
 
-            const { data: { session } } = await supabase.auth.getSession();
+    try {
+        supabase = supabaseLib.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && session.user) {
+            activeUser = session.user;
+            evaluateSignActionBtnVisualState();
+            silentlyExecuteCloudSyncEngineCheck();
+        } else {
+            evaluateSignActionBtnVisualState();
+        }
+
+        supabase.auth.onAuthStateChange((event, session) => {
             if (session && session.user) {
                 activeUser = session.user;
-                evaluateSignActionBtnVisualState();
-                silentlyExecuteCloudSyncEngineCheck();
             } else {
-                evaluateSignActionBtnVisualState();
+                activeUser = null;
             }
-
-            supabase.auth.onAuthStateChange((event, session) => {
-                if (session && session.user) {
-                    activeUser = session.user;
-                } else {
-                    activeUser = null;
-                }
-                evaluateSignActionBtnVisualState();
-            });
-        }
+            evaluateSignActionBtnVisualState();
+        });
+    } catch (err) {
+        console.error("Failed to initialize Supabase client:", err);
+        updateCloudStatusInterfaceDisplay("☁ Supabase Init Error");
+    }
+}
 
         function updateCloudStatusInterfaceDisplay(statusTextString) {
             document.getElementById('cloudStatusLabel').innerText = statusTextString;
