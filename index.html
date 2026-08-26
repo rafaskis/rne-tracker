@@ -299,12 +299,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v66.1</div>
+    <div class="version-watermark">RNE Tracker • v66.2</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260826_v66.1
+        // VERSION TRACKER REFERENCE: 260826_v66.2
         // ==========================================
 
         const SUPABASE_URL = 'https://ztgwsvhikhefuutdnvwt.supabase.co';
@@ -331,17 +331,24 @@
             { key: 12, label: "Yearly" }
         ];
 
-        function initializeSavedDisplayTheme() {
-            const savedTheme = localStorage.getItem('rne_app_theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-        }
+function initializeSavedDisplayTheme() {
+    // Read theme from meta object first, falling back to localStorage or light theme
+    const savedTheme = (meta && meta.theme) ? meta.theme : (localStorage.getItem('rne_app_theme') || 'light');
+    document.documentElement.setAttribute('data-theme', savedTheme);
+}
 
-        function toggleDisplayTheme() {
-            const activeTheme = document.documentElement.getAttribute('data-theme');
-            const targetTheme = activeTheme === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', targetTheme);
-            localStorage.setItem('rne_app_theme', targetTheme);
-        }
+function toggleDisplayTheme() {
+    const activeTheme = document.documentElement.getAttribute('data-theme');
+    const targetTheme = activeTheme === 'dark' ? 'light' : 'dark';
+    
+    document.documentElement.setAttribute('data-theme', targetTheme);
+    localStorage.setItem('rne_app_theme', targetTheme);
+    
+    // Save theme choice to application state and sync if connected
+    meta.theme = targetTheme;
+    saveStateToLocalStorage();
+    silentlyExecuteCloudSyncEngineCheck();
+}
 
         function presentCustomChoicePrompt(questionMessage, leftLabel = "Current", rightLabel = "All", isDestructive = false) {
             return new Promise((resolve) => {
@@ -644,7 +651,8 @@
 if (!meta.lastMonthPopulated) {
     meta.lastMonthPopulated = currentSystemMonth;
     meta.lastUpdated = Date.now();
-
+meta.theme = localStorage.getItem('rne_app_theme') || 'light';
+    
     // Preserve the blank-state flag during first initialization.
     localStorage.setItem('household_expenses', JSON.stringify(expenses));
     localStorage.setItem('household_templates', JSON.stringify(templates));
@@ -1203,7 +1211,7 @@ async function triggerResetToScratch() {
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v66.1)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v66.2)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1562,8 +1570,10 @@ async function handleAuthActionBtn() {
         if (confirmed) {
             if (supabaseClient) await supabaseClient.auth.signOut();
             
+            const activeTheme = document.documentElement.getAttribute('data-theme') || 'light';
             // Clear all local storage data
             localStorage.clear();
+            localStorage.setItem('rne_app_theme', activeTheme);
             
             // Reset in-memory application variables
             expenses = [];
@@ -1910,6 +1920,12 @@ if (meta.isInitialBlank === true) {
                     localStorage.setItem('household_expenses', JSON.stringify(cloudDb.expenses || []));
                     localStorage.setItem('household_templates', JSON.stringify(cloudDb.templates || []));
                     localStorage.setItem('household_meta', JSON.stringify(cloudDb.meta || { lastUpdated: Date.now() }));
+
+if (cloudDb.meta && cloudDb.meta.theme) {
+        localStorage.setItem('rne_app_theme', cloudDb.meta.theme);
+        document.documentElement.setAttribute('data-theme', cloudDb.meta.theme);
+    }
+                    
                     updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
                     location.reload();
                 } else {
