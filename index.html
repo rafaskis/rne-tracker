@@ -299,12 +299,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v64</div>
+    <div class="version-watermark">RNE Tracker • v64.2</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260826_v64
+        // VERSION TRACKER REFERENCE: 260826_v64.2
         // ==========================================
 
         const SUPABASE_URL = 'https://ztgwsvhikhefuutdnvwt.supabase.co';
@@ -1152,7 +1152,7 @@
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v64)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v64.2)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1433,17 +1433,33 @@
         // SUPABASE BACKUP & AUTH ARCHITECTURE LAYER
         // ==========================================
 async function initializeSupabaseServices() {
-    // Check if Supabase SDK is available
-    const supabaseLib = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
+    const getLib = () => window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
+    let supabaseLib = getLib();
+
+    // If SDK is not ready yet, wait up to 2 seconds before giving up
+    if (!supabaseLib || typeof supabaseLib.createClient !== 'function') {
+        let retries = 0;
+        await new Promise((resolve) => {
+            const interval = setInterval(() => {
+                retries++;
+                supabaseLib = getLib();
+                if ((supabaseLib && typeof supabaseLib.createClient === 'function') || retries >= 10) {
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, 200);
+        });
+    }
 
     if (!supabaseLib || typeof supabaseLib.createClient !== 'function') {
-        console.warn("Supabase SDK is loading or unavailable.");
+        console.warn("Supabase SDK unavailable.");
         updateCloudStatusInterfaceDisplay("☁ Supabase SDK Error");
         return;
     }
 
     try {
         supabase = supabaseLib.createClient(SUPABASE_URL, SUPABASE_KEY);
+        updateCloudStatusInterfaceDisplay("☁ Supabase Ready");
 
         const { data: { session } } = await supabase.auth.getSession();
         if (session && session.user) {
@@ -1463,7 +1479,7 @@ async function initializeSupabaseServices() {
             evaluateSignActionBtnVisualState();
         });
     } catch (err) {
-        console.error("Failed to initialize Supabase client:", err);
+        console.error("Supabase Init Error:", err);
         updateCloudStatusInterfaceDisplay("☁ Supabase Init Error");
     }
 }
@@ -1511,36 +1527,50 @@ async function initializeSupabaseServices() {
             document.getElementById('loginModalOverlay').style.display = 'none';
         }
 
-        async function executeSupabaseLogin() {
-            const rawUsername = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value;
+async function executeSupabaseLogin() {
+    const rawUsername = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
 
-            if (!rawUsername || !password) {
-                alert("Please fill in both username and password.");
-                return;
-            }
+    if (!rawUsername || !password) {
+        alert("Please fill in both username and password.");
+        return;
+    }
 
-            const cleanUsername = rawUsername.toLowerCase().replace(/@.*$/, '');
-            const fullEmail = `${cleanUsername}@rne.tracker`;
+    // Guard: Prevent hanging state if SDK failed to load
+    if (!supabase) {
+        alert("Supabase SDK failed to load. Please check your internet connection or disable ad-blockers and refresh.");
+        updateCloudStatusInterfaceDisplay("☁ Supabase SDK Error");
+        return;
+    }
 
-            updateCloudStatusInterfaceDisplay("☁ Authenticating...");
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: fullEmail,
-                password: password
-            });
+    const cleanUsername = rawUsername.toLowerCase().replace(/@.*$/, '');
+    const fullEmail = `${cleanUsername}@rne.tracker`;
 
-            if (error) {
-                alert("Login failed: " + error.message);
-                updateCloudStatusInterfaceDisplay("☁ Auth Error");
-                return;
-            }
+    updateCloudStatusInterfaceDisplay("☁ Authenticating...");
+    
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: fullEmail,
+            password: password
+        });
 
-            activeUser = data.user;
-            closeAuthModal();
-            evaluateSignActionBtnVisualState();
-            updateCloudStatusInterfaceDisplay("☁ Resolving Profile...");
-            await lookupAndSynchronizeCloudBackupStorageState(true);
+        if (error) {
+            alert("Login failed: " + error.message);
+            updateCloudStatusInterfaceDisplay("☁ Auth Error");
+            return;
         }
+
+        activeUser = data.user;
+        closeAuthModal();
+        evaluateSignActionBtnVisualState();
+        updateCloudStatusInterfaceDisplay("☁ Resolving Profile...");
+        await lookupAndSynchronizeCloudBackupStorageState(true);
+    } catch (err) {
+        console.error("Login Exception:", err);
+        alert("An unexpected authentication error occurred.");
+        updateCloudStatusInterfaceDisplay("☁ Auth Error");
+    }
+}
 
         function openPasswordModal() {
             document.getElementById('newPassword').value = '';
