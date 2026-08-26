@@ -1805,9 +1805,13 @@
                 const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
                 const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
 
-                const { data, error } = await supabaseClient.storage
-                    .from('rne_backups')
-                    .upload(filePath, blob, { upsert: true });
+const { data, error } = await supabaseClient.storage
+    .from('rne_backups')
+    .upload(filePath, blob, { upsert: true }); // Line 1019
+
+if (error) {
+    console.error("Supabase Storage Error Details:", error.message, error.statusCode, error);
+}
 
                 if (error) {
                     console.error("Supabase Storage Error:", error);
