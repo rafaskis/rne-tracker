@@ -299,12 +299,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v66.4</div>
+    <div class="version-watermark">RNE Tracker • v66.5</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260826_v66.4
+        // VERSION TRACKER REFERENCE: 260826_v66.5
         // ==========================================
 
         const SUPABASE_URL = 'https://ztgwsvhikhefuutdnvwt.supabase.co';
@@ -574,12 +574,13 @@ function presentInteractiveSignOutConfirmation() {
             });
         }
 
-        function formatPrettyOriginLabel(monthKeyString) {
-            if (!monthKeyString || !monthKeyString.includes('-')) return '';
-            const [year, month] = monthKeyString.split('-');
-            const labelStr = new Date(year, month - 1, 1).toLocaleDateString('default', { month: 'short', year: 'numeric' });
-            return `Originated: ${labelStr}`;
-        }
+function formatPrettyOriginLabel(monthKeyString, currentMonth) {
+    if (!monthKeyString || !monthKeyString.includes('-')) return '';
+    if (monthKeyString === currentMonth) return '';
+    const [year, month] = monthKeyString.split('-');
+    const labelStr = new Date(year, month - 1, 1).toLocaleDateString('default', { month: 'short', year: 'numeric' });
+    return `Originated: ${labelStr}`;
+}
 
         function formatPrettyUntilLabel(seriesId) {
             if (!seriesId) return '';
@@ -1212,7 +1213,7 @@ async function triggerResetToScratch() {
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v66.4)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v66.5)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -2084,7 +2085,7 @@ if (error) {
                         const itemCard = document.createElement('div');
                         itemCard.className = `expense-item ${item.status}`;
 
-                        const originatedLabel = formatPrettyOriginLabel(item.originated || item.originMonth);
+                        const originatedLabel = formatPrettyOriginLabel(item.originated || item.originMonth, item.month);
                         const untilLabel = formatPrettyUntilLabel(item.seriesId);
 
                         let datesMarkup = '';
