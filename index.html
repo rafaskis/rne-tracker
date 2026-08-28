@@ -67,7 +67,6 @@
         .btn-cloud-signout { background: var(--utility); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .btn-cloud-password { background: var(--edit-color); }
         .btn-cloud-push { background: #4285f4; }
-        .btn-cloud-pull { background: #16a34a; }
         .discreet-actions-grid { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 
         .btn-theme-toggle { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); font-size: 12px; font-weight: bold; padding: 6px 12px; border-radius: 6px; cursor: pointer; height: auto; width: auto; display: inline-flex; align-items: center; justify-content: center; }
@@ -183,8 +182,7 @@
             <button class="btn-theme-toggle" id="themeToggleBtn" onclick="toggleDisplayTheme()">Toggle Theme</button>
             <button class="btn-cloud-discreet btn-cloud-signin" id="supabaseMainActionBtn" onclick="handleAuthActionBtn()">Sign In</button>
             <button class="btn-cloud-discreet btn-cloud-password" id="supabaseChangePassBtn" style="display:none;" onclick="openPasswordModal()">Password</button>
-            <button class="btn-cloud-discreet btn-cloud-push" id="supabasePushBtn" onclick="manuallyTriggerCloudBackup()">Backup</button>
-            <button class="btn-cloud-discreet btn-cloud-pull" id="supabasePullBtn" onclick="manuallyTriggerCloudRestore()">Restore</button>
+            <button class="btn-cloud-discreet btn-cloud-push" id="supabaseSyncBtn" onclick="executeUnifiedCloudSync()">🔄 Sync</button>
         </div>
     </div>
 
@@ -299,12 +297,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v66.5</div>
+    <div class="version-watermark">RNE Tracker • v70.0</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 260826_v66.5
+        // VERSION TRACKER REFERENCE: 280826_v70.0
         // ==========================================
 
         const SUPABASE_URL = 'https://ztgwsvhikhefuutdnvwt.supabase.co';
@@ -331,25 +329,22 @@
             { key: 12, label: "Yearly" }
         ];
 
-function initializeSavedDisplayTheme() {
-    // Priority: Saved meta object from database -> local browser cache fallback -> default light
-    const savedTheme = (meta && meta.theme) ? meta.theme : (localStorage.getItem('rne_app_theme') || 'light');
-    document.documentElement.setAttribute('data-theme', savedTheme);
-}
+        function initializeSavedDisplayTheme() {
+            const savedTheme = (meta && meta.theme) ? meta.theme : (localStorage.getItem('rne_app_theme') || 'light');
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
 
-function toggleDisplayTheme() {
-    const activeTheme = document.documentElement.getAttribute('data-theme');
-    const targetTheme = activeTheme === 'dark' ? 'light' : 'dark';
-    
-    // Apply UI update locally
-    document.documentElement.setAttribute('data-theme', targetTheme);
-    localStorage.setItem('rne_app_theme', targetTheme);
-    
-    // Store in meta state & push immediately to cloud if online
-    meta.theme = targetTheme;
-    saveStateToLocalStorage();
-    silentlyExecuteCloudSyncEngineCheck();
-}
+        function toggleDisplayTheme() {
+            const activeTheme = document.documentElement.getAttribute('data-theme');
+            const targetTheme = activeTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', targetTheme);
+            localStorage.setItem('rne_app_theme', targetTheme);
+            
+            meta.theme = targetTheme;
+            saveStateToLocalStorage();
+            silentlyExecuteCloudSyncEngineCheck();
+        }
 
         function presentCustomChoicePrompt(questionMessage, leftLabel = "Current", rightLabel = "All", isDestructive = false) {
             return new Promise((resolve) => {
@@ -505,7 +500,7 @@ function toggleDisplayTheme() {
             });
         }
 
-function presentInteractiveSignOutConfirmation() {
+        function presentInteractiveSignOutConfirmation() {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('customChoiceOverlay');
                 const textContainer = document.getElementById('choiceOverlayMessage');
@@ -574,13 +569,13 @@ function presentInteractiveSignOutConfirmation() {
             });
         }
 
-function formatPrettyOriginLabel(monthKeyString, currentMonth) {
-    if (!monthKeyString || !monthKeyString.includes('-')) return '';
-    if (monthKeyString === currentMonth) return '';
-    const [year, month] = monthKeyString.split('-');
-    const labelStr = new Date(year, month - 1, 1).toLocaleDateString('default', { month: 'short', year: 'numeric' });
-    return `Originated: ${labelStr}`;
-}
+        function formatPrettyOriginLabel(monthKeyString, currentMonth) {
+            if (!monthKeyString || !monthKeyString.includes('-')) return '';
+            if (monthKeyString === currentMonth) return '';
+            const [year, month] = monthKeyString.split('-');
+            const labelStr = new Date(year, month - 1, 1).toLocaleDateString('default', { month: 'short', year: 'numeric' });
+            return `Originated: ${labelStr}`;
+        }
 
         function formatPrettyUntilLabel(seriesId) {
             if (!seriesId) return '';
@@ -631,7 +626,6 @@ function formatPrettyOriginLabel(monthKeyString, currentMonth) {
             detectAndTriggerArrearsLogic();
             render();
             
-            // Safely attempt cloud initialization without blocking UI rendering
             initializeSupabaseServices().catch(e => {
                 console.error("Cloud init non-blocking failure:", e);
             });
@@ -650,16 +644,15 @@ function formatPrettyOriginLabel(monthKeyString, currentMonth) {
                 meta.isInitialBlank = true;
             }
 
-if (!meta.lastMonthPopulated) {
-    meta.lastMonthPopulated = currentSystemMonth;
-    meta.lastUpdated = Date.now();
-    meta.theme = localStorage.getItem('rne_app_theme') || 'light';
-    
-    // Preserve the blank-state flag during first initialization.
-    localStorage.setItem('household_expenses', JSON.stringify(expenses));
-    localStorage.setItem('household_templates', JSON.stringify(templates));
-    localStorage.setItem('household_meta', JSON.stringify(meta));
-}
+            if (!meta.lastMonthPopulated) {
+                meta.lastMonthPopulated = currentSystemMonth;
+                meta.lastUpdated = Date.now();
+                meta.theme = localStorage.getItem('rne_app_theme') || 'light';
+                
+                localStorage.setItem('household_expenses', JSON.stringify(expenses));
+                localStorage.setItem('household_templates', JSON.stringify(templates));
+                localStorage.setItem('household_meta', JSON.stringify(meta));
+            }
             ensureSequencePopulatedUpToMonth(filterSelect.value);
         }
 
@@ -1119,65 +1112,63 @@ if (!meta.lastMonthPopulated) {
             }
         }
 
-async function triggerResetToScratch() {
-    if (!confirm("Are you sure you want to clear your data completely?")) {
-        return;
-    }
-
-    // If a user is logged in, remove their cloud backup first.
-    if (activeUser && supabaseClient) {
-        updateCloudStatusInterfaceDisplay("☁ Clearing Cloud Database...");
-
-        const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
-
-        try {
-            const { error } = await supabaseClient.storage
-                .from('rne_backups')
-                .remove([filePath]);
-
-            if (error) {
-                console.error("Cloud Reset Delete Error:", error);
-
-                alert(
-                    "The cloud database could not be cleared.\n\n" +
-                    "Your local data has NOT been deleted."
-                );
-
-                updateCloudStatusInterfaceDisplay("☁ Cloud Reset Failed");
+        async function triggerResetToScratch() {
+            if (!confirm("Are you sure you want to clear your data completely?")) {
                 return;
             }
 
-            console.log("Cloud backup deleted successfully:", filePath);
+            if (activeUser && supabaseClient) {
+                updateCloudStatusInterfaceDisplay("☁ Clearing Cloud Database...");
 
-        } catch (err) {
-            console.error("Cloud Reset Exception:", err);
+                const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
 
-            alert(
-                "The cloud database could not be cleared.\n\n" +
-                "Your local data has NOT been deleted."
-            );
+                try {
+                    const { error } = await supabaseClient.storage
+                        .from('rne_backups')
+                        .remove([filePath]);
 
-            updateCloudStatusInterfaceDisplay("☁ Cloud Reset Failed");
-            return;
+                    if (error) {
+                        console.error("Cloud Reset Delete Error:", error);
+
+                        alert(
+                            "The cloud database could not be cleared.\n\n" +
+                            "Your local data has NOT been deleted."
+                        );
+
+                        updateCloudStatusInterfaceDisplay("☁ Cloud Reset Failed");
+                        return;
+                    }
+
+                    console.log("Cloud backup deleted successfully:", filePath);
+
+                } catch (err) {
+                    console.error("Cloud Reset Exception:", err);
+
+                    alert(
+                        "The cloud database could not be cleared.\n\n" +
+                        "Your local data has NOT been deleted."
+                    );
+
+                    updateCloudStatusInterfaceDisplay("☁ Cloud Reset Failed");
+                    return;
+                }
+            }
+
+            localStorage.clear();
+
+            expenses = [];
+            templates = [];
+
+            meta = {
+                lastMonthPopulated: currentSystemMonth,
+                lastUpdated: Date.now(),
+                isInitialBlank: true
+            };
+
+            localStorage.setItem('household_meta', JSON.stringify(meta));
+
+            location.reload();
         }
-    }
-
-    // Clear local application data.
-    localStorage.clear();
-
-    expenses = [];
-    templates = [];
-
-    meta = {
-        lastMonthPopulated: currentSystemMonth,
-        lastUpdated: Date.now(),
-        isInitialBlank: true
-    };
-
-    localStorage.setItem('household_meta', JSON.stringify(meta));
-
-    location.reload();
-}
 
         function exportToFile() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ meta, templates, expenses }));
@@ -1213,7 +1204,7 @@ async function triggerResetToScratch() {
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v66.5)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v70.0)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1498,7 +1489,6 @@ async function triggerResetToScratch() {
                 return window.supabase;
             }
             
-            // Poll for up to 3 seconds in case script tag is delayed
             for (let i = 0; i < 15; i++) {
                 await new Promise(res => setTimeout(res, 200));
                 if (window.supabase && typeof window.supabase.createClient === 'function') {
@@ -1566,30 +1556,27 @@ async function triggerResetToScratch() {
             }
         }
 
-async function handleAuthActionBtn() {
-    if (activeUser) {
-        const confirmed = await presentInteractiveSignOutConfirmation();
-        if (confirmed) {
-            if (supabaseClient) await supabaseClient.auth.signOut();
-            
-            const activeTheme = document.documentElement.getAttribute('data-theme') || 'light';
-            // Clear all local storage data
-            localStorage.clear();
-            localStorage.setItem('rne_app_theme', activeTheme);
-            
-            // Reset in-memory application variables
-            expenses = [];
-            templates = [];
-            activeUser = null;
-            meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now(), isInitialBlank: true };
+        async function handleAuthActionBtn() {
+            if (activeUser) {
+                const confirmed = await presentInteractiveSignOutConfirmation();
+                if (confirmed) {
+                    if (supabaseClient) await supabaseClient.auth.signOut();
+                    
+                    const activeTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                    localStorage.clear();
+                    localStorage.setItem('rne_app_theme', activeTheme);
+                    
+                    expenses = [];
+                    templates = [];
+                    activeUser = null;
+                    meta = { lastMonthPopulated: currentSystemMonth, lastUpdated: Date.now(), isInitialBlank: true };
 
-            // Reload the page to reset the UI clean state
-            location.reload();
+                    location.reload();
+                }
+            } else {
+                openLoginModal();
+            }
         }
-    } else {
-        openLoginModal();
-    }
-}
 
         function openLoginModal() {
             document.getElementById('loginUsername').value = '';
@@ -1610,7 +1597,6 @@ async function handleAuthActionBtn() {
                 return;
             }
 
-            // Fallback initialization if it hasn't loaded yet
             if (!supabaseClient) {
                 updateCloudStatusInterfaceDisplay("☁ Connecting to SDK...");
                 const success = await initializeSupabaseServices();
@@ -1686,117 +1672,108 @@ async function handleAuthActionBtn() {
             await lookupAndSynchronizeCloudBackupStorageState(false);
         }
 
-async function lookupAndSynchronizeCloudBackupStorageState(triggerUserPromptDialog = false) {
-    if (!supabaseClient || !activeUser) return;
+        async function lookupAndSynchronizeCloudBackupStorageState(triggerUserPromptDialog = false) {
+            if (!supabaseClient || !activeUser) return;
 
-    try {
-        const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
+            try {
+                const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
 
-        const { data, error } = await supabaseClient.storage
-            .from('rne_backups')
-            .download(filePath);
+                const { data, error } = await supabaseClient.storage
+                    .from('rne_backups')
+                    .download(filePath);
 
-        if (error) {
-            console.log("Supabase Storage Download Diagnostic:", {
-                message: error.message,
-                error: error.error,
-                status: error.status,
-                statusCode: error.statusCode,
-                name: error.name,
-                fullError: error
-            });
+                if (error) {
+                    console.log("Supabase Storage Download Diagnostic:", {
+                        message: error.message,
+                        error: error.error,
+                        status: error.status,
+                        statusCode: error.statusCode,
+                        name: error.name,
+                        fullError: error
+                    });
 
-            /*
-             * Supabase Storage can report a missing object with HTTP 400
-             * while the Storage error itself indicates "Object not found".
-             *
-             * A missing backup is expected for a new user.
-             */
-            const isMissingObject =
-                error.message === 'Object not found' ||
-                error.error === 'not_found' ||
-                error.error === 'Object not found' ||
-                error.status === 404 ||
-                error.statusCode === 404;
+                    const isMissingObject =
+                        error.message === 'Object not found' ||
+                        error.error === 'not_found' ||
+                        error.error === 'Object not found' ||
+                        error.status === 404 ||
+                        error.statusCode === 404;
 
-            if (!isMissingObject) {
-                console.error("Actual Supabase Storage Error:", error);
-                isCloudSyncPending = false;
-                updateCloudStatusInterfaceDisplay("☁ Storage Error");
-                return;
+                    if (!isMissingObject) {
+                        console.error("Actual Supabase Storage Error:", error);
+                        isCloudSyncPending = false;
+                        updateCloudStatusInterfaceDisplay("☁ Storage Error");
+                        return;
+                    }
+
+                    console.log(
+                        `No cloud backup exists for user ${activeUser.id}. ` +
+                        `Creating initial backup.`
+                    );
+                }
+
+                if (data) {
+                    const text = await data.text();
+                    const cloudData = JSON.parse(text);
+
+                    await checkTimelineMetricsAgainstCloudTarget(
+                        cloudData,
+                        triggerUserPromptDialog
+                    );
+                } else {
+                    updateCloudStatusInterfaceDisplay("☁ Initializing Blank Database...");
+                    isCloudSyncPending = false;
+
+                    const blankDatabase = {
+                        expenses: [],
+                        templates: [],
+                        meta: {
+                            lastMonthPopulated: currentSystemMonth,
+                            lastUpdated: Date.now(),
+                            isInitialBlank: false
+                        }
+                    };
+
+                    const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
+
+                    const blob = new Blob(
+                        [JSON.stringify(blankDatabase, null, 2)],
+                        { type: 'application/json' }
+                    );
+
+                    const { error: uploadError } = await supabaseClient.storage
+                        .from('rne_backups')
+                        .upload(filePath, blob, { upsert: true });
+
+                    if (uploadError) {
+                        console.error("Initial Blank Database Upload Error:", uploadError);
+                        updateCloudStatusInterfaceDisplay("☁ Storage Error");
+                        return;
+                    }
+
+                    await performCloudPullExtractionSequence(blankDatabase);
+                }
+
+            } catch (err) {
+                console.error("Cloud Synchronization Exception:", err);
+                updateCloudStatusInterfaceDisplay("☁ Cloud Offline");
+            } finally {
+                if (isCloudSyncPending) {
+                    isCloudSyncPending = false;
+                    ensureSequencePopulatedUpToMonth(filterSelect.value);
+                    detectAndTriggerArrearsLogic();
+                    render();
+                }
             }
-
-            console.log(
-                `No cloud backup exists for user ${activeUser.id}. ` +
-                `Creating initial backup.`
-            );
         }
-
-        if (data) {
-            const text = await data.text();
-            const cloudData = JSON.parse(text);
-
-            await checkTimelineMetricsAgainstCloudTarget(
-                cloudData,
-                triggerUserPromptDialog
-            );
-} else {
-    updateCloudStatusInterfaceDisplay("☁ Initializing Blank Database...");
-    isCloudSyncPending = false;
-
-    // A new user with no cloud database must NEVER inherit
-    // whatever database happens to be present in this browser.
-    const blankDatabase = {
-        expenses: [],
-        templates: [],
-        meta: {
-            lastMonthPopulated: currentSystemMonth,
-            lastUpdated: Date.now(),
-            isInitialBlank: false
-        }
-    };
-
-    const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
-
-    const blob = new Blob(
-        [JSON.stringify(blankDatabase, null, 2)],
-        { type: 'application/json' }
-    );
-
-    const { error: uploadError } = await supabaseClient.storage
-        .from('rne_backups')
-        .upload(filePath, blob, { upsert: true });
-
-    if (uploadError) {
-        console.error("Initial Blank Database Upload Error:", uploadError);
-        updateCloudStatusInterfaceDisplay("☁ Storage Error");
-        return;
-    }
-
-    // Download the newly-created blank database back into the browser.
-    await performCloudPullExtractionSequence(blankDatabase);
-}
-
-    } catch (err) {
-        console.error("Cloud Synchronization Exception:", err);
-        updateCloudStatusInterfaceDisplay("☁ Cloud Offline");
-    } finally {
-        if (isCloudSyncPending) {
-            isCloudSyncPending = false;
-            ensureSequencePopulatedUpToMonth(filterSelect.value);
-            detectAndTriggerArrearsLogic();
-            render();
-        }
-    }
-}
 
         async function checkTimelineMetricsAgainstCloudTarget(cloudData, triggerUserPromptDialog) {
             try {
-if (meta.isInitialBlank === true) {
-    console.log("New local environment detected. Syncing from cloud...");
-    await performCloudPullExtractionSequence(cloudData);
-    return;
-}
+                if (meta.isInitialBlank === true) {
+                    console.log("New local environment detected. Syncing from cloud...");
+                    await performCloudPullExtractionSequence(cloudData);
+                    return;
+                }
 
                 const localStamp = meta.lastUpdated || 0;
                 const cloudStamp = (cloudData.meta && cloudData.meta.lastUpdated) ? cloudData.meta.lastUpdated : 0;
@@ -1829,13 +1806,21 @@ if (meta.isInitialBlank === true) {
             }
         }
 
-        async function manuallyTriggerCloudBackup() {
-            if (!activeUser) {
+        // ==========================================
+        // CONSOLIDATED CLOUD SYNC ENGINE (v70.0)
+        // ==========================================
+        async function executeUnifiedCloudSync() {
+            // 1. Sign-in Guard
+            if (!activeUser || !supabaseClient) {
                 updateCloudStatusInterfaceDisplay("☁ Not Authenticated");
+                alert("Please sign in first to synchronize your data with the cloud.");
                 openLoginModal();
                 return;
             }
-            updateCloudStatusInterfaceDisplay("☁ Fetching State...");
+
+            // 2. Set Status & Fetch Cloud Data
+            updateCloudStatusInterfaceDisplay("☁ Syncing...");
+
             try {
                 const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
                 let cloudDb = null;
@@ -1846,58 +1831,82 @@ if (meta.isInitialBlank === true) {
                     cloudDb = JSON.parse(text);
                 }
 
-                let localMeta = { lastUpdated: 0 };
-                try {
-                    const rawMeta = localStorage.getItem('household_meta');
-                    if (rawMeta) {
-                        localMeta = JSON.parse(rawMeta) || { lastUpdated: 0 };
-                    }
-                } catch (e) {
-                    console.warn("Local metadata missing, defaulting.", e);
+                const localMeta = JSON.parse(localStorage.getItem('household_meta')) || { lastUpdated: 0, isInitialBlank: true };
+                const localExpenses = JSON.parse(localStorage.getItem('household_expenses')) || [];
+                const localTemplates = JSON.parse(localStorage.getItem('household_templates')) || [];
+
+                const localHasData = (localExpenses.length > 0 || localTemplates.length > 0) && !localMeta.isInitialBlank;
+                const cloudHasData = cloudDb && ((Array.isArray(cloudDb.expenses) && cloudDb.expenses.length > 0) || (Array.isArray(cloudDb.templates) && cloudDb.templates.length > 0));
+
+                // 2.1 Auto-resolve Empty States
+                if (!cloudHasData && localHasData) {
+                    // Empty Cloud State -> Auto Push
+                    await confirmAndExecuteSyncAction('push', cloudDb);
+                    return;
                 }
 
-                const localUpdateTimestamp = localMeta && localMeta.lastUpdated ? localMeta.lastUpdated : 0;
-                const cloudUpdateTimestamp = (cloudDb && cloudDb.meta) ? (cloudDb.meta.lastUpdated || 0) : 0;
-
-                const localDateStr = localUpdateTimestamp ? new Date(localUpdateTimestamp).toLocaleString() : "Never (Empty Local Cache)";
-                const cloudDateStr = cloudUpdateTimestamp ? new Date(cloudUpdateTimestamp).toLocaleString() : "Empty Cloud Storage";
-
-                let syncState = 'match';
-                let statusHeadline = '<span style="color: #d4af37; font-weight: bold;">Your offline storage is perfectly matching cloud copies.</span>';
-                
-                if (!cloudDb && localUpdateTimestamp === 0) {
-                    syncState = 'match';
-                    statusHeadline = 'Both local storage and cloud storage are currently uninitialized.';
-                } else if (localUpdateTimestamp > cloudUpdateTimestamp) {
-                    syncState = 'local-newer';
-                    statusHeadline = '<span style="color: #2563eb; font-weight: bold;">Your Local Cache is newer than the Cloud Backup.</span>';
-                } else if (cloudUpdateTimestamp > localUpdateTimestamp) {
-                    syncState = 'cloud-newer';
-                    statusHeadline = '<span style="color: #16a34a; font-weight: bold;">The Cloud Backup is newer than your Local Cache.</span>';
-                } else if (!cloudDb && localUpdateTimestamp > 0) {
-                    syncState = 'local-newer';
-                    statusHeadline = 'No file found in the cloud. Local cache is ready to back up.';
+                if (cloudHasData && !localHasData) {
+                    // Empty Local Data -> Auto Pull
+                    await confirmAndExecuteSyncAction('pull', cloudDb);
+                    return;
                 }
 
-                const decision = await presentCloudSyncCrossroadsPrompt(syncState, statusHeadline, localDateStr, cloudDateStr);
-                if (decision === 'push') {
-                    await performCloudWriteExecutionSequence();
-                } else if (decision === 'pull') {
-                    await performCloudPullExtractionSequence(cloudDb);
+                if (!cloudHasData && !localHasData) {
+                    updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
+                    return;
                 }
+
+                // Both local and cloud have data: Check Timestamps
+                const localStamp = localMeta.lastUpdated || 0;
+                const cloudStamp = (cloudDb.meta && cloudDb.meta.lastUpdated) ? cloudDb.meta.lastUpdated : 0;
+
+                // Timestamp Match: Bypass prompts
+                if (localStamp === cloudStamp) {
+                    updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
+                    return;
+                }
+
+                // Timestamps Differ: Show comparison modal
+                const localDateStr = localStamp ? new Date(localStamp).toLocaleString() : 'Never';
+                const cloudDateStr = cloudStamp ? new Date(cloudStamp).toLocaleString() : 'Never';
+                const syncState = cloudStamp > localStamp ? 'cloud-newer' : 'local-newer';
+                const headline = cloudStamp > localStamp 
+                    ? '<span style="color: #16a34a; font-weight: bold;">Cloud Backup is newer than Local Data.</span>' 
+                    : '<span style="color: #2563eb; font-weight: bold;">Local Data is newer than Cloud Backup.</span>';
+
+                const choice = await presentCloudSyncCrossroadsPrompt(syncState, headline, localDateStr, cloudDateStr);
+
+                if (choice === 'push' || choice === 'pull') {
+                    await confirmAndExecuteSyncAction(choice, cloudDb);
+                } else {
+                    updateCloudStatusInterfaceDisplay("☁ Sync Aborted");
+                }
+
             } catch (err) {
-                console.error("Sync Crossroads Failure Details:", err);
-                updateCloudStatusInterfaceDisplay("☁ Dynamic Sync Error");
+                console.error("Unified Sync Engine Error:", err);
+                updateCloudStatusInterfaceDisplay("☁ Sync Error");
             }
         }
 
-        async function manuallyTriggerCloudRestore() {
-            if (!activeUser) {
-                updateCloudStatusInterfaceDisplay("☁ Not Authenticated");
-                openLoginModal();
+        // 3. Step 3 Confirmation & Overwrite Execution
+        async function confirmAndExecuteSyncAction(actionType, cloudDb) {
+            const isPush = actionType === 'push';
+            const message = isPush 
+                ? "Are you sure you want to overwrite CLOUD data with current LOCAL data? There is no way back."
+                : "Are you sure you want to overwrite LOCAL data with current CLOUD data? There is no way back.";
+
+            const confirmed = await presentCustomChoicePrompt(message, "No", "Yes", true);
+
+            if (confirmed !== 'right') { // 'right' corresponds to the "Yes" action button
+                updateCloudStatusInterfaceDisplay("☁ Sync Aborted");
                 return;
             }
-            await manuallyTriggerCloudBackup();
+
+            if (isPush) {
+                await performCloudWriteExecutionSequence();
+            } else {
+                await performCloudPullExtractionSequence(cloudDb);
+            }
         }
 
         async function performCloudPullExtractionSequence(providedCloudDb = null) {
@@ -1923,11 +1932,10 @@ if (meta.isInitialBlank === true) {
                     localStorage.setItem('household_templates', JSON.stringify(cloudDb.templates || []));
                     localStorage.setItem('household_meta', JSON.stringify(cloudDb.meta || { lastUpdated: Date.now() }));
 
-// Instantly apply downloaded user theme to current browser DOM & localStorage
-            if (cloudDb.meta && cloudDb.meta.theme) {
-                localStorage.setItem('rne_app_theme', cloudDb.meta.theme);
-                document.documentElement.setAttribute('data-theme', cloudDb.meta.theme);
-            }
+                    if (cloudDb.meta && cloudDb.meta.theme) {
+                        localStorage.setItem('rne_app_theme', cloudDb.meta.theme);
+                        document.documentElement.setAttribute('data-theme', cloudDb.meta.theme);
+                    }
                     
                     updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
                     location.reload();
@@ -1957,16 +1965,12 @@ if (meta.isInitialBlank === true) {
                 const filePath = `${activeUser.id}/${DEDICATED_FILE_NAME}`;
                 const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
 
-const { data, error } = await supabaseClient.storage
-    .from('rne_backups')
-    .upload(filePath, blob, { upsert: true }); // Line 1019
-
-if (error) {
-    console.error("Supabase Storage Error Details:", error.message, error.statusCode, error);
-}
+                const { data, error } = await supabaseClient.storage
+                    .from('rne_backups')
+                    .upload(filePath, blob, { upsert: true });
 
                 if (error) {
-                    console.error("Supabase Storage Error:", error);
+                    console.error("Supabase Storage Error Details:", error.message, error.statusCode, error);
                     updateCloudStatusInterfaceDisplay("☁ Write Action Failed");
                 } else {
                     updateCloudStatusInterfaceDisplay("☁ Cloud Synced");
