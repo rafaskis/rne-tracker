@@ -171,8 +171,25 @@
         .auth-card h3 { font-size: 18px; font-weight: 700; text-align: center; margin-bottom: 4px; }
 
         /* Persistent Version Watermark */
-        .version-watermark { position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; user-select: none; pointer-events: none; }
-    </style>
+.watermark {
+  /* Fixes position relative to the screen, staying visible while scrolling */
+  position: fixed; 
+  
+  /* Pins it to a specific corner (e.g., bottom-right) */
+  bottom: 12px;
+  right: 12px;
+  
+  /* Keeps it above all other page content */
+  z-index: 9999; 
+  
+  /* Prevents the watermark from blocking mouse clicks/taps on elements underneath */
+  pointer-events: none; 
+  
+  /* Ensures visibility against both dark and light backgrounds */
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.8);
+  font-size: 12px;
+}    </style>
 </head>
 <body>
 
@@ -297,12 +314,12 @@
         </div>
     </div>
 
-    <div class="version-watermark">RNE Tracker • v70.0</div>
+    <div class="version-watermark">RNE Tracker • v71</div>
 
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 280826_v70.0
+        // VERSION TRACKER REFERENCE: 280826_v71
         // ==========================================
 
         const SUPABASE_URL = 'https://ztgwsvhikhefuutdnvwt.supabase.co';
@@ -1204,7 +1221,7 @@
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v70.0)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v71)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1807,7 +1824,7 @@
         }
 
         // ==========================================
-        // CONSOLIDATED CLOUD SYNC ENGINE (v70.0)
+        // CONSOLIDATED CLOUD SYNC ENGINE (v71)
         // ==========================================
         async function executeUnifiedCloudSync() {
             // 1. Sign-in Guard
