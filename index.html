@@ -2110,7 +2110,7 @@
                                 </div>
                             </div>
                             <div class="actions">
-                                <button class="btn-action btn-pay" onclick="togglePaid('${item.id}')" title="Toggle Paid">${item.status === 'paid' ? '✓' : '✗'}</button>
+                                <button class="btn-action btn-pay" onclick="togglePaid('${item.id}')" title="Toggle Paid">${item.status === 'paid' ? '✗' : '✓'}</button>
                                 <button class="btn-action btn-back ${leftShiftDisabled}" ${leftShiftDisabled} onclick="movePreviousMonth('${item.id}')" title="Move to Previous Month">◄</button>
                                 <button class="btn-action btn-move" onclick="moveNextMonth('${item.id}')" title="Move to Next Month">►</button>
                                 <button class="btn-action btn-edit" onclick="openEditMode('${item.id}')" title="Edit Entry">✎</button>
