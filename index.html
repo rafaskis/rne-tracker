@@ -298,7 +298,7 @@
     <script>
         // ==========================================
         // APPLICATION CORE ARCHITECTURE LOGIC
-        // VERSION TRACKER REFERENCE: 280828_v72
+        // VERSION TRACKER REFERENCE: 280828_v73
         // ==========================================
 
         const SUPABASE_URL = 'https://ztgwsvhikhefuutdnvwt.supabase.co';
@@ -1200,7 +1200,7 @@
         }
 
         // =========================================================================
-        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v72)
+        // STABLE HIGH-ISOLATION PDF REPORT GENERATION ENGINE (v73)
         // =========================================================================
         function exportToPDF() {
             const selectEl = document.getElementById('monthViewFilter');
@@ -1803,7 +1803,7 @@
         }
 
         // ==========================================
-        // CONSOLIDATED CLOUD SYNC ENGINE (v72)
+        // CONSOLIDATED CLOUD SYNC ENGINE (v73)
         // ==========================================
         async function executeUnifiedCloudSync() {
             // 1. Sign-in Guard
@@ -2110,7 +2110,7 @@
                                 </div>
                             </div>
                             <div class="actions">
-                                <button class="btn-action btn-pay" onclick="togglePaid('${item.id}')" title="Toggle Paid">${item.status === 'paid' ? '✗' : '✓'}</button>
+                                <button class="btn-action btn-pay" onclick="togglePaid('${item.id}')" title="Toggle Paid">${item.status === 'paid' ? '↺' : '✓'}</button>
                                 <button class="btn-action btn-back ${leftShiftDisabled}" ${leftShiftDisabled} onclick="movePreviousMonth('${item.id}')" title="Move to Previous Month">◄</button>
                                 <button class="btn-action btn-move" onclick="moveNextMonth('${item.id}')" title="Move to Next Month">►</button>
                                 <button class="btn-action btn-edit" onclick="openEditMode('${item.id}')" title="Edit Entry">✎</button>
@@ -2127,7 +2127,7 @@
             });
         }
     </script>
-    <div style="position:fixed;bottom:8px;left:0;width:100%;text-align:center;font-size:10px;font-weight:600;color:#94a3b8;letter-spacing:.4px;pointer-events:none;">RNE Tracker • v72</div>
+    <div style="position:fixed;bottom:8px;left:0;width:100%;text-align:center;font-size:10px;font-weight:600;color:#94a3b8;letter-spacing:.4px;pointer-events:none;">RNE Tracker • v73</div>
 
 </body>
 </html>
